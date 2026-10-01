@@ -25,15 +25,13 @@ struct ContentView: View {
                         Divider()
                         ZoomControls(state: state, editor: editor)
                     }
-                    .frame(minHeight: 160, idealHeight: 240, maxHeight: .infinity)
-                    ScrollView {
-                        PalettePanel(state: state, editor: editor)
-                            .padding(10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(minHeight: 200, idealHeight: 300, maxHeight: .infinity)
+                    .frame(minHeight: 160, idealHeight: 640, maxHeight: .infinity)
+                    .layoutPriority(1)
+                    // カラーピッカーは固定、パレット側だけがスクロールする
+                    PalettePanel(state: state, editor: editor)
+                        .frame(minHeight: 150, idealHeight: 160, maxHeight: 360)
                 }
-                .frame(minWidth: 560, idealWidth: 620, maxWidth: 900)
+                .frame(minWidth: 470, idealWidth: 620, maxWidth: 900)
             }
             Divider()
             StatusBar(state: state, editor: editor)

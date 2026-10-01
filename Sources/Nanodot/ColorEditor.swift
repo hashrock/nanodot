@@ -30,9 +30,9 @@ struct ColorEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Swatch(color: c, size: 36)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Swatch(color: c, size: 26)
                     .gesture(previewGesture ?? AnyGesture(TapGesture().map { _ in () }))
                     .help("ドラッグでスロットに登録")
                 Picker("", selection: $mode) {
@@ -41,9 +41,17 @@ struct ColorEditor: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 110)
-                Spacer()
-                Button { set(.clear) } label: { Swatch(color: .clear, selected: c.a == 0) }
+                .frame(width: 84)
+                TextField("", text: $hexText)
+                    .font(.caption.monospaced())
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 74)
+                    .help("16 進数（rrggbb または rrggbbaa）")
+                    .onSubmit {
+                        if let v = RGBA(hex: hexText) { set(v) } else { hexText = hexString(c) }
+                    }
+                Spacer(minLength: 0)
+                Button { set(.clear) } label: { Swatch(color: .clear, selected: c.a == 0, size: 16) }
                     .buttonStyle(.plain)
                     .help("透明")
             }
@@ -65,19 +73,8 @@ struct ColorEditor: View {
             }
             ChannelSlider(label: "A", value: channel(\.a), max: 255, checker: true,
                           colors: [RGBA(c.r, c.g, c.b, 0).swiftUIColor, RGBA(c.r, c.g, c.b, 255).swiftUIColor])
-
-            HStack(spacing: 4) {
-                Text("#").font(.caption.monospaced()).foregroundStyle(.secondary)
-                TextField("", text: $hexText)
-                    .font(.caption.monospaced())
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 90)
-                    .onSubmit {
-                        if let v = RGBA(hex: hexText) { set(v) } else { hexText = hexString(c) }
-                    }
-                Spacer()
-            }
         }
+        .controlSize(.small)
         .onAppear {
             hsl = HSL(c)
             hexText = hexString(c)
@@ -136,9 +133,9 @@ struct ChannelSlider: View {
                     value = Swift.min(1, Swift.max(0, (g.location.x - 4) / Swift.max(1, w - 8)))
                 })
             }
-            .frame(height: 16)
+            .frame(height: 12)
             IntField(value: Binding(get: { Int((value * Double(max)).rounded()) },
-                                    set: { value = Double($0) / Double(max) }), min: 0, max: max)
+                                    set: { value = Double($0) / Double(max) }), min: 0, max: max, width: 40)
         }
     }
 }

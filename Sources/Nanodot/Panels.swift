@@ -6,7 +6,6 @@ import SwiftUI
 
 struct Swatch: View {
     let color: RGBA
-    var count: Int?
     var selected = false
     var size: CGFloat = 18
     /// 枠線（隙間なく並べるときは消す）
@@ -16,14 +15,6 @@ struct Swatch: View {
         ZStack {
             if color.a < 255 { CheckerBackground(size: size / 4) }
             Rectangle().fill(color.swiftUIColor)
-            if let count, count <= 99 {
-                Text("\(count)")
-                    .font(.system(size: 8, weight: .bold).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
         }
         .frame(width: size, height: size)
         .overlay {
@@ -41,7 +32,6 @@ struct Swatch: View {
 struct PalettePanel: View {
     let state: AppState
     @Bindable var editor: Editor
-    @AppStorage("showColorCounts") private var showCounts = true
 
     /// どの色見本を押したか（同じ色が複数あっても、押したものだけを選択表示にする）
     private enum SwatchID: Hashable {
@@ -61,7 +51,11 @@ struct PalettePanel: View {
     @State private var pressIsRange = false
     /// スロットの格子の位置（パネル内の座標。ドロップ先を求める）
     @State private var slotsFrame = CGRect.zero
-    private static let cell: CGFloat = 22
+    /// 横に並べる色の数（4 の倍数）と色見本の大きさ。パネルの幅に合わせて決める
+    @State private var columns = 16
+    @State private var cell: CGFloat = 22
+    private static let minCell: CGFloat = 18
+    private static let maxCell: CGFloat = 26
 
     private var selectedRange: ClosedRange<Int>? {
         guard case .slot(let a) = selected, let e = rangeEnd, e != a else { return nil }
@@ -77,10 +71,9 @@ struct PalettePanel: View {
     private func slotIndex(at p: CGPoint) -> Int? {
         let f = slotsFrame
         guard f.contains(p) else { return nil }
-        let cols = max(1, Int(f.width / Self.cell))
-        let col = Int((p.x - f.minX) / Self.cell), row = Int((p.y - f.minY) / Self.cell)
-        guard col < cols else { return nil }
-        let i = row * cols + col
+        let col = Int((p.x - f.minX) / cell), row = Int((p.y - f.minY) / cell)
+        guard col < columns else { return nil }
+        let i = row * columns + col
         return i < SheetMeta.slotCount ? i : nil
     }
 
@@ -135,17 +128,31 @@ struct PalettePanel: View {
     private static let space = "palettePanel"
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: 0) {
             ColorEditor(editor: editor, previewGesture: AnyGesture(swatchGesture(.current, color: editor.color).map { _ in () }))
-                .frame(width: 260)
+                .frame(width: 250)
+                .padding(10)
             Divider()
-            palettes
+            // パレットとスロットだけを縦にスクロール
+            ScrollView(.vertical) {
+                palettes
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(minWidth: 4 * Self.minCell + 32)
+            // 中身ではなくスクロール領域の幅から決める（中身の幅で測ると広がったまま縮まない）
+            .background(GeometryReader { g in
+                let w = g.size.width - 20 - 12 // パディングとスクロールバーの分
+                Color.clear
+                    .onAppear { fitGrid(to: w) }
+                    .onChange(of: w) { _, new in fitGrid(to: new) }
+            })
         }
         .coordinateSpace(name: Self.space)
         .overlay(alignment: .topLeading) {
             // ドラッグ中の色のゴースト
             if let d = drag {
-                Swatch(color: d.color, size: Self.cell)
+                Swatch(color: d.color, size: cell)
                     .shadow(color: .black.opacity(0.35), radius: 3, y: 2)
                     .overlay(alignment: .bottomTrailing) {
                         if d.target != nil, NSEvent.modifierFlags.contains(.option), case .slot = d.source {
@@ -163,31 +170,43 @@ struct PalettePanel: View {
         }
     }
 
+    /// 色見本が最小サイズ以上になる、いちばん多い 4 の倍数の列数（4〜64）を選ぶ
+    static func gridLayout(for width: CGFloat) -> (columns: Int, cell: CGFloat) {
+        let fit = Int(width / minCell) / 4 * 4
+        let cols = min(SheetMeta.slotCount, max(4, fit))
+        return (cols, max(minCell, min(maxCell, floor(width / CGFloat(cols)))))
+    }
+
+    private func fitGrid(to width: CGFloat) {
+        let g = Self.gridLayout(for: width)
+        if g.columns != columns { columns = g.columns }
+        if g.cell != cell { cell = g.cell }
+    }
+
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.fixed(cell), spacing: 0), count: columns)
+    }
+
     private var palettes: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             let palette = SamplePalette.named(editor.meta.palette)
-            let counts = Dictionary(uniqueKeysWithValues: editor.colorStats().map { ($0.color, $0.count) })
-            HStack {
-                Picker("", selection: $editor.meta.palette) {
-                    ForEach(SamplePalette.all) { p in Text("\(p.name)（\(p.colors.count) 色）").tag(p.name) }
-                }
-                .labelsHidden()
-                .fixedSize()
-                Spacer()
-                Toggle("使用数", isOn: $showCounts).toggleStyle(.checkbox).font(.caption)
+            Picker("", selection: $editor.meta.palette) {
+                ForEach(SamplePalette.all) { p in Text("\(p.name)（\(p.colors.count) 色）").tag(p.name) }
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 22, maximum: 22), spacing: 0)], alignment: .leading, spacing: 0) {
+            .labelsHidden()
+            .fixedSize()
+            .controlSize(.small)
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 0) {
                 ForEach(Array(palette.colors.enumerated()), id: \.offset) { i, c in
-                    let n = counts[c] ?? 0
-                    Swatch(color: c, count: showCounts ? n : nil, selected: isSelected(.palette(i)), size: 22, border: false)
+                    Swatch(color: c, selected: isSelected(.palette(i)), size: cell, border: false)
                         .gesture(swatchGesture(.palette(i), color: c))
-                        .help("\(c.hex)  \(n) ドット")
+                        .help(c.hex)
                         .contextMenu { colorMenu(c) }
                 }
             }
 
-            Text("スロット").font(.caption.bold())
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.cell, maximum: Self.cell), spacing: 0)], alignment: .leading, spacing: 0) {
+            Text("スロット").font(.caption.bold()).padding(.top, 2)
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 0) {
                 ForEach(0..<SheetMeta.slotCount, id: \.self) { i in
                     slot(i)
                         .overlay {
@@ -313,7 +332,7 @@ struct PalettePanel: View {
     @ViewBuilder
     private func slot(_ i: Int) -> some View {
         if let c = editor.meta.slots[i] {
-            Swatch(color: c, selected: isSelected(.slot(i)), size: Self.cell, border: false)
+            Swatch(color: c, selected: isSelected(.slot(i)), size: cell, border: false)
                 .gesture(swatchGesture(.slot(i), color: c))
                 .help(c.hex)
                 .contextMenu {
@@ -332,7 +351,7 @@ struct PalettePanel: View {
             Rectangle()
                 .fill(Color.secondary.opacity(isSelected(.slot(i)) ? 0.3 : 0.1))
                 .overlay(Rectangle().strokeBorder(Color.secondary.opacity(0.18), lineWidth: 0.5))
-                .frame(width: Self.cell, height: Self.cell)
+                .frame(width: cell, height: cell)
                 .contentShape(Rectangle())
                 .gesture(swatchGesture(.slot(i), color: nil))
                 .contextMenu {
@@ -533,12 +552,13 @@ struct IntField: View {
     @Binding var value: Int
     var min: Int = 0
     var max: Int = 8192
+    var width: CGFloat = 48
 
     var body: some View {
         TextField("", value: Binding(get: { value }, set: { value = Swift.min(Swift.max($0, min), max) }), format: .number.grouping(.never))
             .labelsHidden()
             .multilineTextAlignment(.trailing)
-            .frame(width: 48)
+            .frame(width: width)
             .textFieldStyle(.roundedBorder)
     }
 }
