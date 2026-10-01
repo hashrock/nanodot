@@ -1,8 +1,12 @@
+<img src="docs/images/app-icon.png" width="96" height="96" alt="nanodot のアイコン">
+
 # Nanodot
 
 ゲーム用スプライトシートを描くための macOS 用ドット絵ツールです。DotPainter ALFAR の操作体系（ストックとメインの往復、右ボタンの一貫した使い方）を参考にしています。仕様は [SPEC.md](SPEC.md) を参照してください。
 
 [サイト](https://hashrock.github.io/nanodot/) · [ダウンロード](https://github.com/hashrock/nanodot/releases/latest)
+
+![nanodot の画面。左のメインにセルを拡大表示、右上にシート全体のストック、右下にカラーピッカーとパレット](docs/images/screenshot.png)
 
 ## ビルドと起動
 
