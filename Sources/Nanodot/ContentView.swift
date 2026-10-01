@@ -16,22 +16,21 @@ struct ContentView: View {
         VStack(spacing: 0) {
             ToolBarView(state: state, editor: editor)
             Divider()
-            HSplitView {
+            // 左右: メイン | ストック＋パレット。初期状態は右を最小幅にしてメインを最大に
+            SplitView(horizontal: true, autosaveName: "nanodot.main", firstMin: 320, secondMin: 470, secondMax: 900, secondInitial: 470) {
                 MainCanvasRepresentable(state: state)
-                    .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
-                VSplitView {
+            } second: {
+                // 上下: ストック | カラーピッカー・パレット
+                SplitView(horizontal: false, autosaveName: "nanodot.right", firstMin: 160, secondMin: 150, secondMax: 360, secondInitial: 160) {
                     VStack(spacing: 0) {
                         StockRepresentable(state: state)
                         Divider()
                         ZoomControls(state: state, editor: editor)
                     }
-                    .frame(minHeight: 160, idealHeight: 640, maxHeight: .infinity)
-                    .layoutPriority(1)
+                } second: {
                     // カラーピッカーは固定、パレット側だけがスクロールする
                     PalettePanel(state: state, editor: editor)
-                        .frame(minHeight: 150, idealHeight: 160, maxHeight: 360)
                 }
-                .frame(minWidth: 470, idealWidth: 620, maxWidth: 900)
             }
             Divider()
             StatusBar(state: state, editor: editor)
