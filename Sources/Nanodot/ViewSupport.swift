@@ -67,6 +67,17 @@ enum Draw {
         ctx.restoreGState()
     }
 
+    /// 不透明な画素を指定の色に寄せた画像（オニオンスキン用）
+    static func tinted(_ b: PixelBuffer, _ tint: RGBA) -> CGImage? {
+        var out = b
+        for i in out.pixels.indices where out.pixels[i].a > 0 {
+            let p = out.pixels[i]
+            func mix(_ a: UInt8, _ t: UInt8) -> UInt8 { UInt8((Int(a) + Int(t) * 2) / 3) }
+            out.pixels[i] = RGBA(mix(p.r, tint.r), mix(p.g, tint.g), mix(p.b, tint.b), p.a)
+        }
+        return SheetFile.cgImage(from: out)
+    }
+
     /// シート上の一部分を切り出した画像
     static func crop(_ img: CGImage, _ r: IntRect) -> CGImage? {
         img.cropping(to: CGRect(x: r.x, y: r.y, width: r.width, height: r.height))

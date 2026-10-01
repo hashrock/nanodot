@@ -17,6 +17,29 @@ final class AppState {
         didSet { UserDefaults.standard.set(dragThreshold, forKey: "dragThreshold") }
     }
 
+    /// アニメウィンドウが開いているか（オニオンスキンの表示条件）
+    var animWindowVisible = false
+    var onionSkin: Bool = UserDefaults.standard.object(forKey: "onionSkin") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(onionSkin, forKey: "onionSkin") }
+    }
+    /// ストックとマップにセルの注釈を重ねて表示
+    var showAnnotations: Bool = UserDefaults.standard.object(forKey: "showAnnotations") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showAnnotations, forKey: "showAnnotations") }
+    }
+
+    // MARK: マップ
+    var selectedMapID: UUID?
+    var mapLayer = 0
+    var mapTool = MapTool.pen
+    /// マップで右クリック・右ドラッグで拾ったブラシ（なければマーク範囲のセル）
+    var mapBrushOverride: MapBrush?
+    var canMapUndo = false
+    var canMapRedo = false
+    @ObservationIgnored weak var mapView: MapCanvasView?
+    @ObservationIgnored private var mapUndoStack: [(id: UUID, map: TileMapDef)] = []
+    @ObservationIgnored private var mapRedoStack: [(id: UUID, map: TileMapDef)] = []
+    @ObservationIgnored private var cellImageCache: (version: Int, cw: Int, ch: Int, images: [Int: CGImage]) = (-1, 0, 0, [:])
+
     @ObservationIgnored weak var mainView: MainCanvasView?
     @ObservationIgnored weak var stockView: StockView?
     @ObservationIgnored weak var previewView: AnimPreviewView?
@@ -52,6 +75,7 @@ final class AppState {
         mainView?.needsDisplay = true
         stockView?.needsDisplay = true
         previewView?.needsDisplay = true
+        mapView?.needsDisplay = true
     }
 
     /// パレットで色を押している間、その色の場所を点滅させる
@@ -81,6 +105,91 @@ final class AppState {
         }
         stockView?.scrollMarkToVisible()
         requestDisplay()
+    }
+
+    // MARK: - マップ
+
+    /// シートの列数（セル番号の計算に使う）
+    var sheetColumns: Int { max(1, editor.image.width / max(1, editor.meta.cellWidth)) }
+
+    /// マーク範囲にかかるセルをブラシにしたもの
+    var markBrush: MapBrush {
+        let m = editor.meta, cw = max(1, m.cellWidth), ch = max(1, m.cellHeight)
+        let c0 = m.mark.x / cw, r0 = m.mark.y / ch
+        let c1 = max(c0, (m.mark.x + m.lupeWidth - 1) / cw), r1 = max(r0, (m.mark.y + m.lupeHeight - 1) / ch)
+        let cols = sheetColumns, rows = max(1, editor.image.height / ch)
+        var tiles: [Int] = []
+        for r in r0...r1 {
+            for c in c0...c1 { tiles.append(c < cols && r < rows ? SheetMeta.cellIndex(col: c, row: r, columns: cols) : -1) }
+        }
+        return MapBrush(width: c1 - c0 + 1, height: r1 - r0 + 1, tiles: tiles)
+    }
+
+    var mapBrush: MapBrush { mapBrushOverride ?? markBrush }
+
+    /// セル番号の画像（画素が変わったら作り直す）
+    func cellImage(_ index: Int) -> CGImage? {
+        guard index >= 0, let sheet = sheetImage else { return nil }
+        let cw = editor.meta.cellWidth, ch = editor.meta.cellHeight
+        if cellImageCache.version != editor.pixelVersion || cellImageCache.cw != cw || cellImageCache.ch != ch {
+            cellImageCache = (editor.pixelVersion, cw, ch, [:])
+        }
+        if let img = cellImageCache.images[index] { return img }
+        let (c, r) = SheetMeta.cellPosition(index, columns: sheetColumns)
+        let rect = IntRect(x: c * cw, y: r * ch, width: cw, height: ch).intersection(editor.image.bounds)
+        guard !rect.isEmpty, let img = Draw.crop(sheet, rect) else { return nil }
+        cellImageCache.images[index] = img
+        return img
+    }
+
+    var isMapWindowKey: Bool {
+        guard let w = mapView?.window else { return false }
+        return NSApp.keyWindow === w
+    }
+
+    var mapIndex: Int? { editor.meta.maps.firstIndex { $0.id == selectedMapID } }
+
+    /// マップ編集の取り消し点を記録する（ドラッグ 1 回につき 1 回）
+    func beginMapEdit() {
+        guard let i = mapIndex else { return }
+        let m = editor.meta.maps[i]
+        mapUndoStack.append((m.id, m))
+        if mapUndoStack.count > 100 { mapUndoStack.removeFirst() }
+        mapRedoStack.removeAll()
+        updateMapHistory()
+    }
+
+    func mutateMap(_ body: (inout TileMapDef) -> Void) {
+        guard let i = mapIndex else { return }
+        body(&editor.meta.maps[i])
+        mapView?.needsDisplay = true
+    }
+
+    func mapUndo() { swapMapHistory(from: &mapUndoStack, to: &mapRedoStack) }
+    func mapRedo() { swapMapHistory(from: &mapRedoStack, to: &mapUndoStack) }
+
+    private func swapMapHistory(from: inout [(id: UUID, map: TileMapDef)], to: inout [(id: UUID, map: TileMapDef)]) {
+        guard let e = from.popLast(), let i = editor.meta.maps.firstIndex(where: { $0.id == e.id }) else {
+            updateMapHistory()
+            return
+        }
+        to.append((e.id, editor.meta.maps[i]))
+        editor.meta.maps[i] = e.map
+        selectedMapID = e.id
+        mapLayer = min(mapLayer, e.map.layers.count - 1)
+        updateMapHistory()
+        mapView?.needsDisplay = true
+    }
+
+    private func updateMapHistory() {
+        canMapUndo = !mapUndoStack.isEmpty
+        canMapRedo = !mapRedoStack.isEmpty
+    }
+
+    func resetMapHistory() {
+        mapUndoStack.removeAll()
+        mapRedoStack.removeAll()
+        updateMapHistory()
     }
 
     // MARK: - クリップボード
@@ -130,6 +239,8 @@ final class AppState {
     func newDocument(width: Int, height: Int, cellWidth: Int, cellHeight: Int) {
         editor.newDocument(width: width, height: height, cellWidth: cellWidth, cellHeight: cellHeight)
         selectedAnimID = nil
+        selectedMapID = nil
+        resetMapHistory()
         stockView?.fitToView()
         requestDisplay()
     }
@@ -151,6 +262,10 @@ final class AppState {
             // PNG 以外は上書き保存しない（保存時に PNG の名前を聞く）
             editor.load(img, meta: m, url: isPNG ? url : nil)
             selectedAnimID = m.anims.first?.id
+            selectedMapID = m.maps.first?.id
+            mapLayer = 0
+            mapBrushOverride = nil
+            resetMapHistory()
             stockView?.fitToView()
             requestDisplay()
         } catch {

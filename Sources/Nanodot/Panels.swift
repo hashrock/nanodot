@@ -423,6 +423,9 @@ struct AnimPanel: View {
             Button { state.previewView?.step(-1) } label: { Image(systemName: "backward.frame") }
             Button { playing.toggle() } label: { Image(systemName: playing ? "pause.fill" : "play.fill") }
             Button { state.previewView?.step(1) } label: { Image(systemName: "forward.frame") }
+            Toggle("オニオンスキン", isOn: Binding(get: { state.onionSkin }, set: { state.onionSkin = $0 }))
+                .toggleStyle(.checkbox)
+                .help("マーク位置がコマと重なっているとき、メインに前（赤）と次（青）のコマを重ねる")
             Spacer()
             Menu("書き出し") {
                 ForEach(AnimExport.Format.allCases, id: \.self) { f in
@@ -574,8 +577,12 @@ struct AnimWindow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minWidth: 340, minHeight: 360)
-        .onAppear { UserDefaults.standard.set(true, forKey: AnimWindow.openKey) }
+        .onAppear {
+            UserDefaults.standard.set(true, forKey: AnimWindow.openKey)
+            state.animWindowVisible = true
+        }
         .onDisappear {
+            state.animWindowVisible = false
             if !AppDelegate.isTerminating { UserDefaults.standard.set(false, forKey: AnimWindow.openKey) }
         }
     }
@@ -607,6 +614,7 @@ struct ZoomControls: View {
             Button("幅に合わせる") { state.stockView?.fitToView() }
                 .help("シートの幅に合わせる (⌘0)")
             Spacer(minLength: 0)
+            AnnotationControls(state: state, editor: editor)
         }
         .buttonStyle(.borderless)
         .controlSize(.small)
@@ -616,3 +624,80 @@ struct ZoomControls: View {
     }
 }
 
+
+// MARK: - 注釈
+
+/// ストックのバーに置く、注釈の表示切り替えと編集
+struct AnnotationControls: View {
+    let state: AppState
+    @Bindable var editor: Editor
+    @State private var editing = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Toggle("注釈", isOn: Binding(get: { state.showAnnotations }, set: { state.showAnnotations = $0 }))
+                .toggleStyle(.checkbox)
+                .help("通行不可（×）・重なり順（★）・名前をストックとマップに表示")
+            Button { editing.toggle() } label: { Image(systemName: "tag") }
+                .help("マーク範囲のセルの注釈を編集")
+                .popover(isPresented: $editing, arrowEdge: .bottom) {
+                    AnnotationEditor(editor: editor).padding(12).frame(width: 260)
+                }
+        }
+    }
+}
+
+/// マーク範囲にかかるセルの注釈をまとめて編集
+struct AnnotationEditor: View {
+    @Bindable var editor: Editor
+
+    /// マーク範囲にかかるセル（列, 行）
+    private var cells: [(col: Int, row: Int)] {
+        let m = editor.meta, cw = max(1, m.cellWidth), ch = max(1, m.cellHeight)
+        let r = editor.markRect.intersection(editor.image.bounds)
+        guard !r.isEmpty else { return [] }
+        var out: [(Int, Int)] = []
+        for row in (r.y / ch)...((r.maxY - 1) / ch) {
+            for col in (r.x / cw)...((r.maxX - 1) / cw) { out.append((col, row)) }
+        }
+        return out
+    }
+
+    private var first: CellAnnotation? {
+        cells.first.map { editor.meta.annotation(col: $0.col, row: $0.row) }
+    }
+
+    private func update(_ body: (inout CellAnnotation) -> Void) {
+        var m = editor.meta
+        for c in cells {
+            var a = m.annotation(col: c.col, row: c.row)
+            body(&a)
+            m.setAnnotation(a)
+        }
+        editor.meta.annotations = m.annotations
+    }
+
+    var body: some View {
+        let cs = cells
+        VStack(alignment: .leading, spacing: 10) {
+            if let f = first {
+                Text(cs.count == 1 ? "セル (\(f.col), \(f.row))" : "\(cs.count) セル（マーク範囲）")
+                    .font(.headline)
+                Form {
+                    TextField("名前", text: Binding(get: { f.name }, set: { v in update { $0.name = v } }))
+                    Toggle("通行できる", isOn: Binding(get: { f.passable }, set: { v in update { $0.passable = v } }))
+                    Stepper("重なり順: \(f.z)", value: Binding(get: { f.z }, set: { v in update { $0.z = v } }), in: -9...9)
+                }
+                .controlSize(.small)
+                HStack {
+                    Text("重なり順 0 が通常、大きいほど手前").font(.caption2).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("クリア") { update { $0 = CellAnnotation(col: $0.col, row: $0.row) } }
+                        .controlSize(.small)
+                }
+            } else {
+                Text("マーク範囲がシートの外です").foregroundStyle(.secondary)
+            }
+        }
+    }
+}

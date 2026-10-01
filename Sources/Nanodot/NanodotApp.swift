@@ -150,6 +150,13 @@ struct NanodotApp: App {
         }
         .defaultSize(width: 420, height: 640)
         .animWindowRestorationDisabled()
+
+        Window("マップ", id: "map") {
+            MapWindow(state: state, editor: state.editor)
+        }
+        .defaultSize(width: 900, height: 640)
+        .keyboardShortcut("m", modifiers: [.command, .shift])
+        .animWindowRestorationDisabled()
         .keyboardShortcut("a", modifiers: [.command, .shift])
     }
 }
@@ -181,12 +188,17 @@ struct AppCommands: Commands {
             .disabled(state.selectedAnimID == nil)
         }
         CommandGroup(replacing: .undoRedo) {
-            Button(editor.undoLabel.map { "取り消し: \($0)" } ?? "取り消し") { editor.undo() }
-                .keyboardShortcut("z")
-                .disabled(!editor.canUndo)
-            Button(editor.redoLabel.map { "やり直し: \($0)" } ?? "やり直し") { editor.redo() }
-                .keyboardShortcut("z", modifiers: [.command, .shift])
-                .disabled(!editor.canRedo)
+            // マップウィンドウが前面ならマップの取り消し・やり直し
+            Button(editor.undoLabel.map { "取り消し: \($0)" } ?? "取り消し") {
+                if state.isMapWindowKey { state.mapUndo() } else { editor.undo() }
+            }
+            .keyboardShortcut("z")
+            .disabled(!editor.canUndo && !state.canMapUndo)
+            Button(editor.redoLabel.map { "やり直し: \($0)" } ?? "やり直し") {
+                if state.isMapWindowKey { state.mapRedo() } else { editor.redo() }
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .disabled(!editor.canRedo && !state.canMapRedo)
         }
         CommandGroup(after: .pasteboard) {
             Divider()

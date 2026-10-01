@@ -343,3 +343,44 @@ final class SlotOpsTests: XCTestCase {
         XCTAssertEqual(SlotOps.reversed(s, 0, 2), [b, nil, a])
     }
 }
+
+final class MapTests: XCTestCase {
+    func testStampFillResize() {
+        var m = TileMapDef(name: "m", width: 4, height: 3)
+        m.stamp(0, 1, 1, MapBrush(width: 2, height: 1, tiles: [5, -1]))
+        XCTAssertEqual(m.tile(0, 1, 1), 5)
+        XCTAssertEqual(m.tile(0, 2, 1), -1)
+        m.stamp(0, 3, 2, MapBrush(width: 2, height: 2, tiles: [7, 7, 7, 7])) // はみ出しは無視
+        XCTAssertEqual(m.tile(0, 3, 2), 7)
+        m.fill(1, 0, 0, 3)
+        XCTAssertEqual(m.layers[1].tiles, Array(repeating: 3, count: 12))
+        m.fill(0, 0, 0, 9)
+        XCTAssertEqual(m.tile(0, 1, 1), 5, "違うタイルで区切られた所は塗らない")
+        XCTAssertEqual(m.tile(0, 2, 2), 9)
+        XCTAssertEqual(m.brush(0, IntRect(x: 1, y: 1, width: 2, height: 1)).tiles, [5, 9])
+        m.resize(width: 2, height: 2)
+        XCTAssertEqual(m.layers[0].tiles, [9, 9, 9, 5])
+    }
+
+    func testAnnotationsAndCoding() throws {
+        var meta = SheetMeta()
+        var a = meta.annotation(col: 2, row: 1)
+        a.passable = false
+        a.z = 1
+        a.name = "壁"
+        meta.setAnnotation(a)
+        var m = TileMapDef(name: "村", width: 3, height: 2)
+        m.set(1, 2, 1, SheetMeta.cellIndex(col: 2, row: 1, columns: 8))
+        meta.maps = [m]
+        let decoded = try JSONDecoder().decode(SheetMeta.self, from: JSONEncoder().encode(meta))
+        XCTAssertEqual(decoded.annotation(col: 2, row: 1).name, "壁")
+        XCTAssertFalse(decoded.annotation(col: 2, row: 1).passable)
+        XCTAssertEqual(decoded.maps.first?.tile(1, 2, 1), 10)
+        XCTAssertEqual(decoded.maps.first?.layers.count, 2)
+        // 既定値に戻すと消える
+        a.passable = true; a.z = 0; a.name = ""
+        meta.setAnnotation(a)
+        XCTAssertTrue(meta.annotations.isEmpty)
+        XCTAssertTrue(SheetMeta.cellPosition(10, columns: 8) == (2, 1))
+    }
+}

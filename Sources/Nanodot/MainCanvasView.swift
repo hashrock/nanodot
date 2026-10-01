@@ -115,6 +115,7 @@ final class MainCanvasView: NSView {
         let visibleSheet = sheet.intersection(bounds)
         if !visibleSheet.isNull {
             Draw.fillChecker(ctx, visibleSheet, origin: sheet.origin, dot: zoom)
+            drawOnionSkin(ctx)
             if let cg = state.sheetImage { Draw.image(ctx, cg, in: sheet) }
         }
 
@@ -173,6 +174,22 @@ final class MainCanvasView: NSView {
             } else if z >= 4 {
                 Draw.outline(ctx, screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)))
             }
+        }
+    }
+
+    /// アニメウィンドウを開いていて、マーク位置がアニメのコマと同じなら、前のコマを赤・次のコマを青で下に重ねる
+    private func drawOnionSkin(_ ctx: CGContext) {
+        guard state.animWindowVisible, state.onionSkin,
+              let anim = editor.meta.anims.first(where: { $0.id == state.selectedAnimID }) else { return }
+        let frames = anim.resolvedFrames, n = frames.count
+        let mk = editor.meta.mark
+        guard n > 1, let i = frames.firstIndex(where: { $0.x == mk.x && $0.y == mk.y }) else { return }
+        var shown: [(AnimFrame, RGBA)] = [(frames[(i - 1 + n) % n], RGBA(255, 60, 70))]
+        if n > 2 { shown.append((frames[(i + 1) % n], RGBA(40, 120, 255))) }
+        for (f, tint) in shown {
+            let buf = editor.image.copy(anim.rect(of: f))
+            guard let img = Draw.tinted(buf, tint) else { continue }
+            Draw.image(ctx, img, in: screenRect(IntRect(x: mk.x, y: mk.y, width: buf.width, height: buf.height)), alpha: 0.4)
         }
     }
 
@@ -346,7 +363,7 @@ struct MainCanvasRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: MainCanvasView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら再描画させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.highlight)
+        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.highlight, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
         nsView.needsDisplay = true
     }
 }

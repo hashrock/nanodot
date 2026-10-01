@@ -113,6 +113,10 @@ public struct SheetMeta: Equatable, Sendable, Codable {
     public var palette = SamplePalette.all[0].name
     public var slots: [RGBA?] = Array(repeating: nil, count: SheetMeta.slotCount)
     public var anims: [AnimDef] = []
+    /// セルの注釈（設定のあるセルだけ）
+    public var annotations: [CellAnnotation] = []
+    /// マップの仮組み
+    public var maps: [TileMapDef] = []
 
     public init() {}
 
@@ -132,6 +136,8 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         s += Array(repeating: nil, count: SheetMeta.slotCount - s.count)
         slots = s
         anims = (try? c.decode([AnimDef].self, forKey: .anims)) ?? []
+        annotations = (try? c.decode([CellAnnotation].self, forKey: .annotations)) ?? []
+        maps = (try? c.decode([TileMapDef].self, forKey: .maps)) ?? []
     }
 
     /// 表示状態（マーク位置・ルーペ・スナップ）を除いた内容

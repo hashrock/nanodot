@@ -238,6 +238,8 @@ final class StockView: NSView {
                       stepY: CGFloat(m.cellHeight) * zoom, color: CGColor(srgbRed: 0.2, green: 0.55, blue: 1, alpha: 0.35))
         }
 
+        if state.showAnnotations { drawAnnotations(ctx) }
+
         if let f = state.previewFrameRect {
             Draw.outline(ctx, screenRect(f), color: CGColor(srgbRed: 0.1, green: 0.8, blue: 0.4, alpha: 0.9), dashed: true)
         }
@@ -272,6 +274,44 @@ final class StockView: NSView {
                 Draw.outline(ctx, screenRect(IntRect(x: p.x, y: p.y, width: clip.width, height: clip.height)),
                              color: CGColor(gray: 1, alpha: 0.5), dashed: true)
             }
+        }
+    }
+
+    /// 注釈のあるセルに、通行不可は ×、重なり順は ★数字、名前を重ねる
+    private func drawAnnotations(_ ctx: CGContext) {
+        let m = editor.meta
+        guard !m.annotations.isEmpty else { return }
+        let cw = m.cellWidth, ch = m.cellHeight
+        let small = CGFloat(min(cw, ch)) * zoom < 28
+        for a in m.annotations {
+            let r = screenRect(IntRect(x: a.col * cw, y: a.row * ch, width: cw, height: ch))
+            guard r.intersects(bounds) else { continue }
+            if !a.passable {
+                ctx.saveGState()
+                ctx.setFillColor(CGColor(srgbRed: 1, green: 0.2, blue: 0.25, alpha: 0.18))
+                ctx.fill(r)
+                let x = r.insetBy(dx: r.width * 0.3, dy: r.height * 0.3)
+                ctx.setStrokeColor(CGColor(srgbRed: 1, green: 0.2, blue: 0.25, alpha: 0.9))
+                ctx.setLineWidth(2)
+                ctx.move(to: CGPoint(x: x.minX, y: x.minY)); ctx.addLine(to: CGPoint(x: x.maxX, y: x.maxY))
+                ctx.move(to: CGPoint(x: x.maxX, y: x.minY)); ctx.addLine(to: CGPoint(x: x.minX, y: x.maxY))
+                ctx.strokePath()
+                ctx.restoreGState()
+            }
+            guard !small else { continue }
+            var labels: [String] = []
+            if a.z != 0 { labels.append("★\(a.z)") }
+            if !a.name.isEmpty { labels.append(a.name) }
+            guard !labels.isEmpty else { continue }
+            let text = NSAttributedString(string: labels.joined(separator: " "), attributes: [
+                .font: NSFont.systemFont(ofSize: 9, weight: .semibold),
+                .foregroundColor: NSColor.white,
+            ])
+            let size = text.size()
+            let bg = CGRect(x: r.minX + 1, y: r.minY + 1, width: min(size.width + 4, r.width - 2), height: size.height)
+            ctx.setFillColor(CGColor(gray: 0, alpha: 0.6))
+            ctx.fill(bg)
+            text.draw(with: bg.insetBy(dx: 2, dy: 0), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
         }
     }
 
@@ -459,7 +499,7 @@ struct StockRepresentable: NSViewRepresentable {
 
     func updateNSView(_ nsView: StockView, context: Context) {
         let e = state.editor
-        _ = (e.meta, e.highlight, e.clipboard?.width)
+        _ = (e.meta, e.highlight, e.clipboard?.width, state.showAnnotations)
         nsView.needsDisplay = true
     }
 }

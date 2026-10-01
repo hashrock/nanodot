@@ -40,6 +40,7 @@ struct ContentView: View {
         .onAppear {
             // 前回開いていたらアニメウィンドウも開く
             if UserDefaults.standard.bool(forKey: AnimWindow.openKey) { openWindow(id: "anim") }
+            if UserDefaults.standard.bool(forKey: MapWindow.openKey) { openWindow(id: "map") }
         }
         .dropDestination(for: URL.self) { urls, _ in state.openDropped(urls) }
         .sheet(isPresented: Binding(get: { state.showNewDocumentSheet }, set: { state.showNewDocumentSheet = $0 })) {
@@ -104,6 +105,8 @@ struct ToolBarView: View {
 
             Button { openWindow(id: "anim") } label: { Image(systemName: "film") }
                 .help("アニメウィンドウ (⇧⌘A)")
+            Button { openWindow(id: "map") } label: { Image(systemName: "map") }
+                .help("マップウィンドウ (⇧⌘M)")
             Button { showSettings.toggle() } label: { Image(systemName: "gearshape") }
                 .help("シートの設定")
                 .popover(isPresented: $showSettings) { SettingsPopover(state: state, editor: editor) }
