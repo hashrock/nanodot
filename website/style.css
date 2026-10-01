@@ -46,3 +46,13 @@ figcaption{display:flex;justify-content:space-between;gap:16px;margin-top:17px;f
 @media(max-width:700px){.keys{grid-template-columns:1fr;padding-bottom:52px}}
 .features{row-gap:56px}
 .features code{font-size:13px}
+.mcp{display:grid;grid-template-columns:1fr 1fr;gap:42px;align-items:start;border-top:1px solid var(--line);padding:56px 0 88px}
+.mcp h2{font-size:29px;letter-spacing:-.04em;margin:20px 0 14px;line-height:1.4}
+.mcp p{font-size:14px;line-height:2;color:var(--muted);margin:0}
+.mcp .requirement{margin-top:14px}
+.mcp-steps{display:flex;flex-direction:column;gap:8px}
+.mcp-label{font-size:13px!important;color:var(--ink)!important;font-weight:600}
+.mcp pre{margin:0 0 10px;padding:14px 16px;border-radius:8px;background:#1a1c2c;color:#f4f4f4;font-size:12.5px;line-height:1.7;overflow-x:auto}
+.mcp pre.prompt{background:#eef0f6;color:var(--ink)}
+.mcp pre code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+@media(max-width:700px){.mcp{grid-template-columns:1fr;gap:24px;padding:44px 0 52px}.mcp h2{font-size:26px;margin:13px 0 10px}}

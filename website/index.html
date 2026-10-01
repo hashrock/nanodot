@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#fafafa">
   <title>nanodot — シートの上で、ドットを打つ。</title>
-  <meta name="description" content="歩行グラフィックやマップチップのような、小さな絵が並んだスプライトシートのための、Macのドット絵ツール。">
+  <meta name="description" content="歩行グラフィックやマップチップのような、小さな絵が並んだスプライトシートのための、Macのドット絵ツール。MCP で AI エージェントからも操作できます。">
   <link rel="icon" href="./assets/nanodot.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -32,7 +32,24 @@
       <article><span class="step">03 / FLIPBOOK</span><h2>描きながら、動かす。</h2><p>アニメは描いた先から再生。<br>前後のコマをオニオンスキンで重ねて、<br>GIF・APNG・連番PNGで書き出せます。</p></article>
       <article><span class="step">04 / MAP</span><h2>並べて、試す。</h2><p>描いたチップをその場でマップに仮組み。<br>レイヤーを重ねて、<br>つなぎ目や見え方を確かめられます。</p></article>
       <article><span class="step">05 / ANNOTATION</span><h2>セルに、意味を。</h2><p>セルごとに名前・通行可否・重なり順。<br>シートの横に置くJSONに保存するので、<br>ゲーム側からそのまま読めます。</p></article>
-      <article><span class="step">06 / PLAIN PNG</span><h2>素のPNGのまま。</h2><p>絵はいつものPNG。<br>設定やアニメ、マップは<br><code>.nanodot.json</code> に分けて残します。</p></article>
+      <article><span class="step">06 / TEXT</span><h2>文字も、ドットで。</h2><p>フォントと大きさを選んで、<br>にじまないドットの文字を置けます。<br>日本語も、改行も。</p></article>
+    </section>
+    <section class="mcp wrap" aria-labelledby="mcp-title">
+      <div>
+        <span class="step">07 / MCP</span>
+        <h2 id="mcp-title">AIと一緒に描く。</h2>
+        <p>nanodot は MCP サーバーを内蔵しています。<br>Claude Code などのエージェントが、シートを見ながら<br>描いたり、色違いを作ったり、マップを組んだり。<br>このMacの中だけで待ち受けます。</p>
+        <p class="requirement"><a href="https://github.com/hashrock/nanodot/blob/main/docs/MCP.md">MCP の使い方とツール一覧</a></p>
+      </div>
+      <div class="mcp-steps">
+        <p class="mcp-label">1. ⚙ の設定で「MCP サーバー」をオン</p>
+        <p class="mcp-label">2. エージェントに登録</p>
+        <pre><code>claude mcp add --transport http \
+  nanodot http://127.0.0.1:47621/mcp</code></pre>
+        <p class="mcp-label">3. 頼んでみる</p>
+        <pre class="prompt"><code>32×32 のセルで草・土・水・岩のタイルを描いて、
+水と岩は通行不可にして</code></pre>
+      </div>
     </section>
     <dl class="keys wrap" aria-label="おもな操作">
       <div><dt>右クリック</dt><dd>スポイト</dd></div>
@@ -41,7 +58,7 @@
       <div><dt>Space + ドラッグ</dt><dd>パン</dd></div>
       <div><dt>ストックで左ドラッグ</dt><dd>セルの入れ替え</dd></div>
       <div><dt>ストックでダブルクリック</dt><dd>貼り付け</dd></div>
-      <div><dt>B / E / G / L / R / O</dt><dd>ペン・消しゴム・塗りつぶし・直線・矩形・楕円</dd></div>
+      <div><dt>B / E / G / L / R / O / T</dt><dd>ペン・消しゴム・塗りつぶし・直線・矩形・楕円・テキスト</dd></div>
       <div><dt>Shift + クリック（スロット）</dt><dd>範囲選択してグラデーション</dd></div>
       <div><dt>⇧⌘A</dt><dd>アニメウィンドウ</dd></div>
       <div><dt>⇧⌘M</dt><dd>マップウィンドウ</dd></div>
@@ -50,7 +67,7 @@
       <img src="./assets/nanodot.svg" width="62" height="62" alt="" loading="lazy">
       <h2 id="closing-title">次のシートを、nanodotで。</h2>
       <a class="button" href="https://github.com/hashrock/nanodot/releases/latest">Mac版をダウンロード <span aria-hidden="true">↓</span></a>
-      <p class="requirement">macOS 14 以降 · <a href="https://github.com/hashrock/nanodot">GitHub</a> · <a href="https://github.com/hashrock/nanodot#ビルドと起動">ソースからビルドする</a></p>
+      <p class="requirement">macOS 14 以降 · 保存は素の PNG ＋ <code>.nanodot.json</code><br><a href="https://github.com/hashrock/nanodot">GitHub</a> · <a href="https://github.com/hashrock/nanodot#ビルドと起動">ソースからビルドする</a></p>
     </section>
   </main>
   <footer class="footer wrap"><span>nanodot</span><a href="https://github.com/hashrock">Made by hashrock <span aria-hidden="true">↗</span></a></footer>
