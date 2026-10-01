@@ -2,11 +2,14 @@
 
 ゲーム用スプライトシートを描くための macOS 用ドット絵ツールです。DotPainter ALFAR の操作体系（ストックとメインの往復、右ボタンの一貫した使い方）を参考にしています。仕様は [SPEC.md](SPEC.md) を参照してください。
 
+[サイト](https://hashrock.github.io/nanodot/) · [ダウンロード](https://github.com/hashrock/nanodot/releases/latest)
+
 ## ビルドと起動
 
 ```sh
 ./scripts/build-app.sh      # リリースビルドして build/Nanodot.app を生成
 open build/Nanodot.app
+./scripts/release.sh        # Developer ID で署名・公証して dist/Nanodot-<版>.zip を作る（配布用）
 ```
 
 - 必要なもの: macOS 14 以降、Xcode 16 以降（Swift 5.10+）
