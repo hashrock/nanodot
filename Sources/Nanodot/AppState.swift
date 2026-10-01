@@ -1,0 +1,253 @@
+import AppKit
+import NanodotCore
+import Observation
+import UniformTypeIdentifiers
+
+@Observable
+final class AppState {
+    let editor = Editor()
+    /// カーソル下のドット（ステータスバー表示用）
+    var cursorDot: IntPoint?
+    var showNewDocumentSheet = false
+    /// ストックの表示倍率（パネルの表示用。実体は StockView）
+    var stockZoom: CGFloat = 1
+    var selectedAnimID: UUID?
+    /// 右ドラッグをドラッグとみなすまでの移動ドット数
+    var dragThreshold: Int = UserDefaults.standard.object(forKey: "dragThreshold") as? Int ?? 1 {
+        didSet { UserDefaults.standard.set(dragThreshold, forKey: "dragThreshold") }
+    }
+
+    @ObservationIgnored weak var mainView: MainCanvasView?
+    @ObservationIgnored weak var stockView: StockView?
+    @ObservationIgnored weak var previewView: AnimPreviewView?
+    /// アニメプレビューで表示中のコマ（ストックに枠を出す）
+    @ObservationIgnored var previewFrameRect: IntRect?
+    /// 点滅の表示相
+    @ObservationIgnored private(set) var blinkOn = false
+    @ObservationIgnored private var blinkTimer: Timer?
+    @ObservationIgnored private var imageCache: (version: Int, image: CGImage)?
+    @ObservationIgnored private var clipboardChangeCount = -1
+
+    init() {
+        editor.newDocument(width: 256, height: 256, cellWidth: 32, cellHeight: 32)
+        editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
+    }
+
+    var title: String {
+        let name = editor.fileURL?.lastPathComponent ?? "無題"
+        return editor.isDirty ? name + " — 編集済み" : name
+    }
+
+    // MARK: - 表示
+
+    /// シート画像（画素が変わったときだけ作り直す）
+    var sheetImage: CGImage? {
+        if let c = imageCache, c.version == editor.pixelVersion { return c.image }
+        guard let img = SheetFile.cgImage(from: editor.image) else { return nil }
+        imageCache = (editor.pixelVersion, img)
+        return img
+    }
+
+    func requestDisplay() {
+        mainView?.needsDisplay = true
+        stockView?.needsDisplay = true
+        previewView?.needsDisplay = true
+    }
+
+    /// パレットで色を押している間、その色の場所を点滅させる
+    func setHighlight(_ c: RGBA?) {
+        editor.highlight = c
+        blinkTimer?.invalidate()
+        blinkTimer = nil
+        blinkOn = c != nil
+        if c != nil {
+            blinkTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                self.blinkOn.toggle()
+                self.mainView?.needsDisplay = true
+                self.stockView?.needsDisplay = true
+            }
+        }
+        mainView?.needsDisplay = true
+        stockView?.needsDisplay = true
+    }
+
+    func moveMark(dx: Int, dy: Int, byLupe: Bool) {
+        let m = editor.meta
+        if byLupe {
+            editor.setMark(IntPoint(m.mark.x + dx * m.lupeWidth, m.mark.y + dy * m.lupeHeight))
+        } else {
+            editor.moveMark(dx: dx, dy: dy)
+        }
+        stockView?.scrollMarkToVisible()
+        requestDisplay()
+    }
+
+    // MARK: - クリップボード
+
+    /// 内部のクリップボードに置き、システムのクリップボードにも PNG で書く
+    func setClipboard(_ b: PixelBuffer) {
+        editor.setClipboard(b)
+        guard let data = SheetFile.pngData(b) else { return }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setData(data, forType: .png)
+        clipboardChangeCount = pb.changeCount
+    }
+
+    func copyMark() {
+        if let b = editor.copy(editor.markRect) { setClipboard(b) }
+    }
+
+    /// 他のアプリで画像がコピーされていればそれを取り込んでスタンプモードへ
+    func pasteToStamp() {
+        let pb = NSPasteboard.general
+        if pb.changeCount != clipboardChangeCount {
+            if let data = pb.data(forType: .png), let b = SheetFile.pixelBuffer(pngData: data) {
+                editor.setClipboard(b)
+            } else if let img = NSImage(pasteboard: pb), let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil),
+                      let b = SheetFile.pixelBuffer(from: cg) {
+                editor.setClipboard(b)
+            }
+            clipboardChangeCount = pb.changeCount
+        }
+        if editor.clipboard != nil { editor.stampActive = true }
+        requestDisplay()
+    }
+
+    // MARK: - ファイル
+
+    func confirmDiscardChanges() -> Bool {
+        guard editor.isDirty else { return true }
+        let alert = NSAlert()
+        alert.messageText = "変更が保存されていません"
+        alert.informativeText = "現在のシートの変更を破棄しますか？"
+        alert.addButton(withTitle: "破棄")
+        alert.addButton(withTitle: "キャンセル")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    func newDocument(width: Int, height: Int, cellWidth: Int, cellHeight: Int) {
+        editor.newDocument(width: width, height: height, cellWidth: cellWidth, cellHeight: cellHeight)
+        selectedAnimID = nil
+        stockView?.fitToView()
+        requestDisplay()
+    }
+
+    func open() {
+        guard confirmDiscardChanges() else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.png, .gif, .bmp, .tiff, .jpeg]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        open(url: url)
+    }
+
+    func open(url: URL) {
+        do {
+            let (img, meta) = try SheetFile.load(url: url)
+            let isPNG = url.pathExtension.lowercased() == "png"
+            var m = meta ?? SheetMeta()
+            if meta == nil { m.slots = editor.meta.slots }
+            // PNG 以外は上書き保存しない（保存時に PNG の名前を聞く）
+            editor.load(img, meta: m, url: isPNG ? url : nil)
+            selectedAnimID = m.anims.first?.id
+            stockView?.fitToView()
+            requestDisplay()
+        } catch {
+            showError("ファイルを開けませんでした: \(error.localizedDescription)")
+        }
+    }
+
+    /// ウィンドウにドロップされたファイルを開く
+    @discardableResult
+    func openDropped(_ urls: [URL]) -> Bool {
+        guard let url = urls.first(where: { ["png", "gif", "bmp", "tif", "tiff", "jpg", "jpeg"].contains($0.pathExtension.lowercased()) }) else {
+            return false
+        }
+        // ドラッグ操作の途中でモーダルを出さないよう、次のランループで処理する
+        DispatchQueue.main.async { [self] in
+            NSApp.activate(ignoringOtherApps: true)
+            guard confirmDiscardChanges() else { return }
+            open(url: url)
+        }
+        return true
+    }
+
+    func save() {
+        if let url = editor.fileURL { write(to: url) } else { saveAs() }
+    }
+
+    func saveAs() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = editor.fileURL?.deletingPathExtension().lastPathComponent ?? "無題"
+        panel.message = "設定は同じフォルダーの <名前>.nanodot.json に保存されます"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        write(to: url)
+    }
+
+    private func write(to url: URL) {
+        do {
+            try SheetFile.save(editor.image, meta: editor.meta, url: url)
+            editor.markSaved(url: url)
+        } catch {
+            showError("保存に失敗しました: \(error.localizedDescription)")
+        }
+    }
+
+    func exportAnim(_ format: AnimExport.Format, scale: Int) {
+        guard let anim = editor.meta.anims.first(where: { $0.id == selectedAnimID }) else { return }
+        let frames = AnimExport.frames(of: anim, in: editor.image, scale: scale)
+        guard !frames.isEmpty else {
+            showError("コマがありません")
+            return
+        }
+        let baseName = anim.name.isEmpty ? "anim" : anim.name
+        do {
+            switch format {
+            case .gif, .apng:
+                let panel = NSSavePanel()
+                panel.allowedContentTypes = [format == .gif ? .gif : .png]
+                panel.nameFieldStringValue = baseName
+                guard panel.runModal() == .OK, let url = panel.url else { return }
+                if format == .gif { try AnimExport.writeGIF(frames, to: url) } else { try AnimExport.writeAPNG(frames, to: url) }
+            case .pngSequence:
+                let panel = NSOpenPanel()
+                panel.canChooseFiles = false
+                panel.canChooseDirectories = true
+                panel.canCreateDirectories = true
+                panel.prompt = "書き出し"
+                panel.message = "\(baseName)_000.png, \(baseName)_001.png … を書き出すフォルダーを選択"
+                guard panel.runModal() == .OK, let dir = panel.url else { return }
+                try AnimExport.writePNGSequence(frames, directory: dir, baseName: baseName)
+            }
+        } catch {
+            showError("書き出しに失敗しました: \(error.localizedDescription)")
+        }
+    }
+
+    func showSheetSizeDialog() {
+        let alert = NSAlert()
+        alert.messageText = "シートサイズ"
+        alert.informativeText = "左上を基準に変更します（幅 × 高さ）"
+        let w = NSTextField(string: "\(editor.image.width)")
+        let h = NSTextField(string: "\(editor.image.height)")
+        w.frame = NSRect(x: 0, y: 30, width: 120, height: 24)
+        h.frame = NSRect(x: 0, y: 0, width: 120, height: 24)
+        let box = NSView(frame: NSRect(x: 0, y: 0, width: 120, height: 54))
+        box.addSubview(w)
+        box.addSubview(h)
+        alert.accessoryView = box
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "キャンセル")
+        guard alert.runModal() == .alertFirstButtonReturn, let nw = Int(w.stringValue), let nh = Int(h.stringValue) else { return }
+        editor.resizeSheet(width: min(max(nw, 1), 8192), height: min(max(nh, 1), 8192))
+        requestDisplay()
+    }
+
+    func showError(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.runModal()
+    }
+}
