@@ -384,3 +384,111 @@ final class MapTests: XCTestCase {
         XCTAssertTrue(SheetMeta.cellPosition(10, columns: 8) == (2, 1))
     }
 }
+
+final class TextTests: XCTestCase {
+    func testRenderIsCrispAndColored() throws {
+        var s = TextSettings()
+        s.size = 16
+        let b = try XCTUnwrap(TextRenderer.render("Ab\nあ", settings: s, color: RGBA(255, 0, 0)))
+        XCTAssertGreaterThan(b.width, 8)
+        XCTAssertGreaterThan(b.height, 16, "2 行ぶんの高さ")
+        // アンチエイリアスなしなら色は 1 色だけ
+        XCTAssertEqual(Set(b.pixels.filter { $0.a > 0 }), [RGBA(255, 0, 0)])
+        // 切り詰めているので上端と左端に画素がある
+        XCTAssertTrue((0..<b.width).contains { b[$0, 0].a > 0 })
+        XCTAssertTrue((0..<b.height).contains { b[0, $0].a > 0 })
+    }
+
+    func testDrawTextUndo() {
+        let e = Editor(width: 64, height: 32)
+        e.setLupe(width: 64, height: 32)
+        e.drawText("Hi", at: IntPoint(2, 2), settings: TextSettings(), color: .black)
+        XCTAssertTrue(e.image.pixels.contains(.black))
+        e.undo()
+        XCTAssertFalse(e.image.pixels.contains(.black))
+    }
+}
+
+final class MCPTests: XCTestCase {
+    final class Host: MCPHost {
+        let editor = Editor(width: 64, height: 32)
+        var replaced = 0
+        func sheetReplaced() { replaced += 1 }
+    }
+
+    func call(_ s: MCPServer, _ method: String, _ params: [String: Any] = [:], id: Int = 1) throws -> [String: Any] {
+        let req: [String: Any] = ["jsonrpc": "2.0", "id": id, "method": method, "params": params]
+        let out = try XCTUnwrap(s.handle(try JSONSerialization.data(withJSONObject: req)))
+        return try XCTUnwrap(try JSONSerialization.jsonObject(with: out) as? [String: Any])
+    }
+
+    func tool(_ s: MCPServer, _ name: String, _ args: [String: Any] = [:]) throws -> (text: String, isError: Bool, content: [[String: Any]]) {
+        let r = try XCTUnwrap(try call(s, "tools/call", ["name": name, "arguments": args])["result"] as? [String: Any])
+        let content = r["content"] as? [[String: Any]] ?? []
+        let text = content.compactMap { $0["text"] as? String }.joined(separator: "\n")
+        return (text, r["isError"] as? Bool ?? false, content)
+    }
+
+    func testInitializeAndList() throws {
+        let s = NanodotMCP.server(host: Host(), version: "test")
+        let r = try XCTUnwrap(try call(s, "initialize", ["protocolVersion": "2025-03-26", "capabilities": [:], "clientInfo": ["name": "t"]])["result"] as? [String: Any])
+        XCTAssertEqual(r["protocolVersion"] as? String, "2025-03-26")
+        let tools = try XCTUnwrap((try call(s, "tools/list")["result"] as? [String: Any])?["tools"] as? [[String: Any]])
+        XCTAssertTrue(tools.contains { $0["name"] as? String == "draw_text" })
+        // 通知には返さない
+        let note = try JSONSerialization.data(withJSONObject: ["jsonrpc": "2.0", "method": "notifications/initialized"])
+        XCTAssertNil(s.handle(note))
+        XCTAssertEqual((try call(s, "nope")["error"] as? [String: Any])?["code"] as? Int, -32601)
+    }
+
+    func testPixelsRoundTripAndUndo() throws {
+        let host = Host()
+        let s = NanodotMCP.server(host: host, version: "test")
+        // マーク範囲（既定 32×32）の外にも描ける
+        let set = try tool(s, "set_pixels", ["x": 40, "y": 1, "palette": ["#ff0000", "transparent"], "rows": ["0 1 0", ". 0 ."]])
+        XCTAssertFalse(set.isError, set.text)
+        XCTAssertEqual(host.editor.image[40, 1], RGBA(255, 0, 0))
+        XCTAssertEqual(host.editor.image[41, 2], RGBA(255, 0, 0))
+        let got = try tool(s, "get_pixels", ["x": 40, "y": 1, "width": 3, "height": 2])
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(got.text.utf8)) as? [String: Any])
+        XCTAssertEqual(json["rows"] as? [String], ["0 1 0", "1 0 1"])
+        XCTAssertFalse(try tool(s, "undo").isError)
+        XCTAssertEqual(host.editor.image[40, 1], .clear)
+    }
+
+    func testShapesTextImageAndErrors() throws {
+        let host = Host()
+        let s = NanodotMCP.server(host: host, version: "test")
+        XCTAssertFalse(try tool(s, "draw_shape", ["shape": "rect", "x1": 0, "y1": 0, "x2": 63, "y2": 31, "color": "#000000"]).isError)
+        XCTAssertEqual(host.editor.image[63, 31], .black)
+        XCTAssertFalse(try tool(s, "fill", ["x": 10, "y": 10, "color": "#00ff00"]).isError)
+        XCTAssertEqual(host.editor.image[50, 20], RGBA(0, 255, 0))
+        XCTAssertFalse(try tool(s, "draw_text", ["x": 2, "y": 2, "text": "A", "color": "#ffffff", "size": 10]).isError)
+        XCTAssertTrue(host.editor.image.pixels.contains(.white))
+        let img = try tool(s, "get_image")
+        XCTAssertEqual(img.content.first?["type"] as? String, "image")
+        XCTAssertTrue(try tool(s, "draw_shape", ["shape": "star", "x1": 0, "y1": 0, "x2": 1, "y2": 1, "color": "#000000"]).isError)
+        XCTAssertTrue(try tool(s, "fill_rect", ["x": 0, "y": 0, "width": 2, "height": 2, "color": "red"]).isError)
+    }
+
+    func testMetaTools() throws {
+        let host = Host()
+        let s = NanodotMCP.server(host: host, version: "test")
+        XCTAssertFalse(try tool(s, "set_annotation", ["col": 1, "row": 0, "passable": false]).isError)
+        XCTAssertFalse(host.editor.meta.annotation(col: 1, row: 0).passable)
+        XCTAssertFalse(try tool(s, "set_anim", ["name": "walk", "columns": 2, "count": 2]).isError)
+        XCTAssertEqual(host.editor.meta.anims.first?.resolvedFrames.count, 2)
+        XCTAssertFalse(try tool(s, "create_map", ["name": "村", "width": 4, "height": 3]).isError)
+        XCTAssertFalse(try tool(s, "set_map_tiles", ["map": "村", "layer": 1, "x": 1, "y": 1, "tiles": [[0, 1], [NSNull(), -1]]]).isError)
+        XCTAssertEqual(host.editor.meta.maps[0].tile(1, 2, 1), 1)
+        XCTAssertFalse(try tool(s, "new_sheet", ["width": 16, "height": 16]).isError)
+        XCTAssertEqual(host.replaced, 1)
+        XCTAssertEqual(host.editor.image.width, 16)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nanodot-mcp-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let path = dir.appendingPathComponent("a.png").path
+        XCTAssertFalse(try tool(s, "save_sheet", ["path": path]).isError)
+        XCTAssertFalse(try tool(s, "open_sheet", ["path": path]).isError)
+        XCTAssertEqual(host.editor.fileURL?.path, path)
+    }
+}

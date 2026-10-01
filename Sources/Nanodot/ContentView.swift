@@ -77,6 +77,10 @@ struct ToolBarView: View {
                     .disabled(editor.tool != .rect && editor.tool != .ellipse)
             }
 
+            if editor.tool == .text {
+                TextToolOptions(settings: $editor.textSettings)
+            }
+
             Divider().frame(height: 20)
 
             HStack(spacing: 2) {
@@ -152,6 +156,8 @@ struct SettingsPopover: View {
                     Button("変更...") { state.showSheetSizeDialog() }
                 }
             }
+            Divider()
+            MCPSettings(state: state)
         }
         .padding()
         .frame(width: 320)
@@ -177,6 +183,10 @@ struct StatusBar: View {
             Text("シート \(editor.image.width)×\(editor.image.height)")
             if let c = editor.clipboard {
                 Text("クリップボード \(c.width)×\(c.height)")
+            }
+            if case .running(let port) = state.mcpStatus {
+                Label("MCP :\(port)", systemImage: "antenna.radiowaves.left.and.right")
+                    .help("MCP サーバーが \(state.mcpURL) で待ち受け中")
             }
             Spacer()
             Text("右クリック: スポイト／右ドラッグ: コピー→スタンプ")
@@ -249,5 +259,62 @@ struct NewDocumentSheet: View {
         }
         .padding(20)
         .frame(width: 360)
+    }
+}
+
+/// テキストツールの設定（文字・フォント・大きさ）
+struct TextToolOptions: View {
+    @Binding var settings: TextSettings
+
+    var body: some View {
+        HStack(spacing: 6) {
+            TextField("文字", text: $settings.text)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 140)
+                .help("メインをクリックすると、カーソル位置を左上にしてこの文字を描きます")
+            Picker("", selection: $settings.fontName) {
+                ForEach(TextRenderer.fonts, id: \.name) { f in Text(f.label).tag(f.name) }
+            }
+            .labelsHidden()
+            .fixedSize()
+            IntField(value: Binding(get: { Int(settings.size) }, set: { settings.size = Double($0) }), min: 4, max: 128, width: 40)
+            Text("pt").font(.caption).foregroundStyle(.secondary)
+            Toggle("なめらか", isOn: $settings.antialias)
+                .toggleStyle(.checkbox)
+                .help("縁をなめらかにする（半透明の画素ができます）")
+        }
+        .controlSize(.small)
+    }
+}
+
+/// MCP サーバーの設定（設定のポップオーバー内）
+struct MCPSettings: View {
+    let state: AppState
+
+    private var statusText: String {
+        switch state.mcpStatus {
+        case .stopped: return "停止中"
+        case .starting: return "起動中…"
+        case .running: return "\(state.mcpURL) で待ち受け中"
+        case .failed(let m): return "起動できません: \(m)"
+        }
+    }
+
+    var body: some View {
+        Toggle("MCP サーバー", isOn: Binding(get: { state.mcpEnabled }, set: { state.mcpEnabled = $0 }))
+            .help("AI エージェントから nanodot を操作できるようにする（このマシンからの接続だけ受け付けます）")
+        LabeledContent("ポート") {
+            IntField(value: Binding(get: { state.mcpPort }, set: { state.mcpPort = $0 }), min: 1024, max: 65535, width: 64)
+        }
+        Text(statusText)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+        Button("Claude Code に登録するコマンドをコピー") {
+            let cmd = "claude mcp add --transport http nanodot \(state.mcpURL)"
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(cmd, forType: .string)
+        }
+        .controlSize(.small)
     }
 }

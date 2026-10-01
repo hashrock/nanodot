@@ -4,7 +4,7 @@ import Observation
 import UniformTypeIdentifiers
 
 @Observable
-final class AppState {
+final class AppState: MCPHost {
     let editor = Editor()
     /// カーソル下のドット（ステータスバー表示用）
     var cursorDot: IntPoint?
@@ -51,9 +51,58 @@ final class AppState {
     @ObservationIgnored private var imageCache: (version: Int, image: CGImage)?
     @ObservationIgnored private var clipboardChangeCount = -1
 
+    // MARK: MCP
+    var mcpEnabled: Bool = UserDefaults.standard.bool(forKey: "mcpEnabled") {
+        didSet {
+            UserDefaults.standard.set(mcpEnabled, forKey: "mcpEnabled")
+            updateMCP()
+        }
+    }
+    var mcpPort: Int = UserDefaults.standard.object(forKey: "mcpPort") as? Int ?? 47621 {
+        didSet {
+            UserDefaults.standard.set(mcpPort, forKey: "mcpPort")
+            if mcpEnabled { updateMCP() }
+        }
+    }
+    var mcpStatus = MCPHTTPServer.Status.stopped
+    @ObservationIgnored private var mcpHTTP: MCPHTTPServer?
+
+    var mcpURL: String { "http://127.0.0.1:\(mcpPort)/mcp" }
+
     init() {
         editor.newDocument(width: 256, height: 256, cellWidth: 32, cellHeight: 32)
         editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
+        updateMCP()
+    }
+
+    private func updateMCP() {
+        guard mcpEnabled else {
+            mcpHTTP?.stop()
+            return
+        }
+        if mcpHTTP == nil {
+            let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+            let server = NanodotMCP.server(host: self, version: version)
+            let http = MCPHTTPServer { [weak self] data in
+                let out = server.handle(data)
+                self?.requestDisplay()
+                return out
+            }
+            http.onStatus = { [weak self] s in self?.mcpStatus = s }
+            mcpHTTP = http
+        }
+        mcpHTTP?.start(port: UInt16(clamping: mcpPort))
+    }
+
+    /// MCP から開く・新規にしたとき
+    func sheetReplaced() {
+        selectedAnimID = editor.meta.anims.first?.id
+        selectedMapID = editor.meta.maps.first?.id
+        mapLayer = 0
+        mapBrushOverride = nil
+        resetMapHistory()
+        stockView?.fitToView()
+        requestDisplay()
     }
 
     var title: String {

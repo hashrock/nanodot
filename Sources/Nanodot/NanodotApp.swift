@@ -92,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "l": tool = .line
         case "r": tool = .rect
         case "o": tool = .ellipse
+        case "t": tool = .text
         default: return e
         }
         editor.tool = tool

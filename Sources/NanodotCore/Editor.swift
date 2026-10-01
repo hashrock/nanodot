@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 public enum Tool: String, CaseIterable, Sendable {
-    case pen, eraser, fill, line, rect, ellipse
+    case pen, eraser, fill, line, rect, ellipse, text
 
     public var displayName: String {
         switch self {
@@ -12,6 +12,7 @@ public enum Tool: String, CaseIterable, Sendable {
         case .line: return "直線 (L)"
         case .rect: return "矩形 (R)"
         case .ellipse: return "楕円 (O)"
+        case .text: return "テキスト (T)"
         }
     }
 
@@ -23,6 +24,7 @@ public enum Tool: String, CaseIterable, Sendable {
         case .line: return "line.diagonal"
         case .rect: return "rectangle"
         case .ellipse: return "circle"
+        case .text: return "textformat"
         }
     }
 
@@ -42,6 +44,7 @@ public final class Editor {
     // MARK: ツール状態
     public var tool: Tool = .pen
     public var shapeFilled = false
+    public var textSettings = TextSettings()
     public var color = RGBA.black
     /// パレットで押している色（点滅表示）
     public var highlight: RGBA?
@@ -280,8 +283,9 @@ public final class Editor {
     // MARK: - 描画
 
     /// 作業範囲内に点を打つ（beginEdit 〜 endEdit の間で呼ぶ）
-    public func plot(_ pts: [IntPoint], color c: RGBA) {
-        let clip = workRect
+    /// clip を省くとマーク範囲（作業範囲）に限る
+    public func plot(_ pts: [IntPoint], color c: RGBA, clip: IntRect? = nil) {
+        let clip = (clip ?? workRect).intersection(image.bounds)
         var r = IntRect.zero
         let c = c.normalized
         for p in pts where clip.contains(p) && image[p.x, p.y] != c {
@@ -291,10 +295,43 @@ public final class Editor {
         touched(r)
     }
 
-    public func drawShape(_ tool: Tool, from a: IntPoint, to b: IntPoint, filled: Bool, color c: RGBA) {
+    public func drawShape(_ tool: Tool, from a: IntPoint, to b: IntPoint, filled: Bool, color c: RGBA, clip: IntRect? = nil) {
         edit(tool == .line ? "直線" : tool == .rect ? "矩形" : "楕円") {
-            plot(Self.shapePoints(tool, a, b, filled: filled), color: c)
+            plot(Self.shapePoints(tool, a, b, filled: filled), color: c, clip: clip)
         }
+    }
+
+    /// 文字を描く（透明部分は下を残す）
+    @discardableResult
+    public func drawText(_ text: String, at p: IntPoint, settings: TextSettings, color c: RGBA, clip: IntRect? = nil) -> IntRect {
+        guard let buf = TextRenderer.render(text, settings: settings, color: c) else { return .zero }
+        var r = IntRect.zero
+        edit("テキスト") {
+            r = image.paste(buf, at: p, skipTransparent: true, clip: (clip ?? workRect).intersection(image.bounds))
+            touched(r)
+        }
+        return r
+    }
+
+    /// 任意の 1 回の編集を履歴にまとめる（MCP などから使う）
+    public func performEdit(_ label: String, _ body: () -> Void) {
+        edit(label, body)
+    }
+
+    /// 画素をまとめて置く（clip 内だけ）
+    public func setPixels(_ px: [(IntPoint, RGBA)], clip: IntRect) {
+        var r = IntRect.zero
+        let area = clip.intersection(image.bounds)
+        for (p, c) in px where area.contains(p) {
+            image[p.x, p.y] = c
+            r = r.union(p)
+        }
+        touched(r)
+    }
+
+    /// バッファを貼る（edit の中で呼ぶ）
+    public func pasteBuffer(_ b: PixelBuffer, at p: IntPoint, skipTransparent: Bool) {
+        touched(image.paste(b, at: p, skipTransparent: skipTransparent))
     }
 
     public static func shapePoints(_ tool: Tool, _ a: IntPoint, _ b: IntPoint, filled: Bool) -> [IntPoint] {
@@ -305,10 +342,11 @@ public final class Editor {
         }
     }
 
-    public func floodFill(at p: IntPoint, color c: RGBA) {
-        guard workRect.contains(p), image[p.x, p.y] != c.normalized else { return }
+    public func floodFill(at p: IntPoint, color c: RGBA, clip: IntRect? = nil) {
+        let area = (clip ?? workRect).intersection(image.bounds)
+        guard area.contains(p), image[p.x, p.y] != c.normalized else { return }
         edit("塗りつぶし") {
-            plot(Raster.floodRegion(image, from: p, clip: workRect), color: c)
+            plot(Raster.floodRegion(image, from: p, clip: area), color: c, clip: area)
         }
     }
 

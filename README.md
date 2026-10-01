@@ -29,7 +29,7 @@ open build/Nanodot.app
 
 | キー | 操作 |
 |---|---|
-| B (P) / E / G / L / R / O | ペン / 消しゴム / 塗りつぶし / 直線 / 矩形 / 楕円 |
+| B (P) / E / G / L / R / O / T | ペン / 消しゴム / 塗りつぶし / 直線 / 矩形 / 楕円 / テキスト |
 | 矢印（Shift） | マーク位置をスナップ単位（ルーペ単位）で移動 |
 | ⌘C / ⌘V | マーク範囲をコピー / スタンプモード |
 | Space + ドラッグ | メイン: マーク位置を動かす（セルの 1/8 単位）／ストック: 表示を動かす |
@@ -41,6 +41,10 @@ open build/Nanodot.app
 | ⇧⌘M | マップウィンドウ（仮組み） |
 
 スナップ単位（既定はセルの 1/2）はメニュー「マーク > スナップ」で変えられます。
+
+## MCP
+
+AI エージェント（Claude Code など）から nanodot を操作できる MCP サーバーを内蔵しています。⚙ の設定で「MCP サーバー」をオンにし、`claude mcp add --transport http nanodot http://127.0.0.1:47621/mcp` で登録します。詳しくは [docs/MCP.md](docs/MCP.md) を参照してください。
 
 ## ファイル
 
@@ -55,6 +59,9 @@ Sources/NanodotCore/   エンジン（UI 非依存、テスト可能）
   Sheet.swift          スナップ、アニメ定義、サイドカーの設定
   Editor.swift         ドキュメント・マーク位置・履歴・ツール操作
   SheetFile.swift      PNG / JSON の読み書き、GIF・APNG・連番 PNG の書き出し
+  TextRenderer.swift   文字をドットに描く
+  TileMap.swift        マップの仮組み、セルの注釈
+  MCP.swift / NanodotMCP.swift  MCP のメッセージ処理とツール
 Sources/Nanodot/       macOS アプリ（SwiftUI パネル + AppKit のキャンバス）
   MainCanvasView.swift / StockView.swift / AnimPreviewView.swift
   Panels.swift (パレット・アニメ) / ContentView.swift / NanodotApp.swift

@@ -170,11 +170,31 @@ final class MainCanvasView: NSView {
                 let r = screenRect(IntRect(x: h.x, y: h.y, width: clip.width, height: clip.height))
                 if let cg = SheetFile.cgImage(from: clip) { Draw.image(ctx, cg, in: r, alpha: 0.75) }
                 Draw.outline(ctx, r)
+            } else if editor.tool == .text, let (buf, img) = textPreview() {
+                // テキストはカーソル位置を左上にして描いた結果を重ねる
+                let r = screenRect(IntRect(x: h.x, y: h.y, width: buf.width, height: buf.height))
+                Draw.image(ctx, img, in: r, alpha: 0.8)
+                Draw.outline(ctx, r)
             } else if case .rightSelect = interaction {
             } else if z >= 4 {
                 Draw.outline(ctx, screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)))
             }
         }
+    }
+
+    private var textCache: (key: String, buf: PixelBuffer, img: CGImage)?
+
+    /// テキストツールのプレビュー（設定と色が同じなら使い回す）
+    private func textPreview() -> (PixelBuffer, CGImage)? {
+        let s = editor.textSettings
+        let key = "\(s.hashValue)-\(editor.color.hex)"
+        if let c = textCache, c.key == key { return (c.buf, c.img) }
+        guard let buf = TextRenderer.render(s.text, settings: s, color: editor.color), let img = SheetFile.cgImage(from: buf) else {
+            textCache = nil
+            return nil
+        }
+        textCache = (key, buf, img)
+        return (buf, img)
     }
 
     /// アニメウィンドウを開いていて、マーク位置がアニメのコマと同じなら、前のコマを赤・次のコマを青で下に重ねる
@@ -231,6 +251,8 @@ final class MainCanvasView: NSView {
         case .line, .rect, .ellipse:
             interaction = .shape(start: d, current: d)
             needsDisplay = true
+        case .text:
+            editor.drawText(editor.textSettings.text, at: d, settings: editor.textSettings, color: editor.color)
         }
     }
 
@@ -363,7 +385,7 @@ struct MainCanvasRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: MainCanvasView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら再描画させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.highlight, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
+        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
         nsView.needsDisplay = true
     }
 }
