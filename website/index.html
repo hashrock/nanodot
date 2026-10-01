@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#fafafa">
-  <title>nanodot — シートの上で、ドットを打つ。</title>
-  <meta name="description" content="歩行グラフィックやマップチップのような、小さな絵が並んだスプライトシートのための、Macのドット絵ツール。MCP で AI エージェントからも操作できます。">
+  <title>nanodot — スプライトシート用ドット絵エディター</title>
+  <meta name="description" content="歩行グラフィックやマップチップなど、同じ大きさの絵が並んだ PNG を編集する macOS 用のドット絵エディター。アニメーション、マップの仮組み、セルの注釈、MCP に対応。">
   <link rel="icon" href="./assets/nanodot.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -16,58 +16,125 @@
   </header>
   <main>
     <section class="hero wrap" aria-labelledby="headline">
-      <p class="eyebrow">A sprite sheet editor for Mac.</p>
-      <h1 id="headline">シートの上で、<br>ドットを打つ。</h1>
-      <p class="intro"><span>歩行グラフィックやマップチップのような、</span><span>小さな絵が並んだシートのためのドット絵ツール。</span><br class="desktop-break"><span>DotPainter ALFAR の操作感を手本に、</span><span>いまのMacに合わせて作りました。</span></p>
-      <a class="button" href="https://github.com/hashrock/nanodot/releases/latest"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg>Mac版をダウンロード</a>
-      <p class="requirement">macOS 14 以降 · <a href="https://github.com/hashrock/nanodot#ビルドと起動">ソースからビルドする</a></p>
+      <h1 id="headline">スプライトシート用<br>ドット絵エディター</h1>
+      <p class="intro">歩行グラフィックやマップチップなど、同じ大きさの絵が格子状に並んだ PNG を編集する macOS 用のアプリです。</p>
+      <a class="button" href="https://github.com/hashrock/nanodot/releases/latest"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg>ダウンロード</a>
+      <p class="requirement">macOS 14 以降・無料 · <a href="https://github.com/hashrock/nanodot#ビルドと起動">ソースからビルド</a></p>
     </section>
+
     <figure class="preview wrap">
-      <img src="./assets/screenshot.png" width="1280" height="860" alt="nanodotの編集画面。左のメインに青いスライムを拡大表示し、右上のストックに色違いのスライムが並んだスプライトシート、右下にRGBのカラーピッカーとパレット、スロット。" fetchpriority="high">
-      <figcaption><span>左で描いて、右でシートを見渡す。</span><span class="caption-note">nanodot / main + stock</span></figcaption>
+      <img src="./assets/screenshot.png" width="1280" height="860" alt="nanodot の画面。左のメインにセルを拡大表示、右上にシート全体のストック、右下にカラーピッカーとパレット。" fetchpriority="high">
     </figure>
-    <section class="features wrap" aria-label="nanodotでできること">
-      <article><span class="step">01 / STOCK ⇄ MAIN</span><h2>見渡して、描く。</h2><p>右のストックでセルを選び、<br>左のメインで拡大して描く。<br>入れ替えも、コピーも、マウスだけで。</p></article>
-      <article><span class="step">02 / RIGHT BUTTON</span><h2>右ボタンで、拾う。</h2><p>右クリックでスポイト。<br>右ドラッグでコピーして、<br>そのままスタンプで押していく。</p></article>
-      <article><span class="step">03 / FLIPBOOK</span><h2>描きながら、動かす。</h2><p>アニメは描いた先から再生。<br>前後のコマをオニオンスキンで重ねて、<br>GIF・APNG・連番PNGで書き出せます。</p></article>
-      <article><span class="step">04 / MAP</span><h2>並べて、試す。</h2><p>描いたチップをその場でマップに仮組み。<br>レイヤーを重ねて、<br>つなぎ目や見え方を確かめられます。</p></article>
-      <article><span class="step">05 / ANNOTATION</span><h2>セルに、意味を。</h2><p>セルごとに名前・通行可否・重なり順。<br>シートの横に置くJSONに保存するので、<br>ゲーム側からそのまま読めます。</p></article>
-      <article><span class="step">06 / TEXT</span><h2>文字も、ドットで。</h2><p>フォントと大きさを選んで、<br>にじまないドットの文字を置けます。<br>日本語も、改行も。</p></article>
-    </section>
-    <section class="mcp wrap" aria-labelledby="mcp-title">
-      <div>
-        <span class="step">07 / MCP</span>
-        <h2 id="mcp-title">AIと一緒に描く。</h2>
-        <p>nanodot は MCP サーバーを内蔵しています。<br>Claude Code などのエージェントが、シートを見ながら<br>描いたり、色違いを作ったり、マップを組んだり。<br>このMacの中だけで待ち受けます。</p>
-        <p class="requirement"><a href="https://github.com/hashrock/nanodot/blob/main/docs/MCP.md">MCP の使い方とツール一覧</a></p>
+
+    <section class="feature wrap" aria-labelledby="f-stock">
+      <div class="feature-text">
+        <h2 id="f-stock">ストックとメイン</h2>
+        <p>右のストックにシート全体を表示し、選んだ範囲（マーク）を左のメインで拡大して編集します。</p>
+        <ul>
+          <li>ストックのクリックでマーク位置を選択。セル単位・セルの 1/2・1/4・ドット単位でスナップ</li>
+          <li>マークの右下をドラッグして範囲の大きさを変更。メインのホイールで 1/2・2 倍</li>
+          <li>ストックでドラッグしてセルを入れ替え、右クリックでコピー、ダブルクリックで貼り付け</li>
+          <li>右クリックでスポイト、右ドラッグで範囲をコピーしてスタンプ</li>
+        </ul>
       </div>
-      <div class="mcp-steps">
-        <p class="mcp-label">1. ⚙ の設定で「MCP サーバー」をオン</p>
-        <p class="mcp-label">2. エージェントに登録</p>
-        <pre><code>claude mcp add --transport http \
+      <img src="./assets/annotations.png" width="420" height="345" alt="ストック。スライムの行と地形タイルの行が並び、赤枠がマーク範囲。" loading="lazy">
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-draw">
+      <div class="feature-text">
+        <h2 id="f-draw">描画ツール</h2>
+        <ul>
+          <li>ペン・消しゴム・塗りつぶし・直線・矩形・楕円（塗りつぶしあり）</li>
+          <li>テキスト: フォントと大きさを指定して、アンチエイリアスなしの文字を配置</li>
+          <li>マーク範囲の左右・上下反転、90° 回転、1 ドットずつのシフト</li>
+          <li>描画は常に置き換え（下の色と混ぜない）。最大 60 回の取り消し</li>
+        </ul>
+      </div>
+      <img src="./assets/text.png" width="760" height="560" alt="テキストツールで Hello をプレビューしている画面。" loading="lazy">
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-color">
+      <div class="feature-text">
+        <h2 id="f-color">色とパレット</h2>
+        <ul>
+          <li>RGB / HSL のスライダーと 16 進数で描画色を指定（不透明度あり）</li>
+          <li>サンプルパレット: PICO-8、DawnBringer 16 / 32、Sweetie 16、ENDESGA 32、ゲームボーイ</li>
+          <li>64 色のスロット。ドラッグで並べ替え、Shift で範囲選択して RGB / HSL のグラデーション</li>
+          <li>色を押している間、その色を使っている画素を点滅表示</li>
+        </ul>
+      </div>
+      <img src="./assets/palette.png" width="500" height="168" alt="カラーピッカーとパレット、スロット。" loading="lazy">
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-anim">
+      <div class="feature-text">
+        <h2 id="f-anim">アニメーション</h2>
+        <ul>
+          <li>簡易アニメ: 起点・列数・行数・枚数・間隔を指定</li>
+          <li>登録アニメ: コマの位置と表示時間を任意の順序で登録</li>
+          <li>別ウィンドウで常時再生。描いた内容がすぐ反映される</li>
+          <li>オニオンスキン: 前のコマを赤、次のコマを青でメインに重ねて表示</li>
+          <li>アニメ GIF・APNG・連番 PNG に書き出し（1〜8 倍）</li>
+        </ul>
+      </div>
+      <img src="./assets/anim.png" width="1280" height="860" alt="アニメウィンドウでジャンプのアニメを再生し、メインに前後のコマが赤と青で重なっている画面。" loading="lazy">
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-map">
+      <div class="feature-text">
+        <h2 id="f-map">マップの仮組み</h2>
+        <ul>
+          <li>シートのセルをタイルとして並べ、つなぎ目や見え方を確認</li>
+          <li>レイヤーの追加・並べ替え・表示切り替え</li>
+          <li>ペン・消しゴム・塗りつぶし。ストックのマーク範囲をブラシとして使い、右クリックでタイルを拾う</li>
+          <li>マップはセル番号の配列として JSON に保存</li>
+        </ul>
+      </div>
+      <img src="./assets/map.png" width="1130" height="700" alt="マップウィンドウ。草地に砂の道、池、石垣、茂み、スライムを並べた村。通行不可のタイルに赤い × が付いている。" loading="lazy">
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-anno">
+      <div class="feature-text">
+        <h2 id="f-anno">セルの注釈</h2>
+        <ul>
+          <li>セルごとに名前・通行可否・重なり順を設定</li>
+          <li>ストックとマップに × や ★ で表示</li>
+          <li>JSON に保存するので、ゲーム側でそのまま読み込める</li>
+        </ul>
+      </div>
+      <img class="pixel" src="./assets/annotations-row.png" width="390" height="70" alt="地形タイルの行。水と石垣に赤い ×、茂みに ★1 と名前が表示されている。" loading="lazy">
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-mcp">
+      <div class="feature-text">
+        <h2 id="f-mcp">MCP</h2>
+        <p>MCP サーバーを内蔵しています。Claude Code などの AI エージェントから、シートの確認・描画・注釈・アニメ・マップの編集ができます。</p>
+        <ul>
+          <li>設定（⚙）で有効化。127.0.0.1 でのみ待ち受け</li>
+          <li>描画は 1 回の呼び出しごとにアプリで取り消し可能</li>
+        </ul>
+        <p class="requirement"><a href="https://github.com/hashrock/nanodot/blob/main/docs/MCP.md">接続方法とツール一覧（docs/MCP.md）</a></p>
+      </div>
+      <pre><code>claude mcp add --transport http \
   nanodot http://127.0.0.1:47621/mcp</code></pre>
-        <p class="mcp-label">3. 頼んでみる</p>
-        <pre class="prompt"><code>32×32 のセルで草・土・水・岩のタイルを描いて、
-水と岩は通行不可にして</code></pre>
-      </div>
     </section>
-    <dl class="keys wrap" aria-label="おもな操作">
-      <div><dt>右クリック</dt><dd>スポイト</dd></div>
-      <div><dt>右ドラッグ</dt><dd>範囲をコピー → スタンプ</dd></div>
-      <div><dt>ホイール</dt><dd>拡大縮小（ルーペを 1/2・2 倍）</dd></div>
-      <div><dt>Space + ドラッグ</dt><dd>パン</dd></div>
-      <div><dt>ストックで左ドラッグ</dt><dd>セルの入れ替え</dd></div>
-      <div><dt>ストックでダブルクリック</dt><dd>貼り付け</dd></div>
-      <div><dt>B / E / G / L / R / O / T</dt><dd>ペン・消しゴム・塗りつぶし・直線・矩形・楕円・テキスト</dd></div>
-      <div><dt>Shift + クリック（スロット）</dt><dd>範囲選択してグラデーション</dd></div>
-      <div><dt>⇧⌘A</dt><dd>アニメウィンドウ</dd></div>
-      <div><dt>⇧⌘M</dt><dd>マップウィンドウ</dd></div>
-    </dl>
+
+    <section class="formats wrap" aria-labelledby="f-format">
+      <h2 id="f-format">対応フォーマット</h2>
+      <table>
+        <tbody>
+          <tr><th>開く</th><td>PNG、GIF、BMP、TIFF、JPEG</td></tr>
+          <tr><th>保存</th><td>PNG（RGBA）＋ 同じフォルダーの <code>&lt;名前&gt;.nanodot.json</code>（セル・パレット・アニメ・マップ・注釈）</td></tr>
+          <tr><th>アニメの書き出し</th><td>アニメ GIF、APNG、連番 PNG（1〜8 倍に拡大可）</td></tr>
+          <tr><th>クリップボード</th><td>PNG（他のアプリとの間でコピー・貼り付け）</td></tr>
+        </tbody>
+      </table>
+    </section>
+
     <section class="closing wrap" aria-labelledby="closing-title">
-      <img src="./assets/nanodot.svg" width="62" height="62" alt="" loading="lazy">
-      <h2 id="closing-title">次のシートを、nanodotで。</h2>
-      <a class="button" href="https://github.com/hashrock/nanodot/releases/latest">Mac版をダウンロード <span aria-hidden="true">↓</span></a>
-      <p class="requirement">macOS 14 以降 · 保存は素の PNG ＋ <code>.nanodot.json</code><br><a href="https://github.com/hashrock/nanodot">GitHub</a> · <a href="https://github.com/hashrock/nanodot#ビルドと起動">ソースからビルドする</a></p>
+      <h2 id="closing-title">ダウンロード</h2>
+      <a class="button" href="https://github.com/hashrock/nanodot/releases/latest">最新版をダウンロード <span aria-hidden="true">↓</span></a>
+      <p class="requirement">macOS 14 以降。Developer ID で署名・公証済み。<br><a href="https://github.com/hashrock/nanodot/releases">リリース一覧</a> · <a href="https://github.com/hashrock/nanodot">GitHub</a></p>
     </section>
   </main>
   <footer class="footer wrap"><span>nanodot</span><a href="https://github.com/hashrock">Made by hashrock <span aria-hidden="true">↗</span></a></footer>
