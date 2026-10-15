@@ -98,7 +98,7 @@ stdio にしか対応していないクライアントでは、[mcp-remote](http
 |---|---|
 | `new_sheet` | 空のシートにする（`width, height, cell_width, cell_height`） |
 | `open_sheet` | 画像を開く（`path`。同じ名前の `.nanodot.json` も読む） |
-| `save_sheet` | PNG と `.nanodot.json` に保存（`path` 省略時は今のファイルに上書き） |
+| `save_sheet` | PNG と `.nanodot.json` に保存（`path` 省略時は今のファイルに上書き）。ゲームエンジン用データ（`.atlas.json`・`.tmj`）も書く |
 
 ## 頼み方の例
 

@@ -163,6 +163,14 @@ extension SheetMeta {
         (index % max(1, columns), index / max(1, columns))
     }
 
+    /// シートに並ぶセルの列数・行数（端の欠けたセルは数えない）
+    public func columns(imageWidth: Int) -> Int { max(1, imageWidth / max(1, cellWidth)) }
+    public func rows(imageHeight: Int) -> Int { max(1, imageHeight / max(1, cellHeight)) }
+
+    public func cellRect(col: Int, row: Int) -> IntRect {
+        IntRect(x: col * cellWidth, y: row * cellHeight, width: cellWidth, height: cellHeight)
+    }
+
     public func annotation(col: Int, row: Int) -> CellAnnotation {
         annotations.first { $0.col == col && $0.row == row } ?? CellAnnotation(col: col, row: row)
     }

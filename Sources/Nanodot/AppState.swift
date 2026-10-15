@@ -159,14 +159,14 @@ final class AppState: MCPHost {
     // MARK: - マップ
 
     /// シートの列数（セル番号の計算に使う）
-    var sheetColumns: Int { max(1, editor.image.width / max(1, editor.meta.cellWidth)) }
+    var sheetColumns: Int { editor.meta.columns(imageWidth: editor.image.width) }
 
     /// マーク範囲にかかるセルをブラシにしたもの
     var markBrush: MapBrush {
         let m = editor.meta, cw = max(1, m.cellWidth), ch = max(1, m.cellHeight)
         let c0 = m.mark.x / cw, r0 = m.mark.y / ch
         let c1 = max(c0, (m.mark.x + m.lupeWidth - 1) / cw), r1 = max(r0, (m.mark.y + m.lupeHeight - 1) / ch)
-        let cols = sheetColumns, rows = max(1, editor.image.height / ch)
+        let cols = sheetColumns, rows = m.rows(imageHeight: editor.image.height)
         var tiles: [Int] = []
         for r in r0...r1 {
             for c in c0...c1 { tiles.append(c < cols && r < rows ? SheetMeta.cellIndex(col: c, row: r, columns: cols) : -1) }
@@ -185,7 +185,7 @@ final class AppState: MCPHost {
         }
         if let img = cellImageCache.images[index] { return img }
         let (c, r) = SheetMeta.cellPosition(index, columns: sheetColumns)
-        let rect = IntRect(x: c * cw, y: r * ch, width: cw, height: ch).intersection(editor.image.bounds)
+        let rect = editor.meta.cellRect(col: c, row: r).intersection(editor.image.bounds)
         guard !rect.isEmpty, let img = Draw.crop(sheet, rect) else { return nil }
         cellImageCache.images[index] = img
         return img

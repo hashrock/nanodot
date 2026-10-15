@@ -284,7 +284,7 @@ final class StockView: NSView {
         let cw = m.cellWidth, ch = m.cellHeight
         let small = CGFloat(min(cw, ch)) * zoom < 28
         for a in m.annotations {
-            let r = screenRect(IntRect(x: a.col * cw, y: a.row * ch, width: cw, height: ch))
+            let r = screenRect(m.cellRect(col: a.col, row: a.row))
             guard r.intersects(bounds) else { continue }
             if !a.passable {
                 ctx.saveGState()
