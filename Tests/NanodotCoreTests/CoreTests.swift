@@ -492,3 +492,69 @@ final class MCPTests: XCTestCase {
         XCTAssertEqual(host.editor.fileURL?.path, path)
     }
 }
+
+final class EngineExportTests: XCTestCase {
+    private func object(_ d: Data) throws -> [String: Any] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: d) as? [String: Any])
+    }
+
+    func testNothingToWrite() {
+        XCTAssertTrue(EngineExport.files(imageName: "a.png", width: 64, height: 64, meta: SheetMeta()).isEmpty)
+    }
+
+    func testAtlasHasAnimFramesTagsAndNamedCells() throws {
+        var m = SheetMeta()
+        m.cellWidth = 16; m.cellHeight = 16
+        var walk = AnimDef(name: "walk", frameWidth: 16, frameHeight: 16)
+        walk.columns = 2; walk.count = 2; walk.interval = 120
+        m.anims = [walk]
+        var c = CellAnnotation(col: 1, row: 2)
+        c.name = "coin"
+        m.setAnnotation(c)
+        let files = EngineExport.files(imageName: "hero.png", width: 64, height: 64, meta: m)
+        XCTAssertEqual(files.map(\.name), ["hero.atlas.json"])
+        let o = try object(files[0].data)
+        let frames = try XCTUnwrap(o["frames"] as? [[String: Any]])
+        XCTAssertEqual(frames.map { $0["filename"] as? String }, ["walk 0", "walk 1", "coin"])
+        XCTAssertEqual(frames[1]["frame"] as? [String: Int], ["x": 16, "y": 0, "w": 16, "h": 16])
+        XCTAssertEqual(frames[1]["duration"] as? Int, 120)
+        XCTAssertEqual(frames[2]["frame"] as? [String: Int], ["x": 16, "y": 32, "w": 16, "h": 16])
+        let meta = try XCTUnwrap(o["meta"] as? [String: Any])
+        XCTAssertEqual(meta["image"] as? String, "hero.png")
+        let tags = try XCTUnwrap(meta["frameTags"] as? [[String: Any]])
+        XCTAssertEqual(tags.first?["from"] as? Int, 0)
+        XCTAssertEqual(tags.first?["to"] as? Int, 1)
+    }
+
+    func testTiledMapGidsAndProperties() throws {
+        var m = SheetMeta()
+        m.cellWidth = 16; m.cellHeight = 16
+        var map = TileMapDef(name: "field 1", width: 3, height: 1, layerCount: 1)
+        map.set(0, 0, 0, 5)
+        map.set(0, 2, 0, 99) // シートの外は空にする
+        m.maps = [map, TileMapDef(name: "field 1", width: 1, height: 1)]
+        var wall = CellAnnotation(col: 1, row: 1)
+        wall.passable = false
+        m.setAnnotation(wall)
+        let files = EngineExport.files(imageName: "tiles.png", width: 64, height: 32, meta: m)
+        XCTAssertEqual(files.map(\.name), ["tiles.field_1.tmj", "tiles.field_1-2.tmj"])
+        let o = try object(files[0].data)
+        XCTAssertEqual(o["tilewidth"] as? Int, 16)
+        let layer = try XCTUnwrap((o["layers"] as? [[String: Any]])?.first)
+        XCTAssertEqual(layer["data"] as? [Int], [6, 0, 0])
+        let ts = try XCTUnwrap((o["tilesets"] as? [[String: Any]])?.first)
+        XCTAssertEqual(ts["columns"] as? Int, 4)
+        XCTAssertEqual(ts["tilecount"] as? Int, 8)
+        let tile = try XCTUnwrap((ts["tiles"] as? [[String: Any]])?.first)
+        XCTAssertEqual(tile["id"] as? Int, 5)
+        let props = try XCTUnwrap(tile["properties"] as? [[String: Any]])
+        XCTAssertEqual(props.first?["value"] as? Bool, false)
+    }
+
+    func testFlagRoundTripsAndDefaultsOn() throws {
+        XCTAssertTrue(try JSONDecoder().decode(SheetMeta.self, from: Data("{}".utf8)).engineExport)
+        var m = SheetMeta()
+        m.engineExport = false
+        XCTAssertFalse(try JSONDecoder().decode(SheetMeta.self, from: JSONEncoder().encode(m)).engineExport)
+    }
+}

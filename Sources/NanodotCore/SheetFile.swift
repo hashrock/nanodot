@@ -41,6 +41,13 @@ public enum SheetFile {
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
         try enc.encode(meta).write(to: sidecarURL(for: url), options: .atomic)
+        guard meta.engineExport else { return }
+        let dir = url.deletingLastPathComponent()
+        for f in EngineExport.files(imageName: url.lastPathComponent, width: img.width, height: img.height, meta: meta) {
+            // 中身が同じなら書かない（ゲーム側のホットリロードを無駄に起こさない）
+            let u = dir.appendingPathComponent(f.name)
+            if (try? Data(contentsOf: u)) != f.data { try f.data.write(to: u, options: .atomic) }
+        }
     }
 
     // MARK: - CGImage との変換

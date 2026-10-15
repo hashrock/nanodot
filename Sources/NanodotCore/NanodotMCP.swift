@@ -51,8 +51,8 @@ public enum NanodotMCP {
         return [
             "width": e.image.width, "height": e.image.height,
             "cell_width": m.cellWidth, "cell_height": m.cellHeight,
-            "sheet_columns": max(1, e.image.width / max(1, m.cellWidth)),
-            "sheet_rows": max(1, e.image.height / max(1, m.cellHeight)),
+            "sheet_columns": m.columns(imageWidth: e.image.width),
+            "sheet_rows": m.rows(imageHeight: e.image.height),
             "mark": ["x": m.mark.x, "y": m.mark.y, "width": m.lupeWidth, "height": m.lupeHeight],
             "drawing_color": e.color.hex,
             "palette": m.palette,
@@ -364,7 +364,7 @@ public enum NanodotMCP {
                 let m = e.meta.maps[try findMap(a, e)]
                 return .json([
                     "name": m.name, "width": m.width, "height": m.height,
-                    "sheet_columns": max(1, e.image.width / max(1, e.meta.cellWidth)),
+                    "sheet_columns": e.meta.columns(imageWidth: e.image.width),
                     "layers": m.layers.map { l -> [String: Any] in
                         ["name": l.name, "visible": l.visible,
                          "rows": (0..<m.height).map { y in Array(l.tiles[(y * m.width)..<((y + 1) * m.width)]) }]
@@ -433,7 +433,7 @@ public enum NanodotMCP {
                 return .json(sheetInfo(e))
             },
 
-            MCPTool("save_sheet", "PNG と <名前>.nanodot.json に保存する。path を省くと今のファイルに上書き", properties: [
+            MCPTool("save_sheet", "PNG と <名前>.nanodot.json に保存する。engineExport がオンならゲームエンジン用の <名前>.atlas.json と <名前>.<マップ名>.tmj も書く。path を省くと今のファイルに上書き", properties: [
                 "path": prop("string", "保存先の .png の絶対パス（省略時は今のファイル）"),
             ]) { a in
                 let url: URL

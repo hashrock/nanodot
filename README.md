@@ -54,6 +54,11 @@ AI エージェント（Claude Code など）から nanodot を操作できる M
 
 画像は素の PNG で保存し、セル・スナップ・パレットスロット・アニメなどの設定は同じフォルダーの `<名前>.nanodot.json` に保存します。
 
+保存のたびに、ゲームエンジンがそのまま読めるデータも書き出します（「ファイル > 保存時にゲームエンジン用データも書き出す」で切り替え）。
+
+- `<名前>.atlas.json`: アニメと名前付きセルのフレーム（Aseprite / TexturePacker 互換。Phaser の `load.aseprite` / `load.atlas` や Godot・Unity の Aseprite インポーターで読める）
+- `<名前>.<マップ名>.tmj`: Tiled 形式のマップ（通行可否・重なり順・名前はタイルのプロパティ）
+
 ## 構成
 
 ```
@@ -63,6 +68,7 @@ Sources/NanodotCore/   エンジン（UI 非依存、テスト可能）
   Sheet.swift          スナップ、アニメ定義、サイドカーの設定
   Editor.swift         ドキュメント・マーク位置・履歴・ツール操作
   SheetFile.swift      PNG / JSON の読み書き、GIF・APNG・連番 PNG の書き出し
+  EngineExport.swift   ゲームエンジン用（アトラス JSON・Tiled マップ）の書き出し
   TextRenderer.swift   文字をドットに描く
   TileMap.swift        マップの仮組み、セルの注釈
   MCP.swift / NanodotMCP.swift  MCP のメッセージ処理とツール
