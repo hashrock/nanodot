@@ -119,6 +119,8 @@ public struct SheetMeta: Equatable, Sendable, Codable {
     public var maps: [TileMapDef] = []
     /// 保存時にゲームエンジン向けのデータ（アトラス JSON・Tiled マップ）も書く
     public var engineExport = true
+    /// 前回の保存で書いたゲームエンジン用ファイルの名前（作られなくなったものを消すため。保存時に SheetFile が書く）
+    public var exportedFiles: [String] = []
 
     public init() {}
 
@@ -141,6 +143,7 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         annotations = (try? c.decode([CellAnnotation].self, forKey: .annotations)) ?? []
         maps = (try? c.decode([TileMapDef].self, forKey: .maps)) ?? []
         engineExport = (try? c.decode(Bool.self, forKey: .engineExport)) ?? d.engineExport
+        exportedFiles = (try? c.decode([String].self, forKey: .exportedFiles)) ?? []
     }
 
     /// 表示状態（マーク位置・ルーペ・スナップ）を除いた内容
@@ -150,6 +153,7 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         m.lupeWidth = 0
         m.lupeHeight = 0
         m.snap = .cell(1)
+        m.exportedFiles = []
         return m
     }
 

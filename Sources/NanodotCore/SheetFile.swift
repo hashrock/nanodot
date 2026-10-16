@@ -35,19 +35,44 @@ public enum SheetFile {
         return (img, meta)
     }
 
-    public static func save(_ img: PixelBuffer, meta: SheetMeta, url: URL) throws {
+    /// PNG とサイドカーを書き、オンならゲームエンジン用データも書く。
+    /// ゲームエンジン用データの失敗は保存の失敗にせず、警告の文として返す
+    @discardableResult
+    public static func save(_ img: PixelBuffer, meta: SheetMeta, url: URL) throws -> [String] {
         guard let cg = cgImage(from: img), let data = pngData(cg) else { throw SheetFileError.encodeFailed }
+        let dir = url.deletingLastPathComponent()
+        let sidecar = sidecarURL(for: url)
+        // 前回この場所に書いたもの（メモリ上の meta は別の場所から開いたものかもしれないので、ディスクのサイドカーを見る）
+        let previous = (try? Data(contentsOf: sidecar)).flatMap { try? JSONDecoder().decode(SheetMeta.self, from: $0) }?.exportedFiles ?? []
+        let files = meta.engineExport
+            ? EngineExport.files(imageName: url.lastPathComponent, width: img.width, height: img.height, meta: meta) : []
+        var meta = meta
+        meta.exportedFiles = files.map(\.name)
+
         try data.write(to: url, options: .atomic)
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try enc.encode(meta).write(to: sidecarURL(for: url), options: .atomic)
-        guard meta.engineExport else { return }
-        let dir = url.deletingLastPathComponent()
-        for f in EngineExport.files(imageName: url.lastPathComponent, width: img.width, height: img.height, meta: meta) {
+        try enc.encode(meta).write(to: sidecar, options: .atomic)
+
+        var warnings: [String] = []
+        for f in files {
             // 中身が同じなら書かない（ゲーム側のホットリロードを無駄に起こさない）
             let u = dir.appendingPathComponent(f.name)
-            if (try? Data(contentsOf: u)) != f.data { try f.data.write(to: u, options: .atomic) }
+            guard (try? Data(contentsOf: u)) != f.data else { continue }
+            do { try f.data.write(to: u, options: .atomic) } catch {
+                warnings.append("\(f.name) を書けませんでした: \(error.localizedDescription)")
+            }
         }
+        // マップの改名・削除や書き出しのオフで作られなくなったものを消す（自分で書いたものだけ）
+        let current = Set(meta.exportedFiles)
+        for name in previous where !current.contains(name) && !name.contains("/") {
+            let u = dir.appendingPathComponent(name)
+            guard FileManager.default.fileExists(atPath: u.path) else { continue }
+            do { try FileManager.default.removeItem(at: u) } catch {
+                warnings.append("古い \(name) を消せませんでした: \(error.localizedDescription)")
+            }
+        }
+        return warnings
     }
 
     // MARK: - CGImage との変換

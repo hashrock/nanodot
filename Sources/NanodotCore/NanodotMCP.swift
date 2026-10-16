@@ -445,9 +445,9 @@ public enum NanodotMCP {
                     throw MCPError("まだ保存先がありません。path を指定してください")
                 }
                 guard url.pathExtension.lowercased() == "png" else { throw MCPError("保存先は .png にしてください") }
-                try SheetFile.save(e.image, meta: e.meta, url: url)
+                let warnings = try SheetFile.save(e.image, meta: e.meta, url: url)
                 e.markSaved(url: url)
-                return .text("\(url.path) に保存しました")
+                return .text((["\(url.path) に保存しました"] + warnings).joined(separator: "\n"))
             },
         ]
     }
