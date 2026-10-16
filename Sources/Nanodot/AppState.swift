@@ -352,8 +352,9 @@ final class AppState: MCPHost {
 
     private func write(to url: URL) {
         do {
-            try SheetFile.save(editor.image, meta: editor.meta, url: url)
+            let warnings = try SheetFile.save(editor.image, meta: editor.meta, url: url)
             editor.markSaved(url: url)
+            if !warnings.isEmpty { showError("保存しましたが、ゲームエンジン用データに問題がありました:\n" + warnings.joined(separator: "\n")) }
         } catch {
             showError("保存に失敗しました: \(error.localizedDescription)")
         }

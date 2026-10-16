@@ -15,32 +15,31 @@ public enum EngineExport {
         let ts = tileset(name: baseName, imageName: imageName, width: width, height: height, meta: meta)
         var used = Set<String>()
         for m in meta.maps {
-            let base = fileSafe(m.name)
-            var name = base, n = 2
-            while used.contains(name) {
-                name = "\(base)-\(n)"
-                n += 1
-            }
-            used.insert(name)
+            let name = unique(fileSafe(m.name), &used)
             out.append(("\(baseName).\(name).tmj", json(tiledMap(m, tileset: ts, meta: meta))))
         }
         return out
     }
 
     /// アニメのコマ（"アニメ名 番号"）と名前付きセル。frameTags にアニメごとの範囲を持つ
+    /// シートからはみ出すコマは書かない。名前が重なったら -2 などを付ける（エンジン側でキーが衝突するため）
     static func atlas(imageName: String, width: Int, height: Int, meta: SheetMeta) -> [String: Any]? {
+        let bounds = IntRect(x: 0, y: 0, width: width, height: height)
         var frames: [[String: Any]] = []
         var tags: [[String: Any]] = []
+        var usedTags = Set<String>(), usedFrames = Set<String>()
         for anim in meta.anims {
-            let fs = anim.resolvedFrames
+            let fs = anim.resolvedFrames.filter { bounds.intersection(anim.rect(of: $0)) == anim.rect(of: $0) }
             guard !fs.isEmpty else { continue }
-            tags.append(["name": anim.name, "from": frames.count, "to": frames.count + fs.count - 1, "direction": "forward"])
+            let name = unique(anim.name, &usedTags)
+            tags.append(["name": name, "from": frames.count, "to": frames.count + fs.count - 1, "direction": "forward"])
             for (i, f) in fs.enumerated() {
-                frames.append(frame("\(anim.name) \(i)", anim.rect(of: f), duration: f.duration))
+                frames.append(frame(unique("\(name) \(i)", &usedFrames), anim.rect(of: f), duration: f.duration))
             }
         }
-        for a in meta.annotations where !a.name.isEmpty {
-            frames.append(frame(a.name, meta.cellRect(col: a.col, row: a.row), duration: 100))
+        let cols = meta.columns(imageWidth: width), rows = meta.rows(imageHeight: height)
+        for a in meta.annotations where !a.name.isEmpty && a.col < cols && a.row < rows {
+            frames.append(frame(unique(a.name, &usedFrames), meta.cellRect(col: a.col, row: a.row), duration: 100))
         }
         guard !frames.isEmpty else { return nil }
         return [
@@ -110,6 +109,17 @@ public enum EngineExport {
     static func fileSafe(_ s: String) -> String {
         let t = String(s.unicodeScalars.map { unsafeChars.contains($0) ? "_" : Character($0) })
         return t.isEmpty ? "map" : t
+    }
+
+    /// used にない名前にする（重なったら -2, -3 … を付ける）
+    private static func unique(_ base: String, _ used: inout Set<String>) -> String {
+        var name = base, n = 2
+        while used.contains(name) {
+            name = "\(base)-\(n)"
+            n += 1
+        }
+        used.insert(name)
+        return name
     }
 
     private static func json(_ obj: [String: Any]) -> Data {

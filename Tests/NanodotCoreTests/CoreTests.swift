@@ -551,6 +551,112 @@ final class EngineExportTests: XCTestCase {
         XCTAssertEqual(props.first?["value"] as? Bool, false)
     }
 
+    func testAtlasDedupesNamesAndSkipsFramesOutsideSheet() throws {
+        var m = SheetMeta()
+        m.cellWidth = 16; m.cellHeight = 16
+        var a = AnimDef(name: "walk", frameWidth: 16, frameHeight: 16)
+        a.columns = 3; a.count = 3 // 3 コマ目は幅 32 のシートからはみ出す
+        m.anims = [a, AnimDef(name: "walk", frameWidth: 16, frameHeight: 16)]
+        m.anims[1].columns = 1; m.anims[1].count = 1
+        var dup = CellAnnotation(col: 0, row: 0)
+        dup.name = "walk 0"
+        m.setAnnotation(dup)
+        var outside = CellAnnotation(col: 5, row: 0)
+        outside.name = "far"
+        m.setAnnotation(outside)
+        let o = try object(EngineExport.files(imageName: "a.png", width: 32, height: 16, meta: m)[0].data)
+        let frames = try XCTUnwrap(o["frames"] as? [[String: Any]])
+        XCTAssertEqual(frames.map { $0["filename"] as? String }, ["walk 0", "walk 1", "walk-2 0", "walk 0-2"])
+        let tags = try XCTUnwrap((o["meta"] as? [String: Any])?["frameTags"] as? [[String: Any]])
+        XCTAssertEqual(tags.map { $0["name"] as? String }, ["walk", "walk-2"])
+        XCTAssertEqual(tags.map { $0["to"] as? Int }, [1, 2])
+    }
+
+    func testFileSafe() {
+        XCTAssertEqual(EngineExport.fileSafe(""), "map")
+        XCTAssertEqual(EngineExport.fileSafe("../a/b"), ".._a_b")
+        XCTAssertEqual(EngineExport.fileSafe("a\nb:c"), "a_b_c")
+    }
+
+    // MARK: - 保存（SheetFile 経由）
+
+    private func tempDir() throws -> URL {
+        let d = FileManager.default.temporaryDirectory.appendingPathComponent("nanodot-export-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: d) }
+        return d
+    }
+
+    private func mapMeta(_ names: [String]) -> SheetMeta {
+        var m = SheetMeta()
+        m.cellWidth = 16; m.cellHeight = 16
+        m.maps = names.map { TileMapDef(name: $0, width: 1, height: 1) }
+        return m
+    }
+
+    private func exists(_ d: URL, _ name: String) -> Bool {
+        FileManager.default.fileExists(atPath: d.appendingPathComponent(name).path)
+    }
+
+    func testSaveWritesFilesAndSkipsUnchanged() throws {
+        let d = try tempDir(), url = d.appendingPathComponent("t.png"), img = PixelBuffer(width: 32, height: 32)
+        let meta = mapMeta(["a"])
+        XCTAssertEqual(try SheetFile.save(img, meta: meta, url: url), [])
+        let tmj = d.appendingPathComponent("t.a.tmj")
+        XCTAssertTrue(exists(d, "t.a.tmj"))
+        // 中身が同じなら書き直さない
+        let past = Date(timeIntervalSince1970: 1_000_000)
+        try FileManager.default.setAttributes([.modificationDate: past], ofItemAtPath: tmj.path)
+        try SheetFile.save(img, meta: meta, url: url)
+        let mod = try FileManager.default.attributesOfItem(atPath: tmj.path)[.modificationDate] as? Date
+        XCTAssertEqual(mod, past)
+        // サイドカーに書いたファイルが残るが、ドキュメントの差分にはならない
+        let (_, loaded) = try SheetFile.load(url: url)
+        XCTAssertEqual(loaded?.exportedFiles, ["t.a.tmj"])
+        var touched = meta
+        touched.exportedFiles = ["t.a.tmj"]
+        XCTAssertEqual(touched.document, meta.document)
+    }
+
+    func testSaveRemovesStaleFilesOnlyItWrote() throws {
+        let d = try tempDir(), url = d.appendingPathComponent("t.png"), img = PixelBuffer(width: 32, height: 32)
+        try Data("mine".utf8).write(to: d.appendingPathComponent("t.mine.tmj"))
+        try SheetFile.save(img, meta: mapMeta(["a"]), url: url)
+        // マップを改名すると古いほうは消える。自分で置いたファイルは消さない
+        try SheetFile.save(img, meta: mapMeta(["b"]), url: url)
+        XCTAssertFalse(exists(d, "t.a.tmj"))
+        XCTAssertTrue(exists(d, "t.b.tmj"))
+        XCTAssertTrue(exists(d, "t.mine.tmj"))
+        // オフにすると書いたものは消える
+        var off = mapMeta(["b"])
+        off.engineExport = false
+        try SheetFile.save(img, meta: off, url: url)
+        XCTAssertFalse(exists(d, "t.b.tmj"))
+        XCTAssertTrue(exists(d, "t.mine.tmj"))
+    }
+
+    func testSaveAsElsewhereDoesNotDeleteThere() throws {
+        let d1 = try tempDir(), d2 = try tempDir(), img = PixelBuffer(width: 32, height: 32)
+        try SheetFile.save(img, meta: mapMeta(["a"]), url: d1.appendingPathComponent("t.png"))
+        let (_, loaded) = try SheetFile.load(url: d1.appendingPathComponent("t.png"))
+        // 別の場所の同名ファイルは、メモリ上の exportedFiles に載っていても消さない
+        try Data("other".utf8).write(to: d2.appendingPathComponent("t.a.tmj"))
+        var m = try XCTUnwrap(loaded)
+        m.maps = []
+        try SheetFile.save(img, meta: m, url: d2.appendingPathComponent("t.png"))
+        XCTAssertTrue(exists(d2, "t.a.tmj"))
+    }
+
+    func testExportFailureIsWarningNotError() throws {
+        let d = try tempDir(), url = d.appendingPathComponent("t.png"), img = PixelBuffer(width: 32, height: 32)
+        // 書き出し先と同名のフォルダーがあると書けない
+        try FileManager.default.createDirectory(at: d.appendingPathComponent("t.a.tmj"), withIntermediateDirectories: true)
+        let warnings = try SheetFile.save(img, meta: mapMeta(["a"]), url: url)
+        XCTAssertEqual(warnings.count, 1)
+        XCTAssertTrue(exists(d, "t.png"))
+        XCTAssertTrue(exists(d, "t.nanodot.json"))
+    }
+
     func testFlagRoundTripsAndDefaultsOn() throws {
         XCTAssertTrue(try JSONDecoder().decode(SheetMeta.self, from: Data("{}".utf8)).engineExport)
         var m = SheetMeta()
