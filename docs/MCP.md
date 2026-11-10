@@ -53,6 +53,7 @@ stdio にしか対応していないクライアントでは、[mcp-remote](http
 - **セル**: シートは `cell_width × cell_height` のセルに区切られています。マップのタイルはセル番号で、`行 × sheet_columns + 列`（空は `-1`）。`sheet_columns` は `get_sheet_info` で分かります。
 - **作業範囲**: アプリでの描画はマーク範囲の中に限られますが、MCP からの描画はシート全体に効きます。
 - **取り消し**: 描画系のツール（`set_pixels` `draw_shape` `fill` `fill_rect` `draw_text` `copy_region` `replace_color`）は、1 回の呼び出しがアプリの取り消し 1 回分です。`undo` / `redo` ツールやアプリの ⌘Z で戻せます。注釈・アニメ・マップ・パレットの変更は取り消しの対象外です。
+- **ファイル**: 保存は PNG と、設定を入れた隣の `<名前>.nanodot` の 2 つです。ゲーム側で使うアトラス・マップは保存では書かれないので、`export_engine_data` で明示的に書き出します。
 - **保存**: 自動では保存しません。`save_sheet` を呼ぶか、アプリで保存してください。`new_sheet` と `open_sheet` は、保存していない変更を確認なしで捨てます。
 
 ## ツール一覧
@@ -99,8 +100,9 @@ stdio にしか対応していないクライアントでは、[mcp-remote](http
 | ツール | 内容 |
 |---|---|
 | `new_sheet` | 空のシートにする（`width, height, cell_width, cell_height`） |
-| `open_sheet` | 画像を開く（`path`。同じ名前の `.nanodot.json` も読む） |
-| `save_sheet` | PNG と `.nanodot.json` に保存（`path` 省略時は今のファイルに上書き）。ゲームエンジン用データ（`.atlas.json`・`.tmj`）も書く |
+| `open_sheet` | 画像を開く（`path`。同じ名前の `.nanodot` も読む。なければ古い名前の `.nanodot.json`） |
+| `save_sheet` | PNG と `.nanodot` に保存（`path` 省略時は今のファイルに上書き）。ゲームエンジン用データは書かない |
+| `export_engine_data` | ゲームエンジン用データ（`<名前>.atlas.json`・`<名前>.<マップ名>.tmj`）をフォルダーへ書き出す（`folder` 省略時は今の PNG と同じフォルダー） |
 
 ## 頼み方の例
 

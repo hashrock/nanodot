@@ -98,7 +98,7 @@ public struct AnimDef: Hashable, Sendable, Codable, Identifiable {
     public func rect(of f: AnimFrame) -> IntRect { IntRect(x: f.x, y: f.y, width: frameWidth, height: frameHeight) }
 }
 
-/// PNG とは別に保存する設定（サイドカー JSON）
+/// PNG とは別に保存する設定（隣のサイドカー `<名前>.nanodot`。中身は JSON）
 public struct SheetMeta: Equatable, Sendable, Codable {
     public static let slotCount = 64
 
@@ -117,10 +117,6 @@ public struct SheetMeta: Equatable, Sendable, Codable {
     public var annotations: [CellAnnotation] = []
     /// マップの仮組み
     public var maps: [TileMapDef] = []
-    /// 保存時にゲームエンジン向けのデータ（アトラス JSON・Tiled マップ）も書く
-    public var engineExport = true
-    /// 前回の保存で書いたゲームエンジン用ファイルの名前（作られなくなったものを消すため。保存時に SheetFile が書く）
-    public var exportedFiles: [String] = []
 
     public init() {}
 
@@ -142,8 +138,6 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         anims = (try? c.decode([AnimDef].self, forKey: .anims)) ?? []
         annotations = (try? c.decode([CellAnnotation].self, forKey: .annotations)) ?? []
         maps = (try? c.decode([TileMapDef].self, forKey: .maps)) ?? []
-        engineExport = (try? c.decode(Bool.self, forKey: .engineExport)) ?? d.engineExport
-        exportedFiles = (try? c.decode([String].self, forKey: .exportedFiles)) ?? []
     }
 
     /// 表示状態（マーク位置・ルーペ・スナップ）を除いた内容
@@ -153,7 +147,6 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         m.lupeWidth = 0
         m.lupeHeight = 0
         m.snap = .cell(1)
-        m.exportedFiles = []
         return m
     }
 

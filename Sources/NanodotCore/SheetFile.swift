@@ -15,64 +15,112 @@ public enum SheetFileError: Error, LocalizedError {
     }
 }
 
-/// PNG ＋サイドカー JSON の読み書き
+/// 書類（PNG）の隣にある、名前が同じで拡張子だけが違うファイル（関連ファイル）の読み書き。
+/// App Sandbox では、Info.plist で NSIsRelatedItemType を宣言した拡張子のファイルに限り、
+/// NSFileCoordinator と primaryPresentedItemURL を持つ NSFilePresenter を毎回通せば読み書きできる。
+/// Sandbox の外でも同じ経路を使う
+public enum RelatedFile {
+    private final class Presenter: NSObject, NSFilePresenter {
+        let primaryPresentedItemURL: URL?
+        let presentedItemURL: URL?
+        let presentedItemOperationQueue = OperationQueue()
+
+        init(primary: URL, related: URL) {
+            primaryPresentedItemURL = primary
+            presentedItemURL = related
+        }
+    }
+
+    private static let lock = NSLock()
+    private static var current: Presenter?
+
+    /// いま扱っている関連ファイルのプレゼンター。同じファイルには同じものを使い回し、別のファイルに移ったら登録し直す。
+    /// 読み書きのたびに登録・解除すると、解除の直後の書き込みが 0.5 秒ほど待たされる
+    private static func presenter(primary: URL, related: URL) -> Presenter {
+        lock.lock()
+        defer { lock.unlock() }
+        if let p = current, p.primaryPresentedItemURL == primary, p.presentedItemURL == related { return p }
+        if let old = current { NSFileCoordinator.removeFilePresenter(old) }
+        let p = Presenter(primary: primary, related: related)
+        NSFileCoordinator.addFilePresenter(p)
+        current = p
+        return p
+    }
+
+    private static func coordinate<T>(_ related: URL, primary: URL, writing: Bool, _ body: (URL) throws -> T) throws -> T {
+        let c = NSFileCoordinator(filePresenter: presenter(primary: primary, related: related))
+        var cerr: NSError?
+        var result: Result<T, Error>?
+        if writing {
+            c.coordinate(writingItemAt: related, options: [], error: &cerr) { u in result = Result { try body(u) } }
+        } else {
+            c.coordinate(readingItemAt: related, options: [], error: &cerr) { u in result = Result { try body(u) } }
+        }
+        if let cerr { throw cerr }
+        guard let result else { throw CocoaError(.fileReadUnknown) }
+        return try result.get()
+    }
+
+    /// なければ（読めなければ）nil
+    public static func read(_ related: URL, primary: URL) -> Data? {
+        try? coordinate(related, primary: primary, writing: false) { try Data(contentsOf: $0) }
+    }
+
+    public static func write(_ data: Data, to related: URL, primary: URL) throws {
+        try coordinate(related, primary: primary, writing: true) { try data.write(to: $0, options: .atomic) }
+    }
+}
+
+/// PNG ＋サイドカー（`<名前>.nanodot`）の読み書き
 public enum SheetFile {
     static let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
-    /// foo.png → foo.nanodot.json
+    public static let sidecarExtension = "nanodot"
+
+    /// foo.png → foo.nanodot。名前が書類と同じで拡張子が 1 段だけ違うこと（App Sandbox の関連ファイルの条件）
     public static func sidecarURL(for url: URL) -> URL {
+        url.deletingPathExtension().appendingPathExtension(sidecarExtension)
+    }
+
+    /// 古い名前のサイドカー: foo.png → foo.nanodot.json（読むだけ。Sandbox では読めない）
+    public static func legacySidecarURL(for url: URL) -> URL {
         url.deletingPathExtension().appendingPathExtension("nanodot.json")
     }
 
+    /// 画像と設定を読む。設定は <名前>.nanodot を優先し、なければ古い <名前>.nanodot.json。
+    /// どちらも読めなければ（Sandbox で古い名前しかないときも）素の画像として開く
     public static func load(url: URL) throws -> (image: PixelBuffer, meta: SheetMeta?) {
         guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
               let cg = CGImageSourceCreateImageAtIndex(src, 0, nil),
               let img = pixelBuffer(from: cg) else { throw SheetFileError.unreadable }
-        var meta: SheetMeta?
-        if let data = try? Data(contentsOf: sidecarURL(for: url)) {
-            meta = try? JSONDecoder().decode(SheetMeta.self, from: data)
-        }
+        let meta = RelatedFile.read(sidecarURL(for: url), primary: url).flatMap(decodeMeta)
+            ?? (try? Data(contentsOf: legacySidecarURL(for: url))).flatMap(decodeMeta)
         return (img, meta)
     }
 
-    /// PNG とサイドカーを書き、オンならゲームエンジン用データも書く。
-    /// ゲームエンジン用データの失敗は保存の失敗にせず、警告の文として返す
-    @discardableResult
-    public static func save(_ img: PixelBuffer, meta: SheetMeta, url: URL) throws -> [String] {
-        guard let cg = cgImage(from: img), let data = pngData(cg) else { throw SheetFileError.encodeFailed }
-        let dir = url.deletingLastPathComponent()
-        let sidecar = sidecarURL(for: url)
-        // 前回この場所に書いたもの（メモリ上の meta は別の場所から開いたものかもしれないので、ディスクのサイドカーを見る）
-        let previous = (try? Data(contentsOf: sidecar)).flatMap { try? JSONDecoder().decode(SheetMeta.self, from: $0) }?.exportedFiles ?? []
-        let files = meta.engineExport
-            ? EngineExport.files(imageName: url.lastPathComponent, width: img.width, height: img.height, meta: meta) : []
-        var meta = meta
-        meta.exportedFiles = files.map(\.name)
+    public static func decodeMeta(_ json: Data) -> SheetMeta? {
+        try? JSONDecoder().decode(SheetMeta.self, from: json)
+    }
 
-        try data.write(to: url, options: .atomic)
+    public static func encodeMeta(_ meta: SheetMeta) throws -> Data {
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try enc.encode(meta).write(to: sidecar, options: .atomic)
+        return try enc.encode(meta)
+    }
 
-        var warnings: [String] = []
-        for f in files {
-            // 中身が同じなら書かない（ゲーム側のホットリロードを無駄に起こさない）
-            let u = dir.appendingPathComponent(f.name)
-            guard (try? Data(contentsOf: u)) != f.data else { continue }
-            do { try f.data.write(to: u, options: .atomic) } catch {
-                warnings.append("\(f.name) を書けませんでした: \(error.localizedDescription)")
-            }
+    /// PNG と隣のサイドカー（<名前>.nanodot）を書く。古い名前のサイドカーには触らない
+    public static func save(_ img: PixelBuffer, meta: SheetMeta, url: URL) throws {
+        guard let png = pngData(img) else { throw SheetFileError.encodeFailed }
+        let json = try encodeMeta(meta)
+        try write(png, to: url)
+        try RelatedFile.write(json, to: sidecarURL(for: url), primary: url)
+    }
+
+    /// アトミックに書く。Sandbox などで一時ファイルを置けないときは直接書く
+    static func write(_ data: Data, to url: URL) throws {
+        do { try data.write(to: url, options: .atomic) } catch {
+            try data.write(to: url)
         }
-        // マップの改名・削除や書き出しのオフで作られなくなったものを消す（自分で書いたものだけ）
-        let current = Set(meta.exportedFiles)
-        for name in previous where !current.contains(name) && !name.contains("/") {
-            let u = dir.appendingPathComponent(name)
-            guard FileManager.default.fileExists(atPath: u.path) else { continue }
-            do { try FileManager.default.removeItem(at: u) } catch {
-                warnings.append("古い \(name) を消せませんでした: \(error.localizedDescription)")
-            }
-        }
-        return warnings
     }
 
     // MARK: - CGImage との変換

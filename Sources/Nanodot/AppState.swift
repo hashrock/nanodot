@@ -309,6 +309,8 @@ final class AppState {
     }
 
     func open(url: URL) {
+        // サイドカー（<名前>.nanodot）を渡されたら、隣の PNG を開く
+        let url = url.pathExtension.lowercased() == SheetFile.sidecarExtension ? url.deletingPathExtension().appendingPathExtension("png") : url
         do {
             let (img, meta) = try SheetFile.load(url: url)
             let isPNG = url.pathExtension.lowercased() == "png"
@@ -351,19 +353,90 @@ final class AppState {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = editor.fileURL?.deletingPathExtension().lastPathComponent ?? "無題"
-        panel.message = "設定は同じフォルダーの <名前>.nanodot.json に保存されます"
+        panel.message = "設定は同じフォルダーの <名前>.nanodot に保存されます"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         write(to: url)
     }
 
     private func write(to url: URL) {
         do {
-            let warnings = try SheetFile.save(editor.image, meta: editor.meta, url: url)
+            try SheetFile.save(editor.image, meta: editor.meta, url: url)
             editor.markSaved(url: url)
-            if !warnings.isEmpty { showError("保存しましたが、ゲームエンジン用データに問題がありました:\n" + warnings.joined(separator: "\n")) }
         } catch {
             showError("保存に失敗しました: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: - 書き出し・読み込み（保存とは別に、明示的に行う）
+
+    /// 前回の書き出し先フォルダーのブックマーク（シートのパスごと。マシンごとのものなのでサイドカーには入れない）
+    private var exportFolderKey: String { editor.fileURL?.path ?? "" }
+
+    /// 前回ゲームエンジン用データを書き出したフォルダー
+    var lastExportFolder: URL? {
+        (UserDefaults.standard.dictionary(forKey: "exportFolders")?[exportFolderKey] as? Data).flatMap(ExportFolder.resolve)
+    }
+
+    private func rememberExportFolder(_ dir: URL) {
+        guard let b = try? ExportFolder.bookmark(for: dir) else { return }
+        var d = UserDefaults.standard.dictionary(forKey: "exportFolders") ?? [:]
+        d[exportFolderKey] = b
+        UserDefaults.standard.set(d, forKey: "exportFolders")
+    }
+
+    /// フォルダーを選んでゲームエンジン用データ（アトラス JSON・Tiled マップ）を書き出す
+    func exportEngineData() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.prompt = "書き出し"
+        let base = (editor.imageName as NSString).deletingPathExtension
+        panel.message = "\(base).atlas.json と \(base).<マップ名>.tmj を書き出すフォルダーを選択（\(editor.imageName) と同じ場所に置くと、そのまま読めます）"
+        panel.directoryURL = lastExportFolder ?? editor.fileURL?.deletingLastPathComponent()
+        guard panel.runModal() == .OK, let dir = panel.url else { return }
+        writeEngineData(to: dir)
+    }
+
+    /// 前回の書き出し先にもう一度書き出す（なければフォルダーを選ぶ）
+    func exportEngineDataAgain() {
+        if let dir = lastExportFolder { writeEngineData(to: dir) } else { exportEngineData() }
+    }
+
+    private func writeEngineData(to dir: URL) {
+        do {
+            let names = try EngineExport.write(imageName: editor.imageName, width: editor.image.width, height: editor.image.height,
+                                               meta: editor.meta, to: dir)
+            if names.isEmpty {
+                showError("書き出すものがありません（アニメ・名前付きセル・マップがありません）")
+            } else {
+                rememberExportFolder(dir)
+            }
+        } catch {
+            showError("書き出しに失敗しました: \(error.localizedDescription)")
+        }
+    }
+
+    /// 設定のファイル（<名前>.nanodot や古い名前の <名前>.nanodot.json）を選んで、今のシートに読み込む。
+    /// Sandbox では古い名前のサイドカーを自動では読めないので、その移行に使う
+    func importMeta() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json] + [UTType(filenameExtension: SheetFile.sidecarExtension)].compactMap { $0 }
+        panel.directoryURL = editor.fileURL?.deletingLastPathComponent()
+        panel.message = "設定のファイル（<名前>.nanodot、古い <名前>.nanodot.json）を選択。今のシートの設定を置き換えます"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let data = try? Data(contentsOf: url), let meta = SheetFile.decodeMeta(data) else {
+            showError("設定を読み込めませんでした")
+            return
+        }
+        editor.meta = meta
+        editor.setMark(editor.meta.mark)
+        selectedAnimID = meta.anims.first?.id
+        selectedMapID = meta.maps.first?.id
+        mapLayer = 0
+        mapBrushOverride = nil
+        resetMapHistory()
+        requestDisplay()
     }
 
     func exportAnim(_ format: AnimExport.Format, scale: Int) {

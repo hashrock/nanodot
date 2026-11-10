@@ -30,6 +30,7 @@ NANODOT_APPSTORE=1 swift test --scratch-path .build/appstore   # App Store 用�
 
 - `NANODOT_APPSTORE=1` を付けると `Package.swift` がコンパイル条件 `APPSTORE` を定義し、`#if !APPSTORE` で囲んだ MCP のコードが落ちます。
 - スクリプトは、できたバイナリに MCP の文字列・シンボルが残っていないこと、Network.framework をリンクしていないことを確かめます。
+- App Sandbox を有効にして（`Resources/AppStore.entitlements`）ad-hoc 署名するので、手元で Sandbox 下の動作を確かめられます。提出用の署名は別途行います。
 - 通常のビルドと成果物が混ざらないよう、`.build/appstore` でビルドします。
 
 ## 基本操作
@@ -67,9 +68,12 @@ AI エージェント（Claude Code など）から nanodot を操作できる M
 
 ## ファイル
 
-画像は素の PNG で保存し、セル・スナップ・パレットスロット・アニメなどの設定は同じフォルダーの `<名前>.nanodot.json` に保存します。
+画像は素の PNG で保存し、セル・スナップ・パレットスロット・アニメ・注釈・マップなどの設定は同じフォルダーの `<名前>.nanodot`（中身は JSON）に保存します。
 
-保存のたびに、ゲームエンジンがそのまま読めるデータも書き出します（「ファイル > 保存時にゲームエンジン用データも書き出す」で切り替え）。
+- 以前の版が書いていた `<名前>.nanodot.json` も読めます。`<名前>.nanodot` があればそちらを優先します。保存は `<名前>.nanodot` だけに書き、古いファイルは消しません。
+- App Store 版（App Sandbox）は、PNG の隣のファイルのうち `<名前>.nanodot` だけを読み書きできます。古い `<名前>.nanodot.json` は自動では読めないので、「ファイル > 設定を読み込む...」で選んで読み込みます。
+
+ゲームエンジンがそのまま読めるデータは、「ファイル > ゲームエンジン用データを書き出す...」でフォルダーを選んで書き出します（保存のたびには書きません）。⌘E で前回の書き出し先にもう一度書き出せます。PNG と同じフォルダーに置くと、そのまま読めます。
 
 - `<名前>.atlas.json`: アニメと名前付きセルのフレーム（Aseprite / TexturePacker 互換。Phaser の `load.aseprite` / `load.atlas` や Godot・Unity の Aseprite インポーターで読める）
 - `<名前>.<マップ名>.tmj`: Tiled 形式のマップ（通行可否・重なり順・名前はタイルのプロパティ）
@@ -82,7 +86,7 @@ Sources/NanodotCore/   エンジン（UI 非依存、テスト可能）
   Raster.swift         直線・矩形・楕円・塗りつぶし
   Sheet.swift          スナップ、アニメ定義、サイドカーの設定
   Editor.swift         ドキュメント・マーク位置・履歴・ツール操作
-  SheetFile.swift      PNG / JSON の読み書き、GIF・APNG・連番 PNG の書き出し
+  SheetFile.swift      PNG とサイドカー（<名前>.nanodot）の読み書き、GIF・APNG・連番 PNG の書き出し
   EngineExport.swift   ゲームエンジン用（アトラス JSON・Tiled マップ）の書き出し
   TextRenderer.swift   文字をドットに描く
   TileMap.swift        マップの仮組み、セルの注釈

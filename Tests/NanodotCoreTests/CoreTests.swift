@@ -277,14 +277,97 @@ final class FileTests: XCTestCase {
         a.mode = .list
         a.frames = [AnimFrame(x: 1, y: 2, duration: 100)]
         meta.anims = [a]
-        let url = try tempDir().appendingPathComponent("sheet.png")
+        meta.maps = [TileMapDef(name: "村の広場", width: 2, height: 1)]
+        let dir = try tempDir(), url = dir.appendingPathComponent("sheet.png")
         try SheetFile.save(img, meta: meta, url: url)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: url.deletingLastPathComponent().appendingPathComponent("sheet.nanodot.json").path))
+        // 書くのは PNG と、名前が同じで拡張子が 1 段だけ違うサイドカー
+        XCTAssertEqual(SheetFile.sidecarURL(for: url).lastPathComponent, "sheet.nanodot")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).sorted(), ["sheet.nanodot", "sheet.png"])
         let (loaded, m) = try SheetFile.load(url: url)
         XCTAssertEqual(loaded, img)
         XCTAssertEqual(m?.cellWidth, 24)
         XCTAssertEqual(m?.slots[3], RGBA(9, 8, 7))
         XCTAssertEqual(m?.anims.first?.frames.first?.x, 1)
+        XCTAssertEqual(m?.maps.first?.name, "村の広場")
+        // PNG は素のまま（ほかのアプリからも同じ画像）で、サイドカーの中身は JSON
+        XCTAssertEqual(SheetFile.pixelBuffer(pngData: try Data(contentsOf: url)), img)
+        XCTAssertEqual(SheetFile.decodeMeta(try Data(contentsOf: SheetFile.sidecarURL(for: url)))?.cellWidth, 24)
+        // 上書き
+        img[2, 2] = RGBA(7, 7, 7, 255)
+        meta.cellWidth = 12
+        try SheetFile.save(img, meta: meta, url: url)
+        let again = try SheetFile.load(url: url)
+        XCTAssertEqual(again.image, img)
+        XCTAssertEqual(again.meta?.cellWidth, 12)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).sorted(), ["sheet.nanodot", "sheet.png"])
+    }
+
+    /// サイドカーがない・壊れている PNG は素の画像として開く
+    func testPlainPNGAndBrokenSidecar() throws {
+        var img = PixelBuffer(width: 3, height: 2)
+        img[1, 1] = RGBA(10, 20, 30, 200)
+        let dir = try tempDir(), url = dir.appendingPathComponent("p.png")
+        try XCTUnwrap(SheetFile.pngData(img)).write(to: url)
+        let plain = try SheetFile.load(url: url)
+        XCTAssertEqual(plain.image, img)
+        XCTAssertNil(plain.meta)
+        try Data("こわれた".utf8).write(to: SheetFile.sidecarURL(for: url))
+        let broken = try SheetFile.load(url: url)
+        XCTAssertEqual(broken.image, img)
+        XCTAssertNil(broken.meta)
+        XCTAssertThrowsError(try SheetFile.load(url: dir.appendingPathComponent("none.png")))
+    }
+
+    /// 古い名前（<名前>.nanodot.json）は読めるまま。新しい名前があればそちらを優先し、保存は新しい名前だけに書く
+    func testLegacySidecar() throws {
+        var img = PixelBuffer(width: 4, height: 4)
+        img[1, 1] = RGBA(10, 20, 30, 255)
+        var old = SheetMeta()
+        old.cellWidth = 2
+        old.maps = [TileMapDef(name: "a", width: 1, height: 1)]
+        let dir = try tempDir(), png = dir.appendingPathComponent("old.png"), legacy = dir.appendingPathComponent("old.nanodot.json")
+        XCTAssertEqual(SheetFile.legacySidecarURL(for: png), legacy)
+        try XCTUnwrap(SheetFile.pngData(img)).write(to: png)
+        // 古い版が書いていたキー（engineExport / exportedFiles）があっても読める
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: SheetFile.encodeMeta(old)) as? [String: Any])
+        json["engineExport"] = true
+        json["exportedFiles"] = ["old.a.tmj"]
+        let legacyData = try JSONSerialization.data(withJSONObject: json)
+        try legacyData.write(to: legacy)
+        // 古い版が隣に書いたゲームエンジン用データ
+        try Data("tmj".utf8).write(to: dir.appendingPathComponent("old.a.tmj"))
+
+        let (loaded, m) = try SheetFile.load(url: png)
+        XCTAssertEqual(loaded, img)
+        XCTAssertEqual(m?.cellWidth, 2)
+        XCTAssertEqual(m?.maps.first?.name, "a")
+
+        // 保存は新しい名前だけに書く。古いサイドカーも、古い版が書いたゲームエンジン用データも消さず、書き換えない
+        var new = try XCTUnwrap(m)
+        new.cellWidth = 3
+        new.maps = []
+        try SheetFile.save(loaded, meta: new, url: png)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).sorted(),
+                       ["old.a.tmj", "old.nanodot", "old.nanodot.json", "old.png"])
+        XCTAssertEqual(try Data(contentsOf: legacy), legacyData)
+        // 両方あれば新しい名前を優先
+        XCTAssertEqual(try SheetFile.load(url: png).meta?.cellWidth, 3)
+        // 新しいほうがなくなれば、残っている古い名前を読む
+        try FileManager.default.removeItem(at: SheetFile.sidecarURL(for: png))
+        XCTAssertEqual(try SheetFile.load(url: png).meta?.cellWidth, 2)
+    }
+
+    /// 関連ファイルの読み書き（コーディネーター経由）
+    func testRelatedFile() throws {
+        let dir = try tempDir(), png = dir.appendingPathComponent("r.png"), side = dir.appendingPathComponent("r.nanodot")
+        XCTAssertNil(RelatedFile.read(side, primary: png))
+        try RelatedFile.write(Data("a".utf8), to: side, primary: png)
+        XCTAssertEqual(RelatedFile.read(side, primary: png), Data("a".utf8))
+        try RelatedFile.write(Data("bb".utf8), to: side, primary: png)
+        XCTAssertEqual(try Data(contentsOf: side), Data("bb".utf8))
+        // 書けない場所ならエラー
+        let missing = dir.appendingPathComponent("no/such/r.png")
+        XCTAssertThrowsError(try RelatedFile.write(Data("c".utf8), to: SheetFile.sidecarURL(for: missing), primary: missing))
     }
 
     func testAnimExport() throws {
@@ -487,10 +570,27 @@ final class MCPTests: XCTestCase {
         XCTAssertEqual(host.editor.image.width, 16)
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nanodot-mcp-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
+        func names(_ d: URL) throws -> [String] { try FileManager.default.contentsOfDirectory(atPath: d.path).sorted() }
         let path = dir.appendingPathComponent("a.png").path
+        XCTAssertTrue(try tool(s, "export_engine_data").isError)
+        XCTAssertFalse(try tool(s, "set_annotation", ["col": 0, "row": 0, "name": "草"]).isError)
+        XCTAssertFalse(try tool(s, "create_map", ["name": "m", "width": 1, "height": 1]).isError)
         XCTAssertFalse(try tool(s, "save_sheet", ["path": path]).isError)
+        // 保存は PNG とサイドカーだけ。ゲームエンジン用データは書かない
+        XCTAssertEqual(try names(dir), ["a.nanodot", "a.png"])
+        XCTAssertFalse(try tool(s, "new_sheet", ["width": 8, "height": 8]).isError)
         XCTAssertFalse(try tool(s, "open_sheet", ["path": path]).isError)
         XCTAssertEqual(host.editor.fileURL?.path, path)
+        XCTAssertEqual(host.editor.meta.maps.first?.name, "m")
+        XCTAssertEqual(host.editor.meta.annotation(col: 0, row: 0).name, "草")
+        // 書き出しは明示的に
+        XCTAssertFalse(try tool(s, "export_engine_data").isError)
+        XCTAssertEqual(try names(dir), ["a.atlas.json", "a.m.tmj", "a.nanodot", "a.png"])
+        let out = dir.appendingPathComponent("out")
+        try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        XCTAssertFalse(try tool(s, "export_engine_data", ["folder": out.path]).isError)
+        XCTAssertEqual(try names(out), ["a.atlas.json", "a.m.tmj"])
     }
 }
 #endif
@@ -596,73 +696,52 @@ final class EngineExportTests: XCTestCase {
         return m
     }
 
-    private func exists(_ d: URL, _ name: String) -> Bool {
-        FileManager.default.fileExists(atPath: d.appendingPathComponent(name).path)
+    private func names(_ d: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: d.path).sorted()
     }
 
-    func testSaveWritesFilesAndSkipsUnchanged() throws {
-        let d = try tempDir(), url = d.appendingPathComponent("t.png"), img = PixelBuffer(width: 32, height: 32)
-        let meta = mapMeta(["a"])
-        XCTAssertEqual(try SheetFile.save(img, meta: meta, url: url), [])
-        let tmj = d.appendingPathComponent("t.a.tmj")
-        XCTAssertTrue(exists(d, "t.a.tmj"))
-        // 中身が同じなら書き直さない
+    func testSaveDoesNotExport() throws {
+        let d = try tempDir(), url = d.appendingPathComponent("t.png")
+        try SheetFile.save(PixelBuffer(width: 32, height: 32), meta: mapMeta(["a"]), url: url)
+        XCTAssertEqual(try names(d), ["t.nanodot", "t.png"])
+    }
+
+    func testWriteToFolderAndSkipsUnchanged() throws {
+        let d = try tempDir()
+        var meta = mapMeta(["a", "b"])
+        var note = CellAnnotation(col: 0, row: 0)
+        note.name = "草"
+        meta.annotations = [note]
+        XCTAssertEqual(try EngineExport.write(imageName: "t.png", width: 32, height: 32, meta: meta, to: d), ["t.atlas.json", "t.a.tmj", "t.b.tmj"])
+        XCTAssertEqual(try names(d), ["t.a.tmj", "t.atlas.json", "t.b.tmj"])
+        let map = try object(Data(contentsOf: d.appendingPathComponent("t.a.tmj")))
+        XCTAssertEqual((map["tilesets"] as? [[String: Any]])?.first?["image"] as? String, "t.png")
+        // 中身が同じなら書き直さない。変わったものだけ書く
         let past = Date(timeIntervalSince1970: 1_000_000)
-        try FileManager.default.setAttributes([.modificationDate: past], ofItemAtPath: tmj.path)
-        try SheetFile.save(img, meta: meta, url: url)
-        let mod = try FileManager.default.attributesOfItem(atPath: tmj.path)[.modificationDate] as? Date
-        XCTAssertEqual(mod, past)
-        // サイドカーに書いたファイルが残るが、ドキュメントの差分にはならない
-        let (_, loaded) = try SheetFile.load(url: url)
-        XCTAssertEqual(loaded?.exportedFiles, ["t.a.tmj"])
-        var touched = meta
-        touched.exportedFiles = ["t.a.tmj"]
-        XCTAssertEqual(touched.document, meta.document)
+        for n in try names(d) { try FileManager.default.setAttributes([.modificationDate: past], ofItemAtPath: d.appendingPathComponent(n).path) }
+        meta.maps[1].set(0, 0, 0, 1)
+        try EngineExport.write(imageName: "t.png", width: 32, height: 32, meta: meta, to: d)
+        func mod(_ n: String) throws -> Date? { try FileManager.default.attributesOfItem(atPath: d.appendingPathComponent(n).path)[.modificationDate] as? Date }
+        XCTAssertEqual(try mod("t.a.tmj"), past)
+        XCTAssertEqual(try mod("t.atlas.json"), past)
+        XCTAssertNotEqual(try mod("t.b.tmj"), past)
+        // 書くものがなければ何も作らない
+        let empty = try tempDir()
+        XCTAssertEqual(try EngineExport.write(imageName: "t.png", width: 32, height: 32, meta: SheetMeta(), to: empty), [])
+        XCTAssertEqual(try names(empty), [])
     }
 
-    func testSaveRemovesStaleFilesOnlyItWrote() throws {
-        let d = try tempDir(), url = d.appendingPathComponent("t.png"), img = PixelBuffer(width: 32, height: 32)
-        try Data("mine".utf8).write(to: d.appendingPathComponent("t.mine.tmj"))
-        try SheetFile.save(img, meta: mapMeta(["a"]), url: url)
-        // マップを改名すると古いほうは消える。自分で置いたファイルは消さない
-        try SheetFile.save(img, meta: mapMeta(["b"]), url: url)
-        XCTAssertFalse(exists(d, "t.a.tmj"))
-        XCTAssertTrue(exists(d, "t.b.tmj"))
-        XCTAssertTrue(exists(d, "t.mine.tmj"))
-        // オフにすると書いたものは消える
-        var off = mapMeta(["b"])
-        off.engineExport = false
-        try SheetFile.save(img, meta: off, url: url)
-        XCTAssertFalse(exists(d, "t.b.tmj"))
-        XCTAssertTrue(exists(d, "t.mine.tmj"))
-    }
-
-    func testSaveAsElsewhereDoesNotDeleteThere() throws {
-        let d1 = try tempDir(), d2 = try tempDir(), img = PixelBuffer(width: 32, height: 32)
-        try SheetFile.save(img, meta: mapMeta(["a"]), url: d1.appendingPathComponent("t.png"))
-        let (_, loaded) = try SheetFile.load(url: d1.appendingPathComponent("t.png"))
-        // 別の場所の同名ファイルは、メモリ上の exportedFiles に載っていても消さない
-        try Data("other".utf8).write(to: d2.appendingPathComponent("t.a.tmj"))
-        var m = try XCTUnwrap(loaded)
-        m.maps = []
-        try SheetFile.save(img, meta: m, url: d2.appendingPathComponent("t.png"))
-        XCTAssertTrue(exists(d2, "t.a.tmj"))
-    }
-
-    func testExportFailureIsWarningNotError() throws {
-        let d = try tempDir(), url = d.appendingPathComponent("t.png"), img = PixelBuffer(width: 32, height: 32)
+    func testWriteFailureThrows() throws {
+        let d = try tempDir()
         // 書き出し先と同名のフォルダーがあると書けない
         try FileManager.default.createDirectory(at: d.appendingPathComponent("t.a.tmj"), withIntermediateDirectories: true)
-        let warnings = try SheetFile.save(img, meta: mapMeta(["a"]), url: url)
-        XCTAssertEqual(warnings.count, 1)
-        XCTAssertTrue(exists(d, "t.png"))
-        XCTAssertTrue(exists(d, "t.nanodot.json"))
+        XCTAssertThrowsError(try EngineExport.write(imageName: "t.png", width: 32, height: 32, meta: mapMeta(["a"]), to: d))
     }
 
-    func testFlagRoundTripsAndDefaultsOn() throws {
-        XCTAssertTrue(try JSONDecoder().decode(SheetMeta.self, from: Data("{}".utf8)).engineExport)
-        var m = SheetMeta()
-        m.engineExport = false
-        XCTAssertFalse(try JSONDecoder().decode(SheetMeta.self, from: JSONEncoder().encode(m)).engineExport)
+    func testExportFolderBookmark() throws {
+        let d = try tempDir()
+        let b = try ExportFolder.bookmark(for: d)
+        XCTAssertEqual(ExportFolder.resolve(b)?.standardizedFileURL.path, d.standardizedFileURL.path)
+        XCTAssertNil(ExportFolder.resolve(Data([1, 2, 3])))
     }
 }
