@@ -119,7 +119,7 @@ AI エージェントから操作するための MCP サーバーを内蔵する
 - 画像は素の PNG（RGBA）で保存する。開くのは PNG のほか ImageIO が読める画像全般。
 - グリッド、スナップ、ルーペ、パレットスロット、アニメ、注釈、マップなどの設定は、同じフォルダーの `<名前>.nanodot`（サイドカー。中身は JSON）に保存する。
   - 名前は「PNG と同じ名前 + 拡張子 1 段」にする。App Sandbox では、書類と名前が同じで拡張子だけが違うファイル（関連ファイル）に限って隣を読み書きできるため。
-  - Info.plist で拡張子 `nanodot` を、`NSIsRelatedItemType = true`・`CFBundleTypeRole = Editor` の書類の型として宣言する（Role が `None` / `Viewer` だと読めるが書けない）。
+  - Info.plist で拡張子 `nanodot` を、`NSIsRelatedItemType = true`・`CFBundleTypeRole = Editor` の書類の型として宣言する（Role が `None` / `Viewer` だと読めるが書けない）。`LSHandlerRank = None` にして、Finder の「このアプリケーションで開く」の候補には出さない。
   - サイドカーの読み書きは毎回、`NSFileCoordinator` と、`primaryPresentedItemURL`（PNG）を持つ `NSFilePresenter` を通す。直接配布版も同じ経路を使う。プレゼンターは同じファイルを扱っている間は使い回す（読み書きのたびに登録・解除すると、解除の直後の書き込みが 0.5 秒ほど待たされる）。
   - サイドカーがない・壊れている PNG は、素の画像として開く（設定は初期値）。
 - **古い名前**: 以前の版はサイドカーを `<名前>.nanodot.json` に書いていた。`<名前>.nanodot` がなければこれを読む（両方あれば新しい名前を優先）。保存は新しい名前だけに書き、古いファイルは消さず、書き換えない。App Sandbox では古い名前は読めないので、そのときは素の画像として開く。「ファイル > 設定を読み込む...」でファイルを選べば、今のシートの設定として読み込める。

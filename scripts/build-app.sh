@@ -47,11 +47,13 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
             <key>LSItemContentTypes</key><array><string>public.png</string></array>
         </dict>
         <!-- サイドカー（<名前>.nanodot）。App Sandbox で PNG の隣に読み書きするための関連ファイルの宣言。
-             Role が Editor でないと書けない（None / Viewer は読み取りだけ） -->
+             Role が Editor でないと書けない（None / Viewer は読み取りだけ）。
+             LSHandlerRank を None にして、Finder の「このアプリケーションで開く」の候補には出さない -->
         <dict>
             <key>CFBundleTypeName</key><string>Nanodot Sheet Settings</string>
             <key>CFBundleTypeExtensions</key><array><string>nanodot</string></array>
             <key>CFBundleTypeRole</key><string>Editor</string>
+            <key>LSHandlerRank</key><string>None</string>
             <key>NSIsRelatedItemType</key><true/>
         </dict>
     </array>
