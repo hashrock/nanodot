@@ -19,6 +19,19 @@ open build/Nanodot.app
 - 必要なもの: macOS 14 以降、Xcode 16 以降（Swift 5.10+）
 - テスト: `swift test`
 
+### App Store 用ビルド
+
+App Store 用のビルドには MCP サーバーを入れません（コード・待ち受け・設定の UI ごとコンパイルから外します）。直接配布（Developer ID）版は今までどおり MCP を含みます。
+
+```sh
+./scripts/build-app.sh --appstore                              # build/appstore/Nanodot.app を生成
+NANODOT_APPSTORE=1 swift test --scratch-path .build/appstore   # App Store 用の構成でテスト
+```
+
+- `NANODOT_APPSTORE=1` を付けると `Package.swift` がコンパイル条件 `APPSTORE` を定義し、`#if !APPSTORE` で囲んだ MCP のコードが落ちます。
+- スクリプトは、できたバイナリに MCP の文字列・シンボルが残っていないこと、Network.framework をリンクしていないことを確かめます。
+- 通常のビルドと成果物が混ざらないよう、`.build/appstore` でビルドします。
+
 ## 基本操作
 
 | 操作 | メイン（拡大編集） | ストック（シート全体） |
@@ -47,6 +60,8 @@ open build/Nanodot.app
 スナップ単位（既定はセルの 1/2）はメニュー「マーク > スナップ」で変えられます。
 
 ## MCP
+
+直接配布版だけの機能です（App Store 用ビルドには入りません）。
 
 AI エージェント（Claude Code など）から nanodot を操作できる MCP サーバーを内蔵しています。⚙ の設定で「MCP サーバー」をオンにし、`claude mcp add --transport http nanodot http://127.0.0.1:47621/mcp` で登録します。詳しくは [docs/MCP.md](docs/MCP.md) を参照してください。
 
