@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fafafa">
+  <title>プライバシーポリシー — nanodot</title>
+  <meta name="description" content="nanodot はあなたの情報を集めません。通信もトラッキングもしないアプリです。">
+  <link rel="icon" href="./assets/nanodot.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="https://repos.hashrock.info/switcher/v1.js"></script>
+</head>
+<body>
+  <header class="header wrap">
+    <a class="brand" href="./" aria-label="nanodot ホーム"><img src="./assets/nanodot.svg" width="36" height="36" alt=""><span>nanodot</span></a>
+    <div class="header-links">
+      <a class="github" href="#en" lang="en">English <span aria-hidden="true">↓</span></a>
+      <!-- hashrock の他のサービスへのメニュー（index.html と同じ置き方） -->
+      <hashrock-switcher theme="light"></hashrock-switcher>
+    </div>
+  </header>
+  <main class="policy wrap">
+
+    <article id="ja" lang="ja">
+      <h1>プライバシーポリシー</h1>
+      <p class="updated">最終更新日: 2026年11月11日</p>
+
+      <p class="lead">nanodot（以下「本アプリ」）は、あなたの情報を集めません。本アプリには利用状況の計測・広告・トラッキング・アカウントの仕組みがなく、インターネットにも接続しません。</p>
+
+      <h2>集める情報</h2>
+      <p>ありません。本アプリは、あなたの個人情報や利用状況を、開発者を含むだれにも送りません。</p>
+
+      <h2>Mac の中で扱うもの</h2>
+      <p>本アプリは次のものを、あなたの Mac の中だけで扱います。どれも外部へは送りません。</p>
+      <dl>
+        <dt>画像（書類）</dt>
+        <dd>あなたが開いた画像を読み、あなたが選んだ場所に PNG で保存します。</dd>
+        <dt>シートの設定（&lt;名前&gt;.nanodot）</dt>
+        <dd>セルの大きさ・パレット・アニメ・マップ・注釈などを、PNG と同じフォルダーの <code>&lt;名前&gt;.nanodot</code> に保存します。中身は絵についての設定だけで、あなたの名前やファイルの場所は入りません。</dd>
+        <dt>書き出したファイル</dt>
+        <dd>アニメ（GIF・APNG・連番 PNG）とゲームエンジン用データ（<code>.atlas.json</code>・<code>.tmj</code>）を、あなたが選んだ場所に書き出します。</dd>
+        <dt>クリップボード</dt>
+        <dd>コピーした範囲を macOS のクリップボードに画像として置き、貼り付けるときにクリップボードの画像を読みます。</dd>
+        <dt>設定</dt>
+        <dd>表示の切り替え、ウィンドウの配置、ゲームエンジン用データの前回の書き出し先（シートのファイルの場所と、そのフォルダーをもう一度開くための macOS のブックマーク）などを、macOS の設定の仕組みでこの Mac に保存します。</dd>
+      </dl>
+      <p>Mac App Store 版は App Sandbox の中で動き、あなたが開く・保存のパネルで選んだファイルやフォルダーと、その PNG の隣の <code>&lt;名前&gt;.nanodot</code> にだけ触れます。ネットワークを使う権限は持っていません。</p>
+
+      <h2>MCP サーバー（直接配布版のみ）</h2>
+      <p>GitHub で配布している版には、AI エージェントから本アプリを操作するための MCP サーバーが入っています。初めは無効で、設定で有効にしたときだけ動きます。この Mac の中（127.0.0.1）からの接続だけを受け付け、本アプリの側から外部へ接続することはありません。Mac App Store 版にはこの機能が入っていません。</p>
+
+      <h2>クラッシュ情報</h2>
+      <p>「システム設定 ＞ プライバシーとセキュリティ ＞ 解析と改善」で「App デベロッパと共有」を有効にしている場合、本アプリが異常終了したときの情報が Apple を通じて開発者に届くことがあります。これは Apple が提供する仕組みで、その扱いは Apple のプライバシーポリシーに従います。</p>
+
+      <h2>このポリシーの変更</h2>
+      <p>内容を変えるときは、このページを更新して最終更新日を改めます。</p>
+
+      <h2>問い合わせ</h2>
+      <p><a class="link" href="https://github.com/hashrock/nanodot/issues">GitHub の Issues</a> で受け付けています。</p>
+    </article>
+
+    <article id="en" lang="en">
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: November 11, 2026</p>
+
+      <p class="lead">nanodot (“the app”) does not collect your information. The app has no analytics, advertising, tracking or accounts, and it does not connect to the internet.</p>
+
+      <h2>Information we collect</h2>
+      <p>None. The app does not send your personal information or usage data to anyone, including the developer.</p>
+
+      <h2>What stays on your Mac</h2>
+      <p>The app handles the following only on your Mac. None of it is sent anywhere.</p>
+      <dl>
+        <dt>Images (documents)</dt>
+        <dd>The app reads the images you open and saves PNG files to the location you choose.</dd>
+        <dt>Sheet settings (&lt;name&gt;.nanodot)</dt>
+        <dd>Cell size, palette, animations, maps, annotations and similar settings are saved as <code>&lt;name&gt;.nanodot</code> in the same folder as the PNG. It contains only settings about the artwork, not your name or file locations.</dd>
+        <dt>Exported files</dt>
+        <dd>Animations (GIF, APNG, PNG sequence) and game engine data (<code>.atlas.json</code>, <code>.tmj</code>) are written to the location you choose.</dd>
+        <dt>Clipboard</dt>
+        <dd>The area you copy is placed on the macOS clipboard as an image, and the app reads an image from the clipboard when you paste.</dd>
+        <dt>Settings</dt>
+        <dd>View options, window layout, the last folder you exported game engine data to (the location of the sheet file and a macOS bookmark that lets the app open that folder again) and similar settings are stored on this Mac with the standard macOS preferences system.</dd>
+      </dl>
+      <p>The Mac App Store version runs inside the App Sandbox. It can touch only the files and folders you choose in open and save panels, plus the <code>&lt;name&gt;.nanodot</code> file next to that PNG. It has no permission to use the network.</p>
+
+      <h2>MCP server (direct download version only)</h2>
+      <p>The version distributed on GitHub includes an MCP server that lets AI agents operate the app. It is off by default and runs only while you turn it on in the settings. It accepts connections only from this Mac (127.0.0.1), and the app never connects out to anything. The Mac App Store version does not include this feature.</p>
+
+      <h2>Crash reports</h2>
+      <p>If “Share with app developers” is turned on in System Settings › Privacy &amp; Security › Analytics &amp; Improvements, information about crashes of the app may be delivered to the developer through Apple. This is provided by Apple and is governed by Apple’s privacy policy.</p>
+
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes, this page will be updated along with the date above.</p>
+
+      <h2>Contact</h2>
+      <p>Please use <a class="link" href="https://github.com/hashrock/nanodot/issues">GitHub Issues</a>.</p>
+    </article>
+
+  </main>
+  <footer class="footer wrap"><a href="./">nanodot</a><span class="footer-links"><a href="./support.html">サポート</a><a href="./privacy.html">プライバシーポリシー</a><a href="https://github.com/hashrock">Made by hashrock <span aria-hidden="true">↗</span></a></span></footer>
+</body>
+</html>

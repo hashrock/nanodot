@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fafafa">
+  <title>サポート — nanodot</title>
+  <meta name="description" content="nanodot への問い合わせ先と、よくある質問。">
+  <link rel="icon" href="./assets/nanodot.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="https://repos.hashrock.info/switcher/v1.js"></script>
+</head>
+<body>
+  <header class="header wrap">
+    <a class="brand" href="./" aria-label="nanodot ホーム"><img src="./assets/nanodot.svg" width="36" height="36" alt=""><span>nanodot</span></a>
+    <div class="header-links">
+      <a class="github" href="#en" lang="en">English <span aria-hidden="true">↓</span></a>
+      <!-- hashrock の他のサービスへのメニュー（index.html と同じ置き方） -->
+      <hashrock-switcher theme="light"></hashrock-switcher>
+    </div>
+  </header>
+  <main class="policy wrap">
+
+    <article id="ja" lang="ja">
+      <h1>サポート</h1>
+
+      <p class="lead">質問や不具合の報告は <a class="link" href="https://github.com/hashrock/nanodot/issues">GitHub の Issues</a> で受け付けています。</p>
+
+      <h2>問い合わせるとき</h2>
+      <p>次のことを書いてもらえると、早く調べられます。</p>
+      <dl>
+        <dt>アプリの版と、入手元</dt>
+        <dd>版はメニューの「Nanodot ＞ Nanodot について」に出ています。Mac App Store 版か、GitHub からダウンロードした版かも書いてください。</dd>
+        <dt>macOS の版</dt>
+        <dd>「アップル メニュー ＞ この Mac について」に出ています。</dd>
+        <dt>起きたことと、その手順</dt>
+        <dd>何をしたら、何が起きたか。画面の写真があるとなおよいです。</dd>
+      </dl>
+
+      <h2>動作環境</h2>
+      <p>macOS 14 以降（Apple シリコン・Intel）。表示言語は日本語と英語です。</p>
+
+      <h2>よくある質問</h2>
+      <dl>
+        <dt>PNG の隣にできる「&lt;名前&gt;.nanodot」は何ですか？</dt>
+        <dd>そのシートの設定（セルの大きさ・スナップ・パレット・アニメ・マップ・注釈）です。絵そのものは素の PNG に保存し、設定は同じフォルダーの <code>&lt;名前&gt;.nanodot</code>（中身は JSON）に保存します。PNG を移したり名前を変えたりするときは、このファイルも同じ名前で一緒に動かしてください。なくても PNG は開けますが、設定は初めの状態になります。</dd>
+        <dt>Mac App Store 版で、PNG の隣にほかのファイルを書けますか？</dt>
+        <dd>Mac App Store 版は App Sandbox の中で動くので、PNG の隣で読み書きできるのは <code>&lt;名前&gt;.nanodot</code> だけです。アニメやゲームエンジン用データは、書き出すときにパネルで保存先を選びます。PNG と同じフォルダーを選べば、隣に書き出せます。</dd>
+        <dt>以前の版の「&lt;名前&gt;.nanodot.json」は使えますか？</dt>
+        <dd>使えます。GitHub からダウンロードした版は、<code>&lt;名前&gt;.nanodot</code> がなければ古い <code>&lt;名前&gt;.nanodot.json</code> を自動で読みます。Mac App Store 版は自動では読めないので、PNG を開いてから「ファイル ＞ 設定を読み込む...」で古いファイルを選んでください。どちらの版も、保存すると <code>&lt;名前&gt;.nanodot</code> に書きます。古いファイルは消しません。</dd>
+        <dt>ゲームエンジンで使うデータは、どう書き出しますか？</dt>
+        <dd>「ファイル ＞ ゲームエンジン用データを書き出す...」でフォルダーを選ぶと、<code>&lt;名前&gt;.atlas.json</code>（アニメと名前付きセルのフレーム。Aseprite / TexturePacker 互換）と、マップごとの <code>&lt;名前&gt;.&lt;マップ名&gt;.tmj</code>（Tiled 形式）を書き出します。PNG と同じフォルダーに置くと、そのまま読めます。保存のたびには書き出しません。⌘E で、前回の書き出し先にもう一度書き出せます。</dd>
+        <dt>Mac App Store 版に MCP サーバーの設定がありません。</dt>
+        <dd>MCP サーバーは GitHub からダウンロードした版だけの機能です。Mac App Store 版には入っていません。</dd>
+      </dl>
+
+      <h2>プライバシー</h2>
+      <p>nanodot はあなたの情報を集めず、インターネットにも接続しません。詳しくは<a class="link" href="./privacy.html">プライバシーポリシー</a>をご覧ください。</p>
+    </article>
+
+    <article id="en" lang="en">
+      <h1>Support</h1>
+
+      <p class="lead">For questions and bug reports, please use <a class="link" href="https://github.com/hashrock/nanodot/issues">GitHub Issues</a>.</p>
+
+      <h2>When you contact us</h2>
+      <p>Including the following helps us look into it quickly.</p>
+      <dl>
+        <dt>App version, and where you got it</dt>
+        <dd>The version is shown in Nanodot › About Nanodot. Please also say whether it is the Mac App Store version or the one downloaded from GitHub.</dd>
+        <dt>macOS version</dt>
+        <dd>Shown in Apple menu › About This Mac.</dd>
+        <dt>What happened, and how</dt>
+        <dd>What you did and what happened. A screenshot helps too.</dd>
+      </dl>
+
+      <h2>Requirements</h2>
+      <p>macOS 14 or later (Apple silicon and Intel). The app is available in Japanese and English.</p>
+
+      <h2>FAQ</h2>
+      <dl>
+        <dt>What is the “&lt;name&gt;.nanodot” file next to my PNG?</dt>
+        <dd>It holds the settings of that sheet: cell size, snap, palette, animations, maps and annotations. The artwork itself is saved as a plain PNG, and the settings go into <code>&lt;name&gt;.nanodot</code> (JSON) in the same folder. When you move or rename the PNG, move this file along with it under the same name. The PNG still opens without it, but the settings start from their defaults.</dd>
+        <dt>Can the Mac App Store version write other files next to my PNG?</dt>
+        <dd>The Mac App Store version runs inside the App Sandbox, so the only file it can read and write next to the PNG is <code>&lt;name&gt;.nanodot</code>. For animations and game engine data, you choose the destination in a panel when you export. Choose the PNG’s folder to put them next to it.</dd>
+        <dt>Can I still use “&lt;name&gt;.nanodot.json” from earlier versions?</dt>
+        <dd>Yes. The version downloaded from GitHub reads the older <code>&lt;name&gt;.nanodot.json</code> automatically when there is no <code>&lt;name&gt;.nanodot</code>. The Mac App Store version cannot read it automatically, so open the PNG and then choose File › Import Settings… and select the older file. Either version writes <code>&lt;name&gt;.nanodot</code> when you save. The older file is not deleted.</dd>
+        <dt>How do I export data for a game engine?</dt>
+        <dd>Choose File › Export Game Engine Data… and pick a folder. The app writes <code>&lt;name&gt;.atlas.json</code> (frames for animations and named cells, compatible with Aseprite / TexturePacker) and one <code>&lt;name&gt;.&lt;map name&gt;.tmj</code> per map (Tiled format). Put them in the same folder as the PNG and they can be loaded as is. They are not written every time you save. Press ⌘E to export again to the last folder.</dd>
+        <dt>The Mac App Store version has no MCP server setting.</dt>
+        <dd>The MCP server is available only in the version downloaded from GitHub. The Mac App Store version does not include it.</dd>
+      </dl>
+
+      <h2>Privacy</h2>
+      <p>nanodot does not collect your information and does not connect to the internet. See the <a class="link" href="./privacy.html#en">Privacy Policy</a> for details.</p>
+    </article>
+
+  </main>
+  <footer class="footer wrap"><a href="./">nanodot</a><span class="footer-links"><a href="./support.html">サポート</a><a href="./privacy.html">プライバシーポリシー</a><a href="https://github.com/hashrock">Made by hashrock <span aria-hidden="true">↗</span></a></span></footer>
+</body>
+</html>
