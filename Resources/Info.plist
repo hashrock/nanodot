@@ -4,6 +4,8 @@
 <dict>
     <key>CFBundleName</key><string>Nanodot</string>
     <key>CFBundleDisplayName</key><string>Nanodot</string>
+    <!-- UI は日本語だけ。開く・保存パネルなどシステムの部品も日本語にし、App Store の対応言語にも日本語と出す -->
+    <key>CFBundleDevelopmentRegion</key><string>ja</string>
     <key>CFBundleIdentifier</key><string>com.hashrock.nanodot</string>
     <key>CFBundleExecutable</key><string>Nanodot</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
