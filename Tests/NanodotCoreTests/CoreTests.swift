@@ -747,51 +747,31 @@ final class EngineExportTests: XCTestCase {
 }
 
 final class SettingsMigrationTests: XCTestCase {
-    private var names: [String] = []
-
-    private func domain(_ values: [String: Any] = [:]) -> String {
-        let name = "nanodot.test.\(UUID().uuidString)"
-        names.append(name)
-        if !values.isEmpty { UserDefaults.standard.setPersistentDomain(values, forName: name) }
-        return name
-    }
-
-    override func tearDown() {
-        for n in names { UserDefaults.standard.removePersistentDomain(forName: n) }
-        names = []
-    }
-
-    func testCopiesOldSettingsOnce() throws {
-        let old = domain(["dragThreshold": 3, "onionSkin": false, "exportFolders": ["/a.png": Data([1, 2])]])
-        let new = domain()
-        let d = try XCTUnwrap(UserDefaults(suiteName: new))
-        XCTAssertEqual(SettingsMigration.run(into: d, from: [old], currentDomain: new), 3)
-        XCTAssertEqual(d.integer(forKey: "dragThreshold"), 3)
-        XCTAssertEqual(d.object(forKey: "onionSkin") as? Bool, false)
-        XCTAssertEqual(d.dictionary(forKey: "exportFolders")?["/a.png"] as? Data, Data([1, 2]))
-        // 二度目は何もしない（新しい側で変えた値を、古い値で戻さない）
-        d.set(7, forKey: "dragThreshold")
-        d.removeObject(forKey: "onionSkin")
-        XCTAssertEqual(SettingsMigration.run(into: d, from: [old], currentDomain: new), 0)
-        XCTAssertEqual(d.integer(forKey: "dragThreshold"), 7)
-        XCTAssertNil(d.object(forKey: "onionSkin"))
+    // 実際の UserDefaults には触らない（空の設定ファイルが残るため）。写す値を決めるところだけを試す
+    func testCopiesOldSettings() throws {
+        let old: [String: Any] = ["dragThreshold": 3, "onionSkin": false, "exportFolders": ["/a.png": Data([1, 2])]]
+        let add = try XCTUnwrap(SettingsMigration.additions(current: [:], legacy: [old]))
+        XCTAssertEqual(add.count, 3)
+        XCTAssertEqual(add["dragThreshold"] as? Int, 3)
+        XCTAssertEqual(add["onionSkin"] as? Bool, false)
+        XCTAssertEqual((add["exportFolders"] as? [String: Any])?["/a.png"] as? Data, Data([1, 2]))
     }
 
     func testKeepsNewValues() throws {
-        let old = domain(["dragThreshold": 3, "onionSkin": false])
-        let new = domain(["dragThreshold": 5])
-        let d = try XCTUnwrap(UserDefaults(suiteName: new))
-        XCTAssertEqual(SettingsMigration.run(into: d, from: [old], currentDomain: new), 1)
-        XCTAssertEqual(d.integer(forKey: "dragThreshold"), 5)
-        XCTAssertEqual(d.object(forKey: "onionSkin") as? Bool, false)
+        let add = try XCTUnwrap(SettingsMigration.additions(current: ["dragThreshold": 5], legacy: [["dragThreshold": 3, "onionSkin": false]]))
+        XCTAssertEqual(add.keys.sorted(), ["onionSkin"])
     }
 
-    func testNoOldSettings() throws {
-        let new = domain()
-        let d = try XCTUnwrap(UserDefaults(suiteName: new))
-        XCTAssertEqual(SettingsMigration.run(into: d, from: [domain()], currentDomain: new), 0)
-        // 古い設定がなくても済んだ印は付く（あとから古い版を動かしても、その設定は持ち込まない）
-        XCTAssertEqual(SettingsMigration.run(into: d, from: [domain(["dragThreshold": 3])], currentDomain: new), 0)
-        XCTAssertEqual(d.integer(forKey: "dragThreshold"), 0)
+    func testOnlyOnce() {
+        // 済んだ印があれば何も写さない（新しい側で変えた・消した値を、古い値で戻さない）
+        XCTAssertNil(SettingsMigration.additions(current: [SettingsMigration.doneKey: ["x"]], legacy: [["dragThreshold": 3]]))
+        // 古い設定がなくても、写すものが空で返る（呼び出し側が印を付ける）
+        XCTAssertEqual(SettingsMigration.additions(current: [:], legacy: [])?.count, 0)
+    }
+
+    func testFirstLegacyDomainWins() throws {
+        let add = try XCTUnwrap(SettingsMigration.additions(current: [:], legacy: [["a": 1], ["a": 2, "b": 3]]))
+        XCTAssertEqual(add["a"] as? Int, 1)
+        XCTAssertEqual(add["b"] as? Int, 3)
     }
 }

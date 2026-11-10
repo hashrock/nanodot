@@ -8,23 +8,28 @@ public enum SettingsMigration {
     public static let legacyDomains = ["dev.hashrock.nanodot"]
     static let doneKey = "settingsMigratedFrom"
 
+    /// 新しいドメインに足す値。済んでいれば nil。新しい側にすでにある鍵は上書きしない（古いドメインが複数なら先のものを優先）
+    public static func additions(current: [String: Any], legacy: [[String: Any]]) -> [String: Any]? {
+        guard current[doneKey] == nil else { return nil }
+        var out: [String: Any] = [:]
+        for old in legacy {
+            for (key, value) in old where current[key] == nil && out[key] == nil { out[key] = value }
+        }
+        return out
+    }
+
     /// 写した鍵の数を返す。済んでいれば（写すものがなくても）0
     @discardableResult
     public static func run(into defaults: UserDefaults = .standard, from domains: [String] = legacyDomains,
                            currentDomain: String? = Bundle.main.bundleIdentifier) -> Int {
+        // バンドルなしで動かしたとき（swift run）は自分のドメインが分からないので、印は defaults からも見る
         guard defaults.object(forKey: doneKey) == nil else { return 0 }
-        var copied = 0
-        // 新しいドメインにすでにある値は上書きしない（persistentDomain はこのアプリのドメインだけを見る。登録済みの既定値やグローバルは含まない）
-        var existing = Set(currentDomain.flatMap { defaults.persistentDomain(forName: $0) }?.keys.map { $0 } ?? [])
-        for domain in domains where domain != currentDomain {
-            guard let old = defaults.persistentDomain(forName: domain) else { continue }
-            for (key, value) in old where !existing.contains(key) {
-                defaults.set(value, forKey: key)
-                existing.insert(key)
-                copied += 1
-            }
-        }
+        // persistentDomain はそのドメインだけを見る（登録済みの既定値やグローバルは含まない）
+        let current = currentDomain.flatMap { defaults.persistentDomain(forName: $0) } ?? [:]
+        let legacy = domains.filter { $0 != currentDomain }.compactMap { defaults.persistentDomain(forName: $0) }
+        guard let add = additions(current: current, legacy: legacy) else { return 0 }
+        for (key, value) in add { defaults.set(value, forKey: key) }
         defaults.set(domains, forKey: doneKey)
-        return copied
+        return add.count
     }
 }
