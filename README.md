@@ -67,10 +67,16 @@ AI エージェント（Claude Code など）から nanodot を操作できる M
 
 ## ファイル
 
-画像は素の PNG で保存し、セル・スナップ・パレットスロット・アニメなどの設定は同じフォルダーの `<名前>.nanodot.json` に保存します。
+書類は `<名前>.nanodot` というパッケージ（Finder では 1 つのファイルに見えるフォルダー）です。中身は 2 つで、名前は書類名によらず固定です。
 
-保存のたびに、ゲームエンジンがそのまま読めるデータも書き出します（「ファイル > 保存時にゲームエンジン用データも書き出す」で切り替え）。
+- `sheet.png`: 画像（素の RGBA の PNG）
+- `meta.json`: セル・スナップ・パレットスロット・アニメ・注釈・マップなどの設定
 
+PNG などの画像は「開く」で読み込めます（保存するときに `.nanodot` の名前を聞きます）。以前の形式（`<名前>.png` と隣の `<名前>.nanodot.json`）も同じように開け、設定も引き継ぎます。素の PNG が要るときは「ファイル > PNG を書き出し...」を使います。
+
+ゲームエンジンがそのまま読めるデータは、「ファイル > 書き出し先フォルダーを選ぶ...」で一度フォルダーを選ぶと、保存のたびにそこへ書き出します（「保存時にゲームエンジン用データも書き出す」で一時的に止められます）。書き出し先は書類ごとに `meta.json` に覚えます。
+
+- `<名前>.png`: シートの画像
 - `<名前>.atlas.json`: アニメと名前付きセルのフレーム（Aseprite / TexturePacker 互換。Phaser の `load.aseprite` / `load.atlas` や Godot・Unity の Aseprite インポーターで読める）
 - `<名前>.<マップ名>.tmj`: Tiled 形式のマップ（通行可否・重なり順・名前はタイルのプロパティ）
 
@@ -80,10 +86,10 @@ AI エージェント（Claude Code など）から nanodot を操作できる M
 Sources/NanodotCore/   エンジン（UI 非依存、テスト可能）
   Pixel.swift          RGBA・矩形・画素バッファ（反転・回転・シフト・貼り付け）
   Raster.swift         直線・矩形・楕円・塗りつぶし
-  Sheet.swift          スナップ、アニメ定義、サイドカーの設定
+  Sheet.swift          スナップ、アニメ定義、書類の設定（meta.json）
   Editor.swift         ドキュメント・マーク位置・履歴・ツール操作
-  SheetFile.swift      PNG / JSON の読み書き、GIF・APNG・連番 PNG の書き出し
-  EngineExport.swift   ゲームエンジン用（アトラス JSON・Tiled マップ）の書き出し
+  SheetFile.swift      書類バンドル（.nanodot）の読み書き、書き出し先フォルダー、GIF・APNG・連番 PNG の書き出し
+  EngineExport.swift   ゲームエンジン用（アトラス JSON・Tiled マップ）のデータ作り
   TextRenderer.swift   文字をドットに描く
   TileMap.swift        マップの仮組み、セルの注釈
   MCP.swift / NanodotMCP.swift  MCP のメッセージ処理とツール

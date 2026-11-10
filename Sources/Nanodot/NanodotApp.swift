@@ -181,13 +181,19 @@ struct AppCommands: Commands {
             Button("別名で保存...") { state.saveAs() }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
             Divider()
+            Button("PNG を書き出し...") { state.exportPNG() }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
             Menu("アニメを書き出し") {
                 ForEach(AnimExport.Format.allCases, id: \.self) { f in
                     Button(f.label + "...") { state.exportAnim(f, scale: 1) }
                 }
             }
             .disabled(state.selectedAnimID == nil)
+            Divider()
             Toggle("保存時にゲームエンジン用データも書き出す", isOn: Binding(get: { editor.meta.engineExport }, set: { editor.meta.engineExport = $0 }))
+            Button(state.exportFolderURL.map { "書き出し先: \($0.lastPathComponent)..." } ?? "書き出し先フォルダーを選ぶ...") { state.chooseExportFolder() }
+            Button("書き出し先をなくす") { editor.meta.exportBookmark = nil }
+                .disabled(editor.meta.exportBookmark == nil)
         }
         CommandGroup(replacing: .undoRedo) {
             // マップウィンドウが前面ならマップの取り消し・やり直し

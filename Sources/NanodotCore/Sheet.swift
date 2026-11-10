@@ -98,7 +98,7 @@ public struct AnimDef: Hashable, Sendable, Codable, Identifiable {
     public func rect(of f: AnimFrame) -> IntRect { IntRect(x: f.x, y: f.y, width: frameWidth, height: frameHeight) }
 }
 
-/// PNG とは別に保存する設定（サイドカー JSON）
+/// 画像とは別に保存する設定（書類バンドルの meta.json。古い形式ではサイドカー JSON）
 public struct SheetMeta: Equatable, Sendable, Codable {
     public static let slotCount = 64
 
@@ -117,9 +117,11 @@ public struct SheetMeta: Equatable, Sendable, Codable {
     public var annotations: [CellAnnotation] = []
     /// マップの仮組み
     public var maps: [TileMapDef] = []
-    /// 保存時にゲームエンジン向けのデータ（アトラス JSON・Tiled マップ）も書く
+    /// 保存時にゲームエンジン向けのデータ（PNG・アトラス JSON・Tiled マップ）を書き出し先フォルダーへ書く
     public var engineExport = true
-    /// 前回の保存で書いたゲームエンジン用ファイルの名前（作られなくなったものを消すため。保存時に SheetFile が書く）
+    /// 書き出し先フォルダーのブックマーク（ExportFolder で作る。未設定なら書き出さない）
+    public var exportBookmark: Data?
+    /// 前回の保存で書き出し先に書いたアトラス・マップのファイル名（作られなくなったものを消すため。保存時に SheetFile が書く）
     public var exportedFiles: [String] = []
 
     public init() {}
@@ -143,6 +145,7 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         annotations = (try? c.decode([CellAnnotation].self, forKey: .annotations)) ?? []
         maps = (try? c.decode([TileMapDef].self, forKey: .maps)) ?? []
         engineExport = (try? c.decode(Bool.self, forKey: .engineExport)) ?? d.engineExport
+        exportBookmark = try? c.decode(Data.self, forKey: .exportBookmark)
         exportedFiles = (try? c.decode([String].self, forKey: .exportedFiles)) ?? []
     }
 

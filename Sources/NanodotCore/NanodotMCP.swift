@@ -18,6 +18,8 @@ public enum NanodotMCP {
     まず get_sheet_info で大きさを、get_image で見た目を確かめてから編集してください。
     描画（set_pixels / draw_shape / fill / fill_rect / draw_text / copy_region / replace_color）は 1 回の呼び出しが 1 回の取り消し単位です。
     注釈・アニメ・マップ・スロットの変更は取り消しの対象外です。保存は save_sheet で明示的に行います。
+    書類は <名前>.nanodot というパッケージ（中に sheet.png と meta.json）です。素の PNG が要るときは export_png、
+    ゲーム側へ PNG・アトラス・マップを保存のたびに書き出したいときは set_export_folder で書き出し先を決めます。
     """
 
     public static func server(host: MCPHost, version: String) -> MCPServer {
@@ -59,6 +61,9 @@ public enum NanodotMCP {
             "drawing_color": e.color.hex,
             "palette": m.palette,
             "file": e.fileURL?.path ?? NSNull(),
+            "imported_from": e.importedURL?.path ?? NSNull(),
+            "engine_export": m.engineExport,
+            "export_folder": m.exportBookmark.flatMap { ExportFolder.resolve($0)?.url.path } ?? NSNull(),
             "unsaved_changes": e.isDirty,
             "anims": m.anims.count, "maps": m.maps.count, "annotations": m.annotations.count,
             "can_undo": e.canUndo, "can_redo": e.canRedo,
@@ -425,18 +430,18 @@ public enum NanodotMCP {
                 return .json(sheetInfo(e))
             },
 
-            MCPTool("open_sheet", "PNG などの画像を開く（同じ名前の .nanodot.json があれば設定も読む。保存していない変更は失われる）", properties: [
+            MCPTool("open_sheet", "書類（.nanodot）を開く。PNG などの画像は読み込みになり、保存先は save_sheet の path で決める（隣に古い形式の .nanodot.json があれば設定も読む）。保存していない変更は失われる", properties: [
                 "path": prop("string", "ファイルの絶対パス"),
             ], required: ["path"]) { a in
                 let url = URL(fileURLWithPath: (try a.string("path") as NSString).expandingTildeInPath)
                 let (img, meta) = try SheetFile.load(url: url)
-                e.load(img, meta: meta ?? SheetMeta(), url: url.pathExtension.lowercased() == "png" ? url : nil)
+                e.open(img, meta: meta ?? SheetMeta(), from: url)
                 host.sheetReplaced()
                 return .json(sheetInfo(e))
             },
 
-            MCPTool("save_sheet", "PNG と <名前>.nanodot.json に保存する。engineExport がオンならゲームエンジン用の <名前>.atlas.json と <名前>.<マップ名>.tmj も書く。path を省くと今のファイルに上書き", properties: [
-                "path": prop("string", "保存先の .png の絶対パス（省略時は今のファイル）"),
+            MCPTool("save_sheet", "書類（<名前>.nanodot。中に sheet.png と meta.json）に保存する。書き出し先フォルダーがあれば、そこへ <名前>.png・<名前>.atlas.json・<名前>.<マップ名>.tmj も書く。path を省くと今の書類に上書き", properties: [
+                "path": prop("string", "保存先の .nanodot の絶対パス（省略時は今の書類）"),
             ]) { a in
                 let url: URL
                 if let p = a.optString("path") {
@@ -444,12 +449,39 @@ public enum NanodotMCP {
                 } else if let u = e.fileURL {
                     url = u
                 } else {
-                    throw MCPError("まだ保存先がありません。path を指定してください")
+                    throw MCPError("まだ保存先がありません。path に .nanodot のパスを指定してください")
                 }
-                guard url.pathExtension.lowercased() == "png" else { throw MCPError("保存先は .png にしてください") }
+                guard SheetFile.isBundle(url) else { throw MCPError("保存先は .nanodot にしてください（素の PNG は export_png）") }
                 let warnings = try SheetFile.save(e.image, meta: e.meta, url: url)
                 e.markSaved(url: url)
                 return .text((["\(url.path) に保存しました"] + warnings).joined(separator: "\n"))
+            },
+
+            MCPTool("export_png", "今のシートを素の PNG として書き出す（書類の保存先は変わらない）", properties: [
+                "path": prop("string", "書き出し先の .png の絶対パス"),
+            ], required: ["path"]) { a in
+                let url = URL(fileURLWithPath: (try a.string("path") as NSString).expandingTildeInPath)
+                guard url.pathExtension.lowercased() == "png" else { throw MCPError("書き出し先は .png にしてください") }
+                try SheetFile.exportPNG(e.image, to: url)
+                return .text("\(url.path) に書き出しました")
+            },
+
+            MCPTool("set_export_folder", "ゲームエンジン用データ（<名前>.png・<名前>.atlas.json・<名前>.<マップ名>.tmj）の書き出し先フォルダーを決める。以後 save_sheet のたびにそこへ書く。path も enabled も省くと書き出し先をなくす", properties: [
+                "path": prop("string", "フォルダーの絶対パス"),
+                "enabled": prop("boolean", "保存時に書き出すか（省略時は変えない）"),
+            ]) { a in
+                if let on = a.optBool("enabled") { e.meta.engineExport = on }
+                guard let p = a.optString("path") else {
+                    if !a.has("enabled") { e.meta.exportBookmark = nil }
+                    return .json(sheetInfo(e))
+                }
+                let url = URL(fileURLWithPath: (p as NSString).expandingTildeInPath)
+                var isDir: ObjCBool = false
+                guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else {
+                    throw MCPError("\(url.path) はフォルダーではありません")
+                }
+                e.meta.exportBookmark = try ExportFolder.bookmark(for: url)
+                return .json(sheetInfo(e))
             },
         ]
     }

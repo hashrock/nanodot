@@ -112,9 +112,16 @@ final class AppState {
     #endif
 
     var title: String {
-        let name = editor.fileURL?.lastPathComponent ?? "無題"
+        // 読み込んだ画像は保存先がまだないので、書類名（拡張子なし）だけを出す
+        let name = editor.fileURL?.deletingPathExtension().lastPathComponent
+            ?? editor.importedURL.map { $0.lastPathComponent + "（読み込み）" } ?? "無題"
         return editor.isDirty ? name + " — 編集済み" : name
     }
+
+    /// 書類（.nanodot パッケージ）の型。Info.plist で宣言していない実行（swift run）では拡張子から作る
+    static let documentType = UTType(SheetFile.bundleTypeIdentifier)
+        ?? UTType(filenameExtension: SheetFile.bundleExtension, conformingTo: .package) ?? .package
+    static let imageExtensions = ["png", "gif", "bmp", "tif", "tiff", "jpg", "jpeg"]
 
     // MARK: - 表示
 
@@ -303,7 +310,9 @@ final class AppState {
     func open() {
         guard confirmDiscardChanges() else { return }
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.png, .gif, .bmp, .tiff, .jpeg]
+        panel.allowedContentTypes = [Self.documentType, .png, .gif, .bmp, .tiff, .jpeg]
+        // 型を宣言していない実行（swift run）では .nanodot がただのフォルダーに見えるので、フォルダーも選べるようにする
+        panel.canChooseDirectories = UTType(SheetFile.bundleTypeIdentifier) == nil
         guard panel.runModal() == .OK, let url = panel.url else { return }
         open(url: url)
     }
@@ -311,11 +320,10 @@ final class AppState {
     func open(url: URL) {
         do {
             let (img, meta) = try SheetFile.load(url: url)
-            let isPNG = url.pathExtension.lowercased() == "png"
             var m = meta ?? SheetMeta()
             if meta == nil { m.slots = editor.meta.slots }
-            // PNG 以外は上書き保存しない（保存時に PNG の名前を聞く）
-            editor.load(img, meta: m, url: isPNG ? url : nil)
+            // 画像（古い形式の PNG ＋サイドカーも）は読み込みで、上書きしない（保存時に .nanodot の名前を聞く）
+            editor.open(img, meta: m, from: url)
             selectedAnimID = m.anims.first?.id
             selectedMapID = m.maps.first?.id
             mapLayer = 0
@@ -331,7 +339,7 @@ final class AppState {
     /// ウィンドウにドロップされたファイルを開く
     @discardableResult
     func openDropped(_ urls: [URL]) -> Bool {
-        guard let url = urls.first(where: { ["png", "gif", "bmp", "tif", "tiff", "jpg", "jpeg"].contains($0.pathExtension.lowercased()) }) else {
+        guard let url = urls.first(where: { SheetFile.isBundle($0) || Self.imageExtensions.contains($0.pathExtension.lowercased()) }) else {
             return false
         }
         // ドラッグ操作の途中でモーダルを出さないよう、次のランループで処理する
@@ -349,11 +357,48 @@ final class AppState {
 
     func saveAs() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = editor.fileURL?.deletingPathExtension().lastPathComponent ?? "無題"
-        panel.message = "設定は同じフォルダーの <名前>.nanodot.json に保存されます"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        panel.allowedContentTypes = [Self.documentType]
+        panel.nameFieldStringValue = editor.suggestedName
+        // 読み込んだ画像の隣を最初の候補にする
+        if editor.fileURL == nil, let dir = editor.importedURL?.deletingLastPathComponent() { panel.directoryURL = dir }
+        panel.message = "画像と設定を 1 つの書類（.nanodot）に保存します"
+        guard panel.runModal() == .OK, var url = panel.url else { return }
+        if !SheetFile.isBundle(url) { url.appendPathExtension(SheetFile.bundleExtension) }
         write(to: url)
+    }
+
+    /// 素の PNG を書き出す（書類の保存先は変わらない）
+    func exportPNG() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = editor.suggestedName
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do { try SheetFile.exportPNG(editor.image, to: url) } catch {
+            showError("書き出しに失敗しました: \(error.localizedDescription)")
+        }
+    }
+
+    /// ゲームエンジン用データの書き出し先フォルダー（表示用）
+    var exportFolderURL: URL? {
+        editor.meta.exportBookmark.flatMap { ExportFolder.resolve($0)?.url }
+    }
+
+    /// ゲームエンジン用データの書き出し先フォルダーを選ぶ（次の保存から書き出す）
+    func chooseExportFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.prompt = "選択"
+        panel.message = "保存のたびに <名前>.png・<名前>.atlas.json・<名前>.<マップ名>.tmj を書き出すフォルダーを選択"
+        panel.directoryURL = exportFolderURL
+        guard panel.runModal() == .OK, let dir = panel.url else { return }
+        do {
+            editor.meta.exportBookmark = try ExportFolder.bookmark(for: dir)
+            editor.meta.engineExport = true
+        } catch {
+            showError("書き出し先を覚えられませんでした: \(error.localizedDescription)")
+        }
     }
 
     private func write(to url: URL) {

@@ -41,10 +41,29 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
-            <key>CFBundleTypeName</key><string>PNG Image</string>
+            <key>CFBundleTypeName</key><string>Nanodot Sheet</string>
             <key>CFBundleTypeRole</key><string>Editor</string>
+            <key>LSHandlerRank</key><string>Owner</string>
+            <key>LSTypeIsPackage</key><true/>
+            <key>LSItemContentTypes</key><array><string>dev.hashrock.nanodot.sheet</string></array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key><string>PNG Image</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
             <key>LSHandlerRank</key><string>Alternate</string>
             <key>LSItemContentTypes</key><array><string>public.png</string></array>
+        </dict>
+    </array>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key><string>dev.hashrock.nanodot.sheet</string>
+            <key>UTTypeDescription</key><string>Nanodot Sheet</string>
+            <key>UTTypeConformsTo</key><array><string>com.apple.package</string></array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key><array><string>nanodot</string></array>
+            </dict>
         </dict>
     </array>
 </dict>

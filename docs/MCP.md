@@ -53,6 +53,7 @@ stdio にしか対応していないクライアントでは、[mcp-remote](http
 - **セル**: シートは `cell_width × cell_height` のセルに区切られています。マップのタイルはセル番号で、`行 × sheet_columns + 列`（空は `-1`）。`sheet_columns` は `get_sheet_info` で分かります。
 - **作業範囲**: アプリでの描画はマーク範囲の中に限られますが、MCP からの描画はシート全体に効きます。
 - **取り消し**: 描画系のツール（`set_pixels` `draw_shape` `fill` `fill_rect` `draw_text` `copy_region` `replace_color`）は、1 回の呼び出しがアプリの取り消し 1 回分です。`undo` / `redo` ツールやアプリの ⌘Z で戻せます。注釈・アニメ・マップ・パレットの変更は取り消しの対象外です。
+- **書類**: 書類は `<名前>.nanodot` というパッケージ（中に `sheet.png` と `meta.json`）です。PNG などの画像は `open_sheet` で読み込めますが、保存先は `.nanodot` です。素の PNG は `export_png` で書き出します。
 - **保存**: 自動では保存しません。`save_sheet` を呼ぶか、アプリで保存してください。`new_sheet` と `open_sheet` は、保存していない変更を確認なしで捨てます。
 
 ## ツール一覧
@@ -61,7 +62,7 @@ stdio にしか対応していないクライアントでは、[mcp-remote](http
 
 | ツール | 内容 |
 |---|---|
-| `get_sheet_info` | 大きさ、セル、マーク範囲、描画色、パレット名、ファイル、未保存かどうか、取り消せるか |
+| `get_sheet_info` | 大きさ、セル、マーク範囲、描画色、パレット名、書類（`file`）、読み込み元の画像（`imported_from`）、書き出し先フォルダー（`export_folder`）、未保存かどうか、取り消せるか |
 | `get_image` | シートまたは範囲を拡大した PNG 画像（見た目の確認用）。`scale` 省略時は長辺 512px 前後 |
 | `get_pixels` | 範囲の画素。`palette`（色の一覧）と `rows`（各行の palette 番号を空白区切り）。最大 128×128 |
 
@@ -99,8 +100,10 @@ stdio にしか対応していないクライアントでは、[mcp-remote](http
 | ツール | 内容 |
 |---|---|
 | `new_sheet` | 空のシートにする（`width, height, cell_width, cell_height`） |
-| `open_sheet` | 画像を開く（`path`。同じ名前の `.nanodot.json` も読む） |
-| `save_sheet` | PNG と `.nanodot.json` に保存（`path` 省略時は今のファイルに上書き）。ゲームエンジン用データ（`.atlas.json`・`.tmj`）も書く |
+| `open_sheet` | 書類（`.nanodot`）を開く。画像（`path` が PNG など）は読み込みになり、隣に古い形式の `.nanodot.json` があれば設定も読む |
+| `save_sheet` | 書類（`.nanodot`）に保存（`path` 省略時は今の書類に上書き）。書き出し先フォルダーがあれば、ゲームエンジン用データ（`.png`・`.atlas.json`・`.tmj`）もそこへ書く |
+| `export_png` | 今のシートを素の PNG として書き出す（`path`。書類の保存先は変わらない） |
+| `set_export_folder` | ゲームエンジン用データの書き出し先フォルダーを決める（`path`）。`enabled` で保存時の書き出しを切り替え。どちらも省くと書き出し先をなくす |
 
 ## 頼み方の例
 

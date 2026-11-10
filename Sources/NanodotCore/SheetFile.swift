@@ -6,70 +6,150 @@ import UniformTypeIdentifiers
 public enum SheetFileError: Error, LocalizedError {
     case unreadable
     case encodeFailed
+    case notBundle
 
     public var errorDescription: String? {
         switch self {
         case .unreadable: return "画像を読み込めませんでした"
         case .encodeFailed: return "画像を書き出せませんでした"
+        case .notBundle: return "保存先は .nanodot にしてください"
         }
     }
 }
 
-/// PNG ＋サイドカー JSON の読み書き
+/// ゲームエンジン用データの書き出し先フォルダー。
+/// Sandbox では書類の隣に書けないので、ユーザーが一度選んだフォルダーをブックマークで覚える
+public enum ExportFolder {
+    public static func bookmark(for url: URL) throws -> Data {
+        #if os(macOS)
+        // Sandbox の外や権限のない環境では security-scoped にできないことがあるので、普通のブックマークに落とす
+        if let d = try? url.bookmarkData(options: .withSecurityScope) { return d }
+        #endif
+        return try url.bookmarkData()
+    }
+
+    /// ブックマークからフォルダーを得る。stale なら作り直したほうがよい
+    public static func resolve(_ data: Data) -> (url: URL, stale: Bool)? {
+        var stale = false
+        #if os(macOS)
+        if let u = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, bookmarkDataIsStale: &stale) { return (u, stale) }
+        #endif
+        guard let u = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &stale) else { return nil }
+        return (u, stale)
+    }
+
+    /// フォルダーへのアクセス権を得てから実行する
+    public static func access<T>(_ url: URL, _ body: () throws -> T) rethrows -> T {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        return try body()
+    }
+}
+
+/// 書類の読み書き。
+/// 書類は `<名前>.nanodot` というパッケージ（フォルダー）で、中に `sheet.png`（画像）と `meta.json`（設定）を置く。
+/// 古い形式（`<名前>.png` と隣の `<名前>.nanodot.json`）と素の画像は読み込みだけできる
 public enum SheetFile {
     static let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
-    /// foo.png → foo.nanodot.json
+    /// 書類バンドルの拡張子と UTI
+    public static let bundleExtension = "nanodot"
+    public static let bundleTypeIdentifier = "dev.hashrock.nanodot.sheet"
+    /// バンドルの中のファイル名（書類名によらず固定）
+    public static let imageFileName = "sheet.png"
+    public static let metaFileName = "meta.json"
+
+    public static func isBundle(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == bundleExtension
+    }
+
+    /// 古い形式のサイドカー: foo.png → foo.nanodot.json
     public static func sidecarURL(for url: URL) -> URL {
         url.deletingPathExtension().appendingPathExtension("nanodot.json")
     }
 
+    /// 書類バンドル、または画像（隣に古いサイドカーがあれば設定も）を読む
     public static func load(url: URL) throws -> (image: PixelBuffer, meta: SheetMeta?) {
-        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let cg = CGImageSourceCreateImageAtIndex(src, 0, nil),
-              let img = pixelBuffer(from: cg) else { throw SheetFileError.unreadable }
-        var meta: SheetMeta?
-        if let data = try? Data(contentsOf: sidecarURL(for: url)) {
-            meta = try? JSONDecoder().decode(SheetMeta.self, from: data)
+        if isBundle(url) {
+            return (try loadImage(url.appendingPathComponent(imageFileName)), loadMeta(url.appendingPathComponent(metaFileName)))
         }
+        let img = try loadImage(url)
+        // 古い形式で隣に書いていたゲームエンジン用データは、もう nanodot の管理下にない
+        var meta = loadMeta(sidecarURL(for: url))
+        meta?.exportedFiles = []
         return (img, meta)
     }
 
-    /// PNG とサイドカーを書き、オンならゲームエンジン用データも書く。
+    private static func loadImage(_ url: URL) throws -> PixelBuffer {
+        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let cg = CGImageSourceCreateImageAtIndex(src, 0, nil),
+              let img = pixelBuffer(from: cg) else { throw SheetFileError.unreadable }
+        return img
+    }
+
+    private static func loadMeta(_ url: URL) -> SheetMeta? {
+        (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode(SheetMeta.self, from: $0) }
+    }
+
+    /// 素の PNG を書き出す
+    public static func exportPNG(_ img: PixelBuffer, to url: URL) throws {
+        guard let data = pngData(img) else { throw SheetFileError.encodeFailed }
+        try data.write(to: url, options: .atomic)
+    }
+
+    /// 書類バンドル（.nanodot）に保存し、オンで書き出し先があればゲームエンジン用データも書く。
     /// ゲームエンジン用データの失敗は保存の失敗にせず、警告の文として返す
     @discardableResult
     public static func save(_ img: PixelBuffer, meta: SheetMeta, url: URL) throws -> [String] {
-        guard let cg = cgImage(from: img), let data = pngData(cg) else { throw SheetFileError.encodeFailed }
-        let dir = url.deletingLastPathComponent()
-        let sidecar = sidecarURL(for: url)
-        // 前回この場所に書いたもの（メモリ上の meta は別の場所から開いたものかもしれないので、ディスクのサイドカーを見る）
-        let previous = (try? Data(contentsOf: sidecar)).flatMap { try? JSONDecoder().decode(SheetMeta.self, from: $0) }?.exportedFiles ?? []
-        let files = meta.engineExport
-            ? EngineExport.files(imageName: url.lastPathComponent, width: img.width, height: img.height, meta: meta) : []
+        guard isBundle(url) else { throw SheetFileError.notBundle }
+        guard let png = pngData(img) else { throw SheetFileError.encodeFailed }
+        let metaURL = url.appendingPathComponent(metaFileName)
+        // 前回この書類から書き出したもの（メモリ上の meta は別の書類から開いたものかもしれないので、ディスクの meta.json を見る）
+        let previous = loadMeta(metaURL)
+
         var meta = meta
-        meta.exportedFiles = files.map(\.name)
-
-        try data.write(to: url, options: .atomic)
-        let enc = JSONEncoder()
-        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try enc.encode(meta).write(to: sidecar, options: .atomic)
-
         var warnings: [String] = []
-        for f in files {
-            // 中身が同じなら書かない（ゲーム側のホットリロードを無駄に起こさない）
-            let u = dir.appendingPathComponent(f.name)
-            guard (try? Data(contentsOf: u)) != f.data else { continue }
-            do { try f.data.write(to: u, options: .atomic) } catch {
-                warnings.append("\(f.name) を書けませんでした: \(error.localizedDescription)")
+        var exportDir: URL?
+        if let b = meta.exportBookmark {
+            if let r = ExportFolder.resolve(b) {
+                exportDir = r.url
+                if r.stale, let fresh = try? ExportFolder.bookmark(for: r.url) { meta.exportBookmark = fresh }
+            } else if meta.engineExport {
+                warnings.append("書き出し先フォルダーが見つかりません。選び直してください")
             }
         }
-        // マップの改名・削除や書き出しのオフで作られなくなったものを消す（自分で書いたものだけ）
-        let current = Set(meta.exportedFiles)
-        for name in previous where !current.contains(name) && !name.contains("/") {
-            let u = dir.appendingPathComponent(name)
-            guard FileManager.default.fileExists(atPath: u.path) else { continue }
-            do { try FileManager.default.removeItem(at: u) } catch {
-                warnings.append("古い \(name) を消せませんでした: \(error.localizedDescription)")
+        // 書類名を書き出すファイルの名前にする（バンドルの中は固定の名前）
+        let imageName = url.deletingPathExtension().lastPathComponent + ".png"
+        let exporting = meta.engineExport && exportDir != nil
+        let files = exporting ? EngineExport.files(imageName: imageName, width: img.width, height: img.height, meta: meta) : []
+        meta.exportedFiles = files.map(\.name)
+
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try png.write(to: url.appendingPathComponent(imageFileName), options: .atomic)
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try enc.encode(meta).write(to: metaURL, options: .atomic)
+
+        guard let dir = exportDir else { return warnings }
+        ExportFolder.access(dir) {
+            for f in (exporting ? [(name: imageName, data: png)] : []) + files {
+                // 中身が同じなら書かない（ゲーム側のホットリロードを無駄に起こさない）
+                let u = dir.appendingPathComponent(f.name)
+                guard (try? Data(contentsOf: u)) != f.data else { continue }
+                do { try f.data.write(to: u, options: .atomic) } catch {
+                    warnings.append("\(f.name) を書けませんでした: \(error.localizedDescription)")
+                }
+            }
+            // マップの改名・削除や書き出しのオフで作られなくなったものを消す（同じフォルダーへ自分で書いたものだけ。PNG は消さない）
+            guard let pb = previous?.exportBookmark, let prevDir = ExportFolder.resolve(pb)?.url,
+                  prevDir.standardizedFileURL.path == dir.standardizedFileURL.path else { return }
+            let current = Set(meta.exportedFiles)
+            for name in previous?.exportedFiles ?? [] where !current.contains(name) && !name.contains("/") {
+                let u = dir.appendingPathComponent(name)
+                guard FileManager.default.fileExists(atPath: u.path) else { continue }
+                do { try FileManager.default.removeItem(at: u) } catch {
+                    warnings.append("古い \(name) を消せませんでした: \(error.localizedDescription)")
+                }
             }
         }
         return warnings

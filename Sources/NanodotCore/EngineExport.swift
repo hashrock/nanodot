@@ -1,6 +1,6 @@
 import Foundation
 
-/// ゲームエンジン向けのデータ（保存時に PNG の隣へ書く）
+/// ゲームエンジン向けのデータ（保存時に、書き出し先フォルダーへ `<名前>.png` と一緒に書く）
 /// - `<名前>.atlas.json`: アニメと名前付きセルのフレーム（Aseprite / TexturePacker の JSON Array 形式）
 /// - `<名前>.<マップ名>.tmj`: マップ（Tiled の JSON 形式。注釈はタイルのプロパティ）
 public enum EngineExport {

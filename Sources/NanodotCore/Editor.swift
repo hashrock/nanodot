@@ -52,7 +52,10 @@ public final class Editor {
     public var stampActive = false
     public private(set) var clipboard: PixelBuffer?
 
+    /// 保存先の書類バンドル（.nanodot）。未保存、または画像を読み込んだだけなら nil
     public var fileURL: URL?
+    /// 読み込んだ画像（PNG など）の場所。保存先の候補と表示に使う
+    public private(set) var importedURL: URL?
     public private(set) var isDirty = false
 
     // MARK: 履歴
@@ -102,13 +105,14 @@ public final class Editor {
         load(PixelBuffer(width: width, height: height), meta: m, url: nil)
     }
 
-    public func load(_ img: PixelBuffer, meta m: SheetMeta, url: URL?) {
+    public func load(_ img: PixelBuffer, meta m: SheetMeta, url: URL?, importedFrom: URL? = nil) {
         image = img
         suppressDirty = true
         meta = m
         suppressDirty = false
         clampMark()
         fileURL = url
+        importedURL = url == nil ? importedFrom : nil
         undoStack.removeAll()
         redoStack.removeAll()
         editSnapshot = nil
@@ -119,8 +123,23 @@ public final class Editor {
         revision += 1
     }
 
+    /// SheetFile.load で読んだものを開く。書類バンドルならそこが保存先になり、画像なら読み込み（保存先なし）になる
+    public func open(_ img: PixelBuffer, meta m: SheetMeta, from url: URL) {
+        if SheetFile.isBundle(url) {
+            load(img, meta: m, url: url)
+        } else {
+            load(img, meta: m, url: nil, importedFrom: url)
+        }
+    }
+
+    /// 保存先の候補の名前（拡張子なし）
+    public var suggestedName: String {
+        (fileURL ?? importedURL)?.deletingPathExtension().lastPathComponent ?? "無題"
+    }
+
     public func markSaved(url: URL) {
         fileURL = url
+        importedURL = nil
         isDirty = false
     }
 
