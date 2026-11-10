@@ -24,14 +24,32 @@ open build/Nanodot.app
 App Store 用のビルドには MCP サーバーを入れません（コード・待ち受け・設定の UI ごとコンパイルから外します）。直接配布（Developer ID）版は今までどおり MCP を含みます。
 
 ```sh
-./scripts/build-app.sh --appstore                              # build/appstore/Nanodot.app を生成
+./scripts/build-app.sh --appstore                              # build/appstore/Nanodot.app を生成（arm64 + x86_64）
 NANODOT_APPSTORE=1 swift test --scratch-path .build/appstore   # App Store 用の構成でテスト
+./scripts/appstore.sh --check-only                             # ビルドして、App Store 用の条件を満たすか検査する
+./scripts/appstore.sh                                          # 検査 → 署名 → dist/appstore/Nanodot-<版>.pkg
 ```
 
 - `NANODOT_APPSTORE=1` を付けると `Package.swift` がコンパイル条件 `APPSTORE` を定義し、`#if !APPSTORE` で囲んだ MCP のコードが落ちます。
-- スクリプトは、できたバイナリに MCP の文字列・シンボルが残っていないこと、Network.framework をリンクしていないことを確かめます。
-- App Sandbox を有効にして（`Resources/AppStore.entitlements`）ad-hoc 署名するので、手元で Sandbox 下の動作を確かめられます。提出用の署名は別途行います。
+- App Sandbox を有効にして（`Resources/AppStore.entitlements`）ad-hoc 署名するので、手元で Sandbox 下の動作を確かめられます。書類は `open -a build/appstore/Nanodot.app <PNG>` で渡します（起動引数ではアクセス権が付きません）。
 - 通常のビルドと成果物が混ざらないよう、`.build/appstore` でビルドします。
+- `appstore.sh` の検査: MCP の文字列・シンボルがない、Network.framework をリンクしていない、Info.plist の項目、`PrivacyInfo.xcprivacy`、アイコン（1024×1024 まで）、App Sandbox と entitlements（`network.*` なし、決めたもの以外なし）。Apple とは通信しません。
+
+### App Store に出す
+
+`.pkg` の署名には次の 3 つが要ります（[Apple Developer](https://developer.apple.com/account/resources) で作ってこの Mac に入れる）。
+
+1. 証明書 **Apple Distribution**（アプリの署名）
+2. 証明書 **Mac Installer Distribution**（`.pkg` の署名。キーチェーンでは `3rd Party Mac Developer Installer: ...`）
+3. App ID `com.hashrock.nanodot` の **Mac App Store Connect** 用プロビジョニングプロファイル。`Resources/Nanodot_AppStore.provisionprofile` に置く（リポジトリには入れません）か、`PROFILE=<場所>` で渡す
+
+```sh
+./scripts/appstore.sh                       # dist/appstore/Nanodot-<版>.pkg
+xcrun altool --validate-app -f dist/appstore/Nanodot-<版>.pkg -t macos --apiKey <鍵の ID> --apiIssuer <発行者 ID>
+xcrun altool --upload-app   -f dist/appstore/Nanodot-<版>.pkg -t macos --apiKey <鍵の ID> --apiIssuer <発行者 ID>
+```
+
+アップロードは Transporter アプリに `.pkg` をドロップしてもできます。同じ版（`CFBundleShortVersionString`）で出し直すときは、`Resources/Info.plist` の `CFBundleVersion` を上げます。
 
 ## 基本操作
 
@@ -88,6 +106,7 @@ Sources/NanodotCore/   エンジン（UI 非依存、テスト可能）
   Editor.swift         ドキュメント・マーク位置・履歴・ツール操作
   SheetFile.swift      PNG とサイドカー（<名前>.nanodot）の読み書き、GIF・APNG・連番 PNG の書き出し
   EngineExport.swift   ゲームエンジン用（アトラス JSON・Tiled マップ）の書き出し
+  SettingsMigration.swift  古い Bundle ID（dev.hashrock.nanodot）の設定の引き継ぎ
   TextRenderer.swift   文字をドットに描く
   TileMap.swift        マップの仮組み、セルの注釈
   MCP.swift / NanodotMCP.swift  MCP のメッセージ処理とツール
