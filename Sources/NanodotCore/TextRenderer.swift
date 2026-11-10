@@ -18,10 +18,10 @@ public struct TextSettings: Hashable, Sendable, Codable {
 public enum TextRenderer {
     /// 選びやすいフォント（PostScript 名, 表示名）
     public static let fonts: [(name: String, label: String)] = [
-        ("system", "システム"),
-        ("HiraginoSans-W3", "ヒラギノ角ゴ W3"),
-        ("HiraginoSans-W6", "ヒラギノ角ゴ W6"),
-        ("HiraMaruProN-W4", "ヒラギノ丸ゴ"),
+        ("system", L("システム")),
+        ("HiraginoSans-W3", L("ヒラギノ角ゴ W3")),
+        ("HiraginoSans-W6", L("ヒラギノ角ゴ W6")),
+        ("HiraMaruProN-W4", L("ヒラギノ丸ゴ")),
         ("Menlo-Regular", "Menlo"),
         ("Helvetica-Bold", "Helvetica Bold"),
         ("Courier", "Courier"),

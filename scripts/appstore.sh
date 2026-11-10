@@ -61,6 +61,20 @@ check_app() {
     done
     plutil -lint "$info" >/dev/null || fail "Info.plist が壊れています"
 
+    # 表示言語: ja・en を申告していて、訳の表が入っている。MCP の文言は入っていない
+    local res="$APP/Contents/Resources" lang
+    [ "$(plist "$info" CFBundleDevelopmentRegion)" = "ja" ] || fail "CFBundleDevelopmentRegion が ja ではありません"
+    for lang in ja en; do
+        plist "$info" CFBundleLocalizations | grep -qx "    $lang" || fail "CFBundleLocalizations に $lang がありません"
+        plutil -lint "$res/$lang.lproj/Localizable.strings" >/dev/null || fail "$lang.lproj/Localizable.strings がないか、壊れています"
+        plutil -lint "$res/$lang.lproj/InfoPlist.strings" >/dev/null || fail "$lang.lproj/InfoPlist.strings がないか、壊れています"
+    done
+    [ "$(plutil -convert json -o - "$res/en.lproj/Localizable.strings" | /usr/bin/python3 -c 'import json, sys; print(len(json.load(sys.stdin)))')" -gt 100 ] \
+        || fail "en.lproj/Localizable.strings に訳が入っていません"
+    [ -z "$(find "$res" -name 'MCP.strings*')" ] || fail "MCP の訳の表が入っています"
+    left="$(find "$res" -name '*.strings' -exec plutil -convert json -o - {} \; | grep -i mcp || true)"
+    [ -z "$left" ] || fail "訳の表に MCP が残っています: $(echo "$left" | head -c 200)"
+
     # プライバシーマニフェスト
     local privacy="$APP/Contents/Resources/PrivacyInfo.xcprivacy"
     plutil -lint "$privacy" >/dev/null || fail "PrivacyInfo.xcprivacy がないか、壊れています"

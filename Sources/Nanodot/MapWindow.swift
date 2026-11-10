@@ -7,9 +7,9 @@ enum MapTool: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .pen: return "ペン"
-        case .eraser: return "消しゴム"
-        case .fill: return "塗りつぶし"
+        case .pen: return L("ペン")
+        case .eraser: return L("消しゴム")
+        case .fill: return L("塗りつぶし")
         }
     }
 
@@ -377,7 +377,7 @@ struct MapWindow: View {
         HStack(spacing: 8) {
             Picker("", selection: Binding(get: { state.selectedMapID }, set: { state.selectedMapID = $0; state.mapLayer = 0 })) {
                 if editor.meta.maps.isEmpty { Text("なし").tag(UUID?.none) }
-                ForEach(editor.meta.maps) { m in Text(m.name.isEmpty ? "（無題）" : m.name).tag(UUID?.some(m.id)) }
+                ForEach(editor.meta.maps) { m in Text(m.name.isEmpty ? L("（無題）") : m.name).tag(UUID?.some(m.id)) }
             }
             .labelsHidden()
             .frame(maxWidth: 160)
@@ -429,7 +429,7 @@ struct MapWindow: View {
     private func statusBar(_ m: TileMapDef) -> some View {
         let b = state.mapBrush
         return HStack(spacing: 12) {
-            Text("ブラシ \(b.width)×\(b.height) \(state.mapBrushOverride == nil ? "（マーク範囲）" : "（マップから拾った）")")
+            Text(state.mapBrushOverride == nil ? L("ブラシ \(b.width)×\(b.height)（マーク範囲）") : L("ブラシ \(b.width)×\(b.height)（マップから拾った）"))
             Text("タイル \(editor.meta.cellWidth)×\(editor.meta.cellHeight)")
             Spacer()
             Text("ストックでセルを選んで置く・右クリックで拾う・右ドラッグで範囲を拾う")
@@ -441,7 +441,7 @@ struct MapWindow: View {
     }
 
     private func addMap() {
-        let m = TileMapDef(name: "マップ \(editor.meta.maps.count + 1)", width: 20, height: 15)
+        let m = TileMapDef(name: L("マップ \(editor.meta.maps.count + 1)"), width: 20, height: 15)
         editor.meta.maps.append(m)
         state.selectedMapID = m.id
         state.mapLayer = 0

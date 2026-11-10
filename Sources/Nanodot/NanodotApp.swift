@@ -189,12 +189,12 @@ struct AppCommands: Commands {
             Divider()
             Menu("アニメを書き出し") {
                 ForEach(AnimExport.Format.allCases, id: \.self) { f in
-                    Button(f.label + "...") { state.exportAnim(f, scale: 1) }
+                    Button(L("\(f.label)...")) { state.exportAnim(f, scale: 1) }
                 }
             }
             .disabled(state.selectedAnimID == nil)
             Button("ゲームエンジン用データを書き出す...") { state.exportEngineData() }
-            Button(state.lastExportFolder.map { "「\($0.lastPathComponent)」にもう一度書き出す" } ?? "前回の書き出し先にもう一度書き出す") {
+            Button(state.lastExportFolder.map { L("「\($0.lastPathComponent)」にもう一度書き出す") } ?? L("前回の書き出し先にもう一度書き出す")) {
                 state.exportEngineDataAgain()
             }
             .keyboardShortcut("e")
@@ -203,12 +203,12 @@ struct AppCommands: Commands {
         }
         CommandGroup(replacing: .undoRedo) {
             // マップウィンドウが前面ならマップの取り消し・やり直し
-            Button(editor.undoLabel.map { "取り消し: \($0)" } ?? "取り消し") {
+            Button(editor.undoLabel.map { L("取り消し: \($0)") } ?? L("取り消し")) {
                 if state.isMapWindowKey { state.mapUndo() } else { editor.undo() }
             }
             .keyboardShortcut("z")
             .disabled(!editor.canUndo && !state.canMapUndo)
-            Button(editor.redoLabel.map { "やり直し: \($0)" } ?? "やり直し") {
+            Button(editor.redoLabel.map { L("やり直し: \($0)") } ?? L("やり直し")) {
                 if state.isMapWindowKey { state.mapRedo() } else { editor.redo() }
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
@@ -239,7 +239,7 @@ struct AppCommands: Commands {
             Button("シートサイズ...") { state.showSheetSizeDialog() }
         }
         CommandGroup(before: .toolbar) {
-            Button(editor.meta.showCellGrid ? "セルの格子を隠す" : "セルの格子を表示") {
+            Button(editor.meta.showCellGrid ? L("セルの格子を隠す") : L("セルの格子を表示")) {
                 editor.meta.showCellGrid.toggle()
             }
             .keyboardShortcut("'")

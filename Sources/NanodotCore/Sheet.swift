@@ -10,8 +10,8 @@ public enum Snap: Hashable, Sendable, Codable {
 
     public var label: String {
         switch self {
-        case .pixels(let n): return "\(n) ドット"
-        case .cell(let n): return n <= 1 ? "セル" : "セルの 1/\(n)"
+        case .pixels(let n): return L("\(n) ドット")
+        case .cell(let n): return n <= 1 ? L("セル") : L("セルの 1/\(n)")
         }
     }
 

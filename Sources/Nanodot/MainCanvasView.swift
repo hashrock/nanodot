@@ -290,7 +290,7 @@ final class MainCanvasView: NSView {
     override func mouseUp(with e: NSEvent) {
         switch interaction {
         case .stroke:
-            editor.endEdit(editor.tool == .eraser ? "消しゴム" : "ペン")
+            editor.endEdit(editor.tool == .eraser ? L("消しゴム") : L("ペン"))
         case .shape(let a, let b):
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
         default:

@@ -17,6 +17,7 @@ open build/Nanodot.app
 ```
 
 - 必要なもの: macOS 14 以降、Xcode 16 以降（Swift 5.10+）
+- 表示言語: 日本語・英語（システムの言語に従う。[表示言語](#表示言語)）
 - テスト: `swift test`
 
 ### App Store 用ビルド
@@ -33,7 +34,7 @@ NANODOT_APPSTORE=1 swift test --scratch-path .build/appstore   # App Store 用�
 - `NANODOT_APPSTORE=1` を付けると `Package.swift` がコンパイル条件 `APPSTORE` を定義し、`#if !APPSTORE` で囲んだ MCP のコードが落ちます。
 - App Sandbox を有効にして（`Resources/AppStore.entitlements`）ad-hoc 署名するので、手元で Sandbox 下の動作を確かめられます。書類は `open -a build/appstore/Nanodot.app <PNG>` で渡します（起動引数ではアクセス権が付きません）。
 - 通常のビルドと成果物が混ざらないよう、`.build/appstore` でビルドします。
-- `appstore.sh` の検査: MCP の文字列・シンボルがない、Network.framework をリンクしていない、Info.plist の項目、`PrivacyInfo.xcprivacy`、アイコン（1024×1024 まで）、App Sandbox と entitlements（`network.*` なし、決めたもの以外なし）。Apple とは通信しません。
+- `appstore.sh` の検査: MCP の文字列・シンボルがない、Network.framework をリンクしていない、Info.plist の項目、表示言語（ja・en の申告と訳の表。MCP の表は入っていない）、`PrivacyInfo.xcprivacy`、アイコン（1024×1024 まで）、App Sandbox と entitlements（`network.*` なし、決めたもの以外なし）。Apple とは通信しません。
 
 ### App Store に出す
 
@@ -96,6 +97,37 @@ AI エージェント（Claude Code など）から nanodot を操作できる M
 - `<名前>.atlas.json`: アニメと名前付きセルのフレーム（Aseprite / TexturePacker 互換。Phaser の `load.aseprite` / `load.atlas` や Godot・Unity の Aseprite インポーターで読める）
 - `<名前>.<マップ名>.tmj`: Tiled 形式のマップ（通行可否・重なり順・名前はタイルのプロパティ）
 
+## 表示言語
+
+日本語と英語で表示します。システムの言語（「システム設定 > 一般 > 言語と地域」。アプリごとの設定もそこ）に従います。優先する言語のどれにも日本語・英語がなければ日本語になります（`CFBundleDevelopmentRegion` が ja のため）。
+
+元の言語は日本語で、コードに書いた文言がそのまま訳のキーになります。訳は `Resources/Localizable.xcstrings`（英語）に入っています。
+
+- `Text("保存")` のように SwiftUI の部品へじかに書いたリテラルは、そのまま引かれます。
+- SwiftUI を通らない文言（`String` を返す表示名、`NSAlert`、エラーの文面、取り消しの名前、三項演算子で選ぶ文言）は `L("…")` で包みます（`Sources/NanodotCore/Localization.swift`）。
+- MCP まわりの画面の文言は `LM("…")` で、表は `Resources/MCP.xcstrings` です。App Store 用の `.app` には表ごと入れません。MCP のツールの説明・結果の文はエージェント向けなので訳しません。
+- `Resources/InfoPlist.xcstrings` は Info.plist の書類の種類の名前です。
+
+SwiftPM は `.xcstrings` をビルドできないので、`scripts/build-app.sh` が `xcstringstool` で `en.lproj/*.strings` にして `.app` の `Contents/Resources` に入れます（`Bundle.main` から引く。リソースバンドルは使いません）。`ja.lproj` は空の表で、日本語に対応していることを示すためのものです。Info.plist の `CFBundleLocalizations` で ja・en を申告しています。`swift run` のようにバンドルなしで動かすと、訳が見つからず日本語で出ます。
+
+英語の画面を確かめるには:
+
+```sh
+./scripts/build-app.sh && open build/Nanodot.app --args -AppleLanguages "(en)"
+```
+
+**保存するデータには訳した文字列を入れません。**
+
+| | 扱い | 例 |
+|---|---|---|
+| 設定に保存される、アプリが決めた名前 | 日本語のまま保存し、表示のときに `LName()` で訳す | 同梱パレットの名前（`ゲームボーイ` → Game Boy） |
+| 新しく作るものの既定の名前 | 作ったときの言語で決め、そのまま保存する（ユーザーが付けた名前と同じ扱い。開く環境の言語では変わらない） | `アニメ 1` / `Animation 1`、`マップ 1` / `Map 1`、`レイヤー 1` / `Layer 1`、`無題` / `Untitled` |
+| 名前のない古いデータを読むときの補い | 訳さない（どの言語で読んでも同じ値にする） | `マップ`、`レイヤー 1` |
+
+アニメ・マップ・レイヤーの名前は、書き出すデータ（アトラスのタグ名、`.tmj` のファイル名とレイヤー名）にそのまま入るので、開いた環境の言語で変わっては困ります。そのため表示のときに訳すことはしません。
+
+文言を足したら訳も足します。`scripts/check-localization.py` が、包み忘れ（訳が引かれない書き方）・訳の抜け・書式指定子の食い違い・使っていないキー・Localizable への MCP の文言の混入を見つけます。`build-app.sh`、`swift test`（`LocalizationTests`）、CI（`.github/workflows/check.yml`）から走ります。
+
 ## 構成
 
 ```
@@ -104,6 +136,7 @@ Sources/NanodotCore/   エンジン（UI 非依存、テスト可能）
   Raster.swift         直線・矩形・楕円・塗りつぶし
   Sheet.swift          スナップ、アニメ定義、サイドカーの設定
   Editor.swift         ドキュメント・マーク位置・履歴・ツール操作
+  Localization.swift   訳を引く入口（L / LName / LM）
   SheetFile.swift      PNG とサイドカー（<名前>.nanodot）の読み書き、GIF・APNG・連番 PNG の書き出し
   EngineExport.swift   ゲームエンジン用（アトラス JSON・Tiled マップ）の書き出し
   SettingsMigration.swift  古い Bundle ID（dev.hashrock.nanodot）の設定の引き継ぎ

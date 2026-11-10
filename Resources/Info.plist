@@ -4,8 +4,10 @@
 <dict>
     <key>CFBundleName</key><string>Nanodot</string>
     <key>CFBundleDisplayName</key><string>Nanodot</string>
-    <!-- UI は日本語だけ。開く・保存パネルなどシステムの部品も日本語にし、App Store の対応言語にも日本語と出す -->
+    <!-- 元の言語は日本語。訳は Resources/*.xcstrings にあり、ビルドのときに ja.lproj / en.lproj になる。
+         システムの言語に従い、開く・保存パネルなどシステムの部品も同じ言語になる。App Store の対応言語には日本語・英語と出る -->
     <key>CFBundleDevelopmentRegion</key><string>ja</string>
+    <key>CFBundleLocalizations</key><array><string>ja</string><string>en</string></array>
     <key>CFBundleIdentifier</key><string>com.hashrock.nanodot</string>
     <key>CFBundleExecutable</key><string>Nanodot</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>

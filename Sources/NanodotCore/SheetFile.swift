@@ -9,8 +9,8 @@ public enum SheetFileError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unreadable: return "画像を読み込めませんでした"
-        case .encodeFailed: return "画像を書き出せませんでした"
+        case .unreadable: return L("画像を読み込めませんでした")
+        case .encodeFailed: return L("画像を書き出せませんでした")
         }
     }
 }
@@ -204,9 +204,9 @@ public enum AnimExport {
 
         public var label: String {
             switch self {
-            case .gif: return "アニメ GIF"
+            case .gif: return L("アニメ GIF")
             case .apng: return "APNG"
-            case .pngSequence: return "連番 PNG"
+            case .pngSequence: return L("連番 PNG")
             }
         }
     }

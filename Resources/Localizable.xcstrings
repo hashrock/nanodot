@@ -1,0 +1,2052 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    " — 編集済み" : {
+      "comment" : "未保存の変更があるとき、ウィンドウの題の後ろに足す",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " — Edited"
+          }
+        }
+      }
+    },
+    "%@..." : {
+      "comment" : "書き出しの形式の名前に … を足したメニュー項目",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@…"
+          }
+        }
+      }
+    },
+    "%@.atlas.json と %@.<マップ名>.tmj を書き出すフォルダーを選択（%@ と同じ場所に置くと、そのまま読めます）" : {
+      "comment" : "1・2 番目はシートの名前（拡張子なし）、3 番目は画像のファイル名",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a folder for %1$@.atlas.json and %2$@.<map name>.tmj. (Put them next to %3$@ and they can be loaded as is.)"
+          }
+        }
+      }
+    },
+    "%@_000.png, %@_001.png … を書き出すフォルダーを選択" : {
+      "comment" : "%@ はアニメの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a folder for %1$@_000.png, %2$@_001.png, …"
+          }
+        }
+      }
+    },
+    "%@（%lld 色）" : {
+      "comment" : "パレットの名前と色数",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (%lld colors)"
+          }
+        }
+      }
+    },
+    "%lld セル（マーク範囲）" : {
+      "comment" : "注釈の編集の見出し。2 つ以上のとき",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Cells (Marked Area)"
+          }
+        }
+      }
+    },
+    "%lld ドット" : {
+      "comment" : "スナップの単位",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld px"
+          }
+        }
+      }
+    },
+    "%lld 個" : {
+      "comment" : "範囲選択しているスロットの数",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld selected"
+          }
+        }
+      }
+    },
+    "%lld 倍" : {
+      "comment" : "書き出しの倍率",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld×"
+          }
+        }
+      }
+    },
+    "1 ドット上へシフト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift 1 px up"
+          }
+        }
+      }
+    },
+    "1 ドット下へシフト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift 1 px down"
+          }
+        }
+      }
+    },
+    "1 ドット右へシフト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift 1 px right"
+          }
+        }
+      }
+    },
+    "1 ドット左へシフト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift 1 px left"
+          }
+        }
+      }
+    },
+    "16 進数（rrggbb または rrggbbaa）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hex (rrggbb or rrggbbaa)"
+          }
+        }
+      }
+    },
+    "HSL で補間（色相は近い方向に回る）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interpolate in HSL (hue takes the shorter way)"
+          }
+        }
+      }
+    },
+    "RGB で補間" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interpolate in RGB"
+          }
+        }
+      }
+    },
+    "「%@」にもう一度書き出す" : {
+      "comment" : "%@ は前回のフォルダーの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Again to “%@”"
+          }
+        }
+      }
+    },
+    "この色を描画色に置換（シート全体）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace This Color with Drawing Color (Whole Sheet)"
+          }
+        }
+      }
+    },
+    "この色を描画色に置換（マーク範囲）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace This Color with Drawing Color (Marked Area)"
+          }
+        }
+      }
+    },
+    "すべてのスロットを消去" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear All Slots"
+          }
+        }
+      }
+    },
+    "なし" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        }
+      }
+    },
+    "なめらか" : {
+      "comment" : "テキストのアンチエイリアス",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smooth"
+          }
+        }
+      }
+    },
+    "やり直し" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo"
+          }
+        }
+      }
+    },
+    "やり直し (⇧⌘Z)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo (⇧⌘Z)"
+          }
+        }
+      }
+    },
+    "やり直し: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo %@"
+          }
+        }
+      }
+    },
+    "やり直し: %@ (⇧⌘Z)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo %@ (⇧⌘Z)"
+          }
+        }
+      }
+    },
+    "アニメ" : {
+      "comment" : "ウィンドウの題、パネルの見出し",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animation"
+          }
+        }
+      }
+    },
+    "アニメ %lld" : {
+      "comment" : "新しいアニメの名前。作ったときの言語で決まり、そのまま保存される",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animation %lld"
+          }
+        }
+      }
+    },
+    "アニメ GIF" : {
+      "comment" : "アニメの書き出しの形式",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animated GIF"
+          }
+        }
+      }
+    },
+    "アニメを書き出し" : {
+      "comment" : "ファイルメニューのサブメニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Animation"
+          }
+        }
+      }
+    },
+    "アニメを追加（マーク位置・セルの大きさで作成）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add an animation (at the mark position, with the cell size)"
+          }
+        }
+      }
+    },
+    "アニメウィンドウ (⇧⌘A)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animation window (⇧⌘A)"
+          }
+        }
+      }
+    },
+    "オニオンスキン" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onion Skin"
+          }
+        }
+      }
+    },
+    "キャンセル" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "クリア" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        }
+      }
+    },
+    "クリップボード %lld×%lld" : {
+      "comment" : "ステータスバー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clipboard %lld×%lld"
+          }
+        }
+      }
+    },
+    "グラデーション" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gradient"
+          }
+        }
+      }
+    },
+    "ゲームエンジン用データを書き出す..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Game Engine Data…"
+          }
+        }
+      }
+    },
+    "ゲームボーイ" : {
+      "comment" : "同梱パレットの名前。保存する値は日本語のままで、表示だけ訳す",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game Boy"
+          }
+        }
+      }
+    },
+    "コマがありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The animation has no frames."
+          }
+        }
+      }
+    },
+    "コマの大きさ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame Size"
+          }
+        }
+      }
+    },
+    "システム" : {
+      "comment" : "テキストツールのフォント",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        }
+      }
+    },
+    "シフト" : {
+      "comment" : "取り消しの名前。マーク範囲の中身を 1 ドットずらす",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift"
+          }
+        }
+      }
+    },
+    "シート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet"
+          }
+        }
+      }
+    },
+    "シート %lld×%lld" : {
+      "comment" : "ステータスバー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet %lld×%lld"
+          }
+        }
+      }
+    },
+    "シートの幅に合わせる (⌘0)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fit the sheet's width (⌘0)"
+          }
+        }
+      }
+    },
+    "シートの設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet settings"
+          }
+        }
+      }
+    },
+    "シートサイズ" : {
+      "comment" : "ダイアログの題、取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet Size"
+          }
+        }
+      }
+    },
+    "シートサイズ..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet Size…"
+          }
+        }
+      }
+    },
+    "スタンプ" : {
+      "comment" : "取り消しの名前。コピーした範囲を押すこと",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stamp"
+          }
+        }
+      }
+    },
+    "スタンプ (⌘V)" : {
+      "comment" : "編集メニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stamp (⌘V)"
+          }
+        }
+      }
+    },
+    "スタンプ（⌥ で透明部分を抜く・Esc / 右クリックで解除）" : {
+      "comment" : "スタンプモードの間、ツールバーに出る",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stamp (⌥ skips transparent pixels; Esc or right-click to stop)"
+          }
+        }
+      }
+    },
+    "ストック" : {
+      "comment" : "シート全体を出す枠の名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stock"
+          }
+        }
+      }
+    },
+    "ストックでセルを選んで置く・右クリックで拾う・右ドラッグで範囲を拾う" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select cells in the stock, then place / Right-click: pick / Right-drag: pick an area"
+          }
+        }
+      }
+    },
+    "ストックを全体表示" : {
+      "comment" : "表示メニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom Stock to Fit"
+          }
+        }
+      }
+    },
+    "スナップ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snap"
+          }
+        }
+      }
+    },
+    "スロット" : {
+      "comment" : "パレットの見出し。自分で色を並べる場所",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slots"
+          }
+        }
+      }
+    },
+    "スロット %lld に登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Slot %lld"
+          }
+        }
+      }
+    },
+    "スロットに反映" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update Slot"
+          }
+        }
+      }
+    },
+    "スロットに登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Slots"
+          }
+        }
+      }
+    },
+    "セル" : {
+      "comment" : "スナップの単位、新規シートの欄、コマの大きさをセルに合わせるボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cell"
+          }
+        }
+      }
+    },
+    "セル %lld×%lld" : {
+      "comment" : "ステータスバー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cell %lld×%lld"
+          }
+        }
+      }
+    },
+    "セル (%lld, %lld)" : {
+      "comment" : "注釈の編集の見出し。列と行",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cell (%lld, %lld)"
+          }
+        }
+      }
+    },
+    "セルの 1/%lld" : {
+      "comment" : "スナップの単位",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1/%lld Cell"
+          }
+        }
+      }
+    },
+    "セルの大きさ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cell Size"
+          }
+        }
+      }
+    },
+    "セルの格子を表示" : {
+      "comment" : "設定のチェックボックス、表示メニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Cell Grid"
+          }
+        }
+      }
+    },
+    "セルの格子を隠す" : {
+      "comment" : "表示メニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Cell Grid"
+          }
+        }
+      }
+    },
+    "タイル %lld×%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tile %lld×%lld"
+          }
+        }
+      }
+    },
+    "テキスト" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "テキスト (T)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text (T)"
+          }
+        }
+      }
+    },
+    "ドラッグでスロットに登録" : {
+      "comment" : "描画色の見本のツールチップ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag to a slot to add this color"
+          }
+        }
+      }
+    },
+    "パレットの色をスロットに追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Palette Colors to Slots"
+          }
+        }
+      }
+    },
+    "ヒラギノ丸ゴ" : {
+      "comment" : "テキストツールのフォント",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiragino Maru Gothic"
+          }
+        }
+      }
+    },
+    "ヒラギノ角ゴ W3" : {
+      "comment" : "テキストツールのフォント",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiragino Sans W3"
+          }
+        }
+      }
+    },
+    "ヒラギノ角ゴ W6" : {
+      "comment" : "テキストツールのフォント",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiragino Sans W6"
+          }
+        }
+      }
+    },
+    "ファイルを開けませんでした: %@" : {
+      "comment" : "%@ はエラーの中身",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file could not be opened: %@"
+          }
+        }
+      }
+    },
+    "ブラシ %lld×%lld（マップから拾った）" : {
+      "comment" : "マップのステータスバー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brush %lld×%lld (picked from map)"
+          }
+        }
+      }
+    },
+    "ブラシ %lld×%lld（マーク範囲）" : {
+      "comment" : "マップのステータスバー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brush %lld×%lld (marked area)"
+          }
+        }
+      }
+    },
+    "ペン" : {
+      "comment" : "取り消しの名前、マップのツール",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pen"
+          }
+        }
+      }
+    },
+    "ペン (B)" : {
+      "comment" : "ツールの名前とキー。ツールバーのツールチップ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pen (B)"
+          }
+        }
+      }
+    },
+    "マップ" : {
+      "comment" : "ウィンドウの題",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map"
+          }
+        }
+      }
+    },
+    "マップ %lld" : {
+      "comment" : "新しいマップの名前。作ったときの言語で決まり、そのまま保存される",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map %lld"
+          }
+        }
+      }
+    },
+    "マップがありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Maps"
+          }
+        }
+      }
+    },
+    "マップのやり直し (⇧⌘Z)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo in map (⇧⌘Z)"
+          }
+        }
+      }
+    },
+    "マップの取り消し (⌘Z)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo in map (⌘Z)"
+          }
+        }
+      }
+    },
+    "マップを削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Map"
+          }
+        }
+      }
+    },
+    "マップを追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Map"
+          }
+        }
+      }
+    },
+    "マップウィンドウ (⇧⌘M)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map window (⇧⌘M)"
+          }
+        }
+      }
+    },
+    "マーク" : {
+      "comment" : "メニューの名前。マークは、ストックで選んでメインに拡大している範囲",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark"
+          }
+        }
+      }
+    },
+    "マーク (%lld, %lld) %lld×%lld" : {
+      "comment" : "ステータスバー。位置と大きさ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark (%lld, %lld) %lld×%lld"
+          }
+        }
+      }
+    },
+    "マーク位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark Position"
+          }
+        }
+      }
+    },
+    "マーク位置がコマと重なっているとき、メインに前（赤）と次（青）のコマを重ねる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When the mark is on a frame, overlay the previous (red) and next (blue) frames in the main view"
+          }
+        }
+      }
+    },
+    "マーク位置をこのコマへ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move the mark to this frame"
+          }
+        }
+      }
+    },
+    "マーク位置を動かしながら「マーク位置を追加」でコマを登録します" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move the mark and click “Add Mark Position” to add frames."
+          }
+        }
+      }
+    },
+    "マーク位置を追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Mark Position"
+          }
+        }
+      }
+    },
+    "マーク範囲がシートの外です" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The marked area is outside the sheet."
+          }
+        }
+      }
+    },
+    "マーク範囲のセルの注釈を編集" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit annotations of the cells in the marked area"
+          }
+        }
+      }
+    },
+    "マーク範囲をコピー (⌘C)" : {
+      "comment" : "編集メニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Marked Area (⌘C)"
+          }
+        }
+      }
+    },
+    "マーク範囲を描画色で塗りつぶし" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill the marked area with the drawing color"
+          }
+        }
+      }
+    },
+    "マーク範囲を消去" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the marked area"
+          }
+        }
+      }
+    },
+    "メインをクリックすると、カーソル位置を左上にしてこの文字を描きます" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click in the main view to draw this text with its top left at the pointer"
+          }
+        }
+      }
+    },
+    "ルーペ" : {
+      "comment" : "コマの大きさをルーペに合わせるボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loupe"
+          }
+        }
+      }
+    },
+    "ルーペをセルの大きさに" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Loupe to Cell Size"
+          }
+        }
+      }
+    },
+    "ルーペ（任意）" : {
+      "comment" : "メインに拡大して出す範囲の大きさ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loupe (custom)"
+          }
+        }
+      }
+    },
+    "レイヤー %lld" : {
+      "comment" : "新しいレイヤーの名前。作ったときの言語で決まり、そのまま保存される",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layer %lld"
+          }
+        }
+      }
+    },
+    "レイヤーを削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Layer"
+          }
+        }
+      }
+    },
+    "レイヤーを追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Layer"
+          }
+        }
+      }
+    },
+    "上へ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Up"
+          }
+        }
+      }
+    },
+    "上下反転" : {
+      "comment" : "メニュー、ツールチップ、取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flip Vertical"
+          }
+        }
+      }
+    },
+    "下へ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Down"
+          }
+        }
+      }
+    },
+    "両端の色の間を補間して埋める" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill in between the two end colors"
+          }
+        }
+      }
+    },
+    "作成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create"
+          }
+        }
+      }
+    },
+    "保存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        }
+      }
+    },
+    "保存に失敗しました: %@" : {
+      "comment" : "%@ はエラーの中身",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sheet could not be saved: %@"
+          }
+        }
+      }
+    },
+    "入れ替え" : {
+      "comment" : "取り消しの名前。ストックでマーク範囲をドラッグして入れ替える",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swap"
+          }
+        }
+      }
+    },
+    "列 × 行" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Columns × Rows"
+          }
+        }
+      }
+    },
+    "別名で保存..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save As…"
+          }
+        }
+      }
+    },
+    "前回の書き出し先にもう一度書き出す" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Again to Last Folder"
+          }
+        }
+      }
+    },
+    "反転" : {
+      "comment" : "スロットの並びを逆にする",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reverse"
+          }
+        }
+      }
+    },
+    "取り消し" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        }
+      }
+    },
+    "取り消し (⌘Z)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo (⌘Z)"
+          }
+        }
+      }
+    },
+    "取り消し: %@" : {
+      "comment" : "編集メニュー。%@ は取り消す操作の名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo %@"
+          }
+        }
+      }
+    },
+    "取り消し: %@ (⌘Z)" : {
+      "comment" : "%@ は取り消す操作の名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo %@ (⌘Z)"
+          }
+        }
+      }
+    },
+    "右に 90° 回転" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate 90° Right"
+          }
+        }
+      }
+    },
+    "右に 90° 回転（正方形のとき）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate 90° right (square areas only)"
+          }
+        }
+      }
+    },
+    "右クリック: スポイト／右ドラッグ: コピー→スタンプ" : {
+      "comment" : "ステータスバー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right-click: pick color / Right-drag: copy → stamp"
+          }
+        }
+      }
+    },
+    "右ドラッグの判定: %lld ドット" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right-drag: %lld px"
+          }
+        }
+      }
+    },
+    "右回転" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate Right"
+          }
+        }
+      }
+    },
+    "名前" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "塗りつぶし" : {
+      "comment" : "取り消しの名前、マップのツール",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill"
+          }
+        }
+      }
+    },
+    "塗りつぶし (G)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill (G)"
+          }
+        }
+      }
+    },
+    "変更" : {
+      "comment" : "マップの大きさを確定するボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        }
+      }
+    },
+    "変更..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change…"
+          }
+        }
+      }
+    },
+    "変更が保存されていません" : {
+      "comment" : "確認のダイアログ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have unsaved changes."
+          }
+        }
+      }
+    },
+    "左に 90° 回転" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate 90° Left"
+          }
+        }
+      }
+    },
+    "左に 90° 回転（正方形のとき）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate 90° left (square areas only)"
+          }
+        }
+      }
+    },
+    "左上を基準に変更します（幅 × 高さ）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sheet is resized from the top left (width × height)."
+          }
+        }
+      }
+    },
+    "左右反転" : {
+      "comment" : "メニュー、ツールチップ、取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flip Horizontal"
+          }
+        }
+      }
+    },
+    "左回転" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate Left"
+          }
+        }
+      }
+    },
+    "幅に合わせる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fit Width"
+          }
+        }
+      }
+    },
+    "戻す" : {
+      "comment" : "描画色をスロットの色に戻す",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revert"
+          }
+        }
+      }
+    },
+    "拡大" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom In"
+          }
+        }
+      }
+    },
+    "描画色でスロット %lld を上書き (⌘↩)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace slot %lld with the drawing color (⌘↩)"
+          }
+        }
+      }
+    },
+    "描画色で上書き" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace with Drawing Color"
+          }
+        }
+      }
+    },
+    "描画色で塗りつぶし (⌥Delete)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill with Drawing Color (⌥Delete)"
+          }
+        }
+      }
+    },
+    "描画色をこのスロットに登録 (⌘↩)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put the drawing color in this slot (⌘↩)"
+          }
+        }
+      }
+    },
+    "描画色をスロットの色に戻す" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set the drawing color back to the slot's color"
+          }
+        }
+      }
+    },
+    "描画色を登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Drawing Color"
+          }
+        }
+      }
+    },
+    "文字" : {
+      "comment" : "テキストツールの入力欄",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "新規..." : {
+      "comment" : "ファイルメニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New…"
+          }
+        }
+      }
+    },
+    "新規シート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Sheet"
+          }
+        }
+      }
+    },
+    "書き出し" : {
+      "comment" : "パネルのボタン、アニメウィンドウのメニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        }
+      }
+    },
+    "書き出しに失敗しました: %@" : {
+      "comment" : "%@ はエラーの中身",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The export failed: %@"
+          }
+        }
+      }
+    },
+    "書き出すものがありません（アニメ・名前付きセル・マップがありません）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is nothing to export (no animations, named cells, or maps)."
+          }
+        }
+      }
+    },
+    "枚数" : {
+      "comment" : "コマの数",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frames"
+          }
+        }
+      }
+    },
+    "楕円" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ellipse"
+          }
+        }
+      }
+    },
+    "楕円 (O)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ellipse (O)"
+          }
+        }
+      }
+    },
+    "注釈" : {
+      "comment" : "セルに付ける通行可否・重なり順・名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annotations"
+          }
+        }
+      }
+    },
+    "消しゴム" : {
+      "comment" : "取り消しの名前、マップのツール",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eraser"
+          }
+        }
+      }
+    },
+    "消しゴム (E)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eraser (E)"
+          }
+        }
+      }
+    },
+    "消去" : {
+      "comment" : "取り消しの名前、スロットのメニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        }
+      }
+    },
+    "消去 (Delete)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear (Delete)"
+          }
+        }
+      }
+    },
+    "無題" : {
+      "comment" : "まだ保存していないシートの名前。保存パネルの名前の候補にもなる",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untitled"
+          }
+        }
+      }
+    },
+    "現在のシートの変更を破棄しますか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do you want to discard the changes to the current sheet?"
+          }
+        }
+      }
+    },
+    "画像を書き出せませんでした" : {
+      "comment" : "エラー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The image could not be written."
+          }
+        }
+      }
+    },
+    "画像を読み込めませんでした" : {
+      "comment" : "エラー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The image could not be read."
+          }
+        }
+      }
+    },
+    "登録" : {
+      "comment" : "コマを 1 つずつ登録するアニメ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List"
+          }
+        }
+      }
+    },
+    "直線" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line"
+          }
+        }
+      }
+    },
+    "直線 (L)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line (L)"
+          }
+        }
+      }
+    },
+    "矩形" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rectangle"
+          }
+        }
+      }
+    },
+    "矩形 (R)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rectangle (R)"
+          }
+        }
+      }
+    },
+    "矩形・楕円を塗りつぶす" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill rectangles and ellipses"
+          }
+        }
+      }
+    },
+    "破棄" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard"
+          }
+        }
+      }
+    },
+    "種類" : {
+      "comment" : "アニメの種類",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type"
+          }
+        }
+      }
+    },
+    "簡易" : {
+      "comment" : "コマが格子状に並んでいるアニメ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grid"
+          }
+        }
+      }
+    },
+    "縁をなめらかにする（半透明の画素ができます）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smooth the edges (produces semi-transparent pixels)"
+          }
+        }
+      }
+    },
+    "縮小" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom Out"
+          }
+        }
+      }
+    },
+    "色の置換" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace Color"
+          }
+        }
+      }
+    },
+    "複製" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate"
+          }
+        }
+      }
+    },
+    "設定のファイル（<名前>.nanodot、古い <名前>.nanodot.json）を選択。今のシートの設定を置き換えます" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a settings file (<name>.nanodot, or the older <name>.nanodot.json). It replaces the settings of the current sheet."
+          }
+        }
+      }
+    },
+    "設定は同じフォルダーの <名前>.nanodot に保存されます" : {
+      "comment" : "保存パネルの説明",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings are saved as <name>.nanodot in the same folder."
+          }
+        }
+      }
+    },
+    "設定を読み込む..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Settings…"
+          }
+        }
+      }
+    },
+    "設定を読み込めませんでした" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The settings could not be read."
+          }
+        }
+      }
+    },
+    "起点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origin"
+          }
+        }
+      }
+    },
+    "追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "透明" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transparent"
+          }
+        }
+      }
+    },
+    "通行できる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passable"
+          }
+        }
+      }
+    },
+    "通行不可のタイルに × を表示（ストックの「注釈」と共通）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show × on impassable tiles (shared with Annotations in the stock)"
+          }
+        }
+      }
+    },
+    "通行不可（×）・重なり順（★）・名前をストックとマップに表示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show impassable (×), z-order (★), and names in the stock and the map"
+          }
+        }
+      }
+    },
+    "連番 PNG" : {
+      "comment" : "アニメの書き出しの形式",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PNG Sequence"
+          }
+        }
+      }
+    },
+    "重なり順 0 が通常、大きいほど手前" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Z-order 0 is normal; higher is in front"
+          }
+        }
+      }
+    },
+    "重なり順: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Z-Order: %lld"
+          }
+        }
+      }
+    },
+    "開く..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open…"
+          }
+        }
+      }
+    },
+    "間隔" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interval"
+          }
+        }
+      }
+    },
+    "（無題）" : {
+      "comment" : "名前が空のアニメ・マップ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(Untitled)"
+          }
+        }
+      }
+    },
+    "＋ でアニメを追加します" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click + to add an animation."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
