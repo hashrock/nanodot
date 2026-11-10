@@ -112,8 +112,8 @@ final class AppState {
     #endif
 
     var title: String {
-        let name = editor.fileURL?.lastPathComponent ?? "無題"
-        return editor.isDirty ? name + " — 編集済み" : name
+        let name = editor.fileURL?.lastPathComponent ?? L("無題")
+        return editor.isDirty ? name + L(" — 編集済み") : name
     }
 
     // MARK: - 表示
@@ -284,10 +284,10 @@ final class AppState {
     func confirmDiscardChanges() -> Bool {
         guard editor.isDirty else { return true }
         let alert = NSAlert()
-        alert.messageText = "変更が保存されていません"
-        alert.informativeText = "現在のシートの変更を破棄しますか？"
-        alert.addButton(withTitle: "破棄")
-        alert.addButton(withTitle: "キャンセル")
+        alert.messageText = L("変更が保存されていません")
+        alert.informativeText = L("現在のシートの変更を破棄しますか？")
+        alert.addButton(withTitle: L("破棄"))
+        alert.addButton(withTitle: L("キャンセル"))
         return alert.runModal() == .alertFirstButtonReturn
     }
 
@@ -326,7 +326,7 @@ final class AppState {
             stockView?.fitToView()
             requestDisplay()
         } catch {
-            showError("ファイルを開けませんでした: \(error.localizedDescription)")
+            showError(L("ファイルを開けませんでした: \(error.localizedDescription)"))
         }
     }
 
@@ -352,8 +352,8 @@ final class AppState {
     func saveAs() {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = editor.fileURL?.deletingPathExtension().lastPathComponent ?? "無題"
-        panel.message = "設定は同じフォルダーの <名前>.nanodot に保存されます"
+        panel.nameFieldStringValue = editor.fileURL?.deletingPathExtension().lastPathComponent ?? L("無題")
+        panel.message = L("設定は同じフォルダーの <名前>.nanodot に保存されます")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         write(to: url)
     }
@@ -363,7 +363,7 @@ final class AppState {
             try SheetFile.save(editor.image, meta: editor.meta, url: url)
             editor.markSaved(url: url)
         } catch {
-            showError("保存に失敗しました: \(error.localizedDescription)")
+            showError(L("保存に失敗しました: \(error.localizedDescription)"))
         }
     }
 
@@ -390,9 +390,9 @@ final class AppState {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
-        panel.prompt = "書き出し"
+        panel.prompt = L("書き出し")
         let base = (editor.imageName as NSString).deletingPathExtension
-        panel.message = "\(base).atlas.json と \(base).<マップ名>.tmj を書き出すフォルダーを選択（\(editor.imageName) と同じ場所に置くと、そのまま読めます）"
+        panel.message = L("\(base).atlas.json と \(base).<マップ名>.tmj を書き出すフォルダーを選択（\(editor.imageName) と同じ場所に置くと、そのまま読めます）")
         panel.directoryURL = lastExportFolder ?? editor.fileURL?.deletingLastPathComponent()
         guard panel.runModal() == .OK, let dir = panel.url else { return }
         writeEngineData(to: dir)
@@ -408,12 +408,12 @@ final class AppState {
             let names = try EngineExport.write(imageName: editor.imageName, width: editor.image.width, height: editor.image.height,
                                                meta: editor.meta, to: dir)
             if names.isEmpty {
-                showError("書き出すものがありません（アニメ・名前付きセル・マップがありません）")
+                showError(L("書き出すものがありません（アニメ・名前付きセル・マップがありません）"))
             } else {
                 rememberExportFolder(dir)
             }
         } catch {
-            showError("書き出しに失敗しました: \(error.localizedDescription)")
+            showError(L("書き出しに失敗しました: \(error.localizedDescription)"))
         }
     }
 
@@ -423,10 +423,10 @@ final class AppState {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json] + [UTType(filenameExtension: SheetFile.sidecarExtension)].compactMap { $0 }
         panel.directoryURL = editor.fileURL?.deletingLastPathComponent()
-        panel.message = "設定のファイル（<名前>.nanodot、古い <名前>.nanodot.json）を選択。今のシートの設定を置き換えます"
+        panel.message = L("設定のファイル（<名前>.nanodot、古い <名前>.nanodot.json）を選択。今のシートの設定を置き換えます")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let data = try? Data(contentsOf: url), let meta = SheetFile.decodeMeta(data) else {
-            showError("設定を読み込めませんでした")
+            showError(L("設定を読み込めませんでした"))
             return
         }
         editor.meta = meta
@@ -443,7 +443,7 @@ final class AppState {
         guard let anim = editor.meta.anims.first(where: { $0.id == selectedAnimID }) else { return }
         let frames = AnimExport.frames(of: anim, in: editor.image, scale: scale)
         guard !frames.isEmpty else {
-            showError("コマがありません")
+            showError(L("コマがありません"))
             return
         }
         let baseName = anim.name.isEmpty ? "anim" : anim.name
@@ -460,20 +460,20 @@ final class AppState {
                 panel.canChooseFiles = false
                 panel.canChooseDirectories = true
                 panel.canCreateDirectories = true
-                panel.prompt = "書き出し"
-                panel.message = "\(baseName)_000.png, \(baseName)_001.png … を書き出すフォルダーを選択"
+                panel.prompt = L("書き出し")
+                panel.message = L("\(baseName)_000.png, \(baseName)_001.png … を書き出すフォルダーを選択")
                 guard panel.runModal() == .OK, let dir = panel.url else { return }
                 try AnimExport.writePNGSequence(frames, directory: dir, baseName: baseName)
             }
         } catch {
-            showError("書き出しに失敗しました: \(error.localizedDescription)")
+            showError(L("書き出しに失敗しました: \(error.localizedDescription)"))
         }
     }
 
     func showSheetSizeDialog() {
         let alert = NSAlert()
-        alert.messageText = "シートサイズ"
-        alert.informativeText = "左上を基準に変更します（幅 × 高さ）"
+        alert.messageText = L("シートサイズ")
+        alert.informativeText = L("左上を基準に変更します（幅 × 高さ）")
         let w = NSTextField(string: "\(editor.image.width)")
         let h = NSTextField(string: "\(editor.image.height)")
         w.frame = NSRect(x: 0, y: 30, width: 120, height: 24)
@@ -483,7 +483,7 @@ final class AppState {
         box.addSubview(h)
         alert.accessoryView = box
         alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "キャンセル")
+        alert.addButton(withTitle: L("キャンセル"))
         guard alert.runModal() == .alertFirstButtonReturn, let nw = Int(w.stringValue), let nh = Int(h.stringValue) else { return }
         editor.resizeSheet(width: min(max(nw, 1), 8192), height: min(max(nh, 1), 8192))
         requestDisplay()

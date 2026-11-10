@@ -71,7 +71,7 @@ public struct TileMapDef: Hashable, Sendable, Codable, Identifiable {
         self.name = name
         self.width = max(1, width)
         self.height = max(1, height)
-        layers = (1...max(1, layerCount)).map { MapLayer(name: "レイヤー \($0)", count: max(1, width) * max(1, height)) }
+        layers = (1...max(1, layerCount)).map { MapLayer(name: L("レイヤー \($0)"), count: max(1, width) * max(1, height)) }
     }
 
     private enum CodingKeys: String, CodingKey { case name, width, height, layers }
@@ -137,12 +137,12 @@ public struct TileMapDef: Hashable, Sendable, Codable, Identifiable {
     }
 
     public mutating func addLayer() {
-        layers.append(MapLayer(name: "レイヤー \(layers.count + 1)", count: width * height))
+        layers.append(MapLayer(name: L("レイヤー \(layers.count + 1)"), count: width * height))
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        name = (try? c.decode(String.self, forKey: .name)) ?? "マップ"
+        name = (try? c.decode(String.self, forKey: .name)) ?? "マップ" // l10n: 訳さない（読むたびに同じ値にする）
         width = max(1, try c.decode(Int.self, forKey: .width))
         height = max(1, try c.decode(Int.self, forKey: .height))
         let n = width * height
@@ -151,7 +151,7 @@ public struct TileMapDef: Hashable, Sendable, Codable, Identifiable {
             if l.tiles.count != n { l.tiles = Array((l.tiles + Array(repeating: -1, count: n)).prefix(n)) }
             return l
         }
-        if layers.isEmpty { layers = [MapLayer(name: "レイヤー 1", count: n)] }
+        if layers.isEmpty { layers = [MapLayer(name: "レイヤー 1", count: n)] } // l10n: 訳さない（同上）
     }
 }
 

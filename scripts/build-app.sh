@@ -21,6 +21,8 @@ elif [ $# -gt 0 ]; then
     echo "usage: $0 [--appstore]" >&2
     exit 2
 fi
+# 訳の抜け・包み忘れがあれば、ビルドの前に落とす
+./scripts/check-localization.py --quiet
 "${BUILD[@]}"
 BIN="$("${BUILD[@]}" --show-bin-path)/Nanodot"
 rm -rf "$APP"
@@ -29,6 +31,16 @@ cp "$BIN" "$APP/Contents/MacOS/Nanodot"
 swift scripts/make-icon.swift Resources/AppIcon.svg "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
+# 訳。カタログ（.xcstrings）を .lproj/<表>.strings にして Resources に入れる（SwiftPM は .xcstrings をビルドできないので、ここでやる）。
+# 元の言語（ja）の表は作られないので、ja.lproj は空の表を置いて「日本語に対応している」ことだけ示す。
+# MCP の表は App Store 用には入れない
+TABLES=(Localizable InfoPlist)
+[ -n "$APPSTORE" ] || TABLES+=(MCP)
+for table in "${TABLES[@]}"; do
+    xcrun xcstringstool compile "Resources/$table.xcstrings" --output-directory "$APP/Contents/Resources"
+done
+mkdir -p "$APP/Contents/Resources/ja.lproj"
+[ -f "$APP/Contents/Resources/ja.lproj/Localizable.strings" ] || echo "/* 元の言語。キーがそのまま文言 */" > "$APP/Contents/Resources/ja.lproj/Localizable.strings"
 if [ -n "$APPSTORE" ]; then
     # Xcode がビルドのときに入れる項目（App Store の検査が、どの SDK・Xcode で作ったかを見る）
     plist() { /usr/libexec/PlistBuddy -c "$1" "$APP/Contents/Info.plist"; }

@@ -143,7 +143,7 @@ public enum NanodotMCP {
                     throw MCPError("pixels か rows を指定してください")
                 }
                 guard px.count <= 65_536 else { throw MCPError("一度に置けるのは 65536 ドットまでです") }
-                e.performEdit("MCP: 画素") { e.setPixels(px, clip: e.image.bounds) }
+                e.performEdit(LM("MCP: 画素")) { e.setPixels(px, clip: e.image.bounds) }
                 return .text("\(px.count) ドットを置きました")
             },
 
@@ -178,7 +178,7 @@ public enum NanodotMCP {
                     required: ["x", "y", "width", "height", "color"]) { a in
                 let r = try checkedRegion(a, e, maxPixels: 16_777_216)
                 let c = try a.color("color")
-                e.performEdit("MCP: 塗り") { e.pasteBuffer(PixelBuffer(width: r.width, height: r.height, fill: c), at: r.origin, skipTransparent: false) }
+                e.performEdit(LM("MCP: 塗り")) { e.pasteBuffer(PixelBuffer(width: r.width, height: r.height, fill: c), at: r.origin, skipTransparent: false) }
                 return .text("x=\(r.x) y=\(r.y) \(r.width)×\(r.height) を塗りました")
             },
 
@@ -213,7 +213,7 @@ public enum NanodotMCP {
                 default: break
                 }
                 let d = IntPoint(try a.int("dest_x"), try a.int("dest_y"))
-                e.performEdit("MCP: 写す") { e.pasteBuffer(buf, at: d, skipTransparent: a.optBool("skip_transparent") ?? false) }
+                e.performEdit(LM("MCP: 写す")) { e.pasteBuffer(buf, at: d, skipTransparent: a.optBool("skip_transparent") ?? false) }
                 return .text("\(buf.width)×\(buf.height) を (\(d.x), \(d.y)) に写しました")
             },
 
@@ -271,7 +271,7 @@ public enum NanodotMCP {
                 "slots": ["type": "array", "description": "start から順に置く色（null で空にする）", "items": ["type": ["string", "null"]]],
                 "start": prop("integer", "slots を置き始める番号（0〜63、省略時 0）"),
             ]) { a in
-                if let p = a.optString("palette") {
+                if let p = a.optString("palette").map(SamplePalette.currentName) {
                     guard SamplePalette.all.contains(where: { $0.name == p }) else { throw MCPError("パレット \(p) はありません") }
                     e.meta.palette = p
                 }

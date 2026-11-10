@@ -1,0 +1,40 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "Nanodot Sheet Settings" : {
+      "comment" : "CFBundleTypeName / UTTypeDescription。サイドカー（<名前>.nanodot）の種類",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nanodot Sheet Settings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nanodot シート設定"
+          }
+        }
+      }
+    },
+    "PNG Image" : {
+      "comment" : "CFBundleTypeName。Finder の「情報を見る」などに出る書類の種類",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PNG Image"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PNG 画像"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

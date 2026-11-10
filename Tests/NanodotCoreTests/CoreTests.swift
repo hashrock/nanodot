@@ -555,6 +555,18 @@ final class MCPTests: XCTestCase {
         XCTAssertTrue(try tool(s, "fill_rect", ["x": 0, "y": 0, "width": 2, "height": 2, "color": "red"]).isError)
     }
 
+    /// set_palette は、名前を変えたパレットの古い名前（0.4.0 までの「ゲームボーイ」）も受け付ける
+    func testSetPaletteAcceptsOldName() throws {
+        let host = Host()
+        let s = NanodotMCP.server(host: host, version: "test")
+        XCTAssertFalse(try tool(s, "set_palette", ["palette": "ゲームボーイ"]).isError)
+        XCTAssertEqual(host.editor.meta.palette, "緑の濃淡")
+        XCTAssertFalse(try tool(s, "set_palette", ["palette": "PICO-8"]).isError)
+        XCTAssertFalse(try tool(s, "set_palette", ["palette": "緑の濃淡"]).isError)
+        XCTAssertEqual(host.editor.meta.palette, "緑の濃淡")
+        XCTAssertTrue(try tool(s, "set_palette", ["palette": "ないパレット"]).isError)
+    }
+
     func testMetaTools() throws {
         let host = Host()
         let s = NanodotMCP.server(host: host, version: "test")

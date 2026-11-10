@@ -191,7 +191,7 @@ struct PalettePanel: View {
         VStack(alignment: .leading, spacing: 6) {
             let palette = SamplePalette.named(editor.meta.palette)
             Picker("", selection: $editor.meta.palette) {
-                ForEach(SamplePalette.all) { p in Text("\(p.name)（\(p.colors.count) 色）").tag(p.name) }
+                ForEach(SamplePalette.all) { p in Text("\(LName(p.name))（\(p.colors.count) 色）").tag(p.name) }
             }
             .labelsHidden()
             .fixedSize()
@@ -383,7 +383,7 @@ struct AnimPanel: View {
                 Text("アニメ").font(.caption.bold())
                 Picker("", selection: Binding(get: { state.selectedAnimID }, set: { state.selectedAnimID = $0 })) {
                     if editor.meta.anims.isEmpty { Text("なし").tag(UUID?.none) }
-                    ForEach(editor.meta.anims) { a in Text(a.name.isEmpty ? "（無題）" : a.name).tag(UUID?.some(a.id)) }
+                    ForEach(editor.meta.anims) { a in Text(a.name.isEmpty ? L("（無題）") : a.name).tag(UUID?.some(a.id)) }
                 }
                 .labelsHidden()
                 Button { addAnim() } label: { Image(systemName: "plus") }
@@ -407,7 +407,7 @@ struct AnimPanel: View {
 
     private func addAnim() {
         let m = editor.meta
-        var a = AnimDef(name: "アニメ \(m.anims.count + 1)", frameWidth: m.cellWidth, frameHeight: m.cellHeight)
+        var a = AnimDef(name: L("アニメ \(m.anims.count + 1)"), frameWidth: m.cellWidth, frameHeight: m.cellHeight)
         a.originX = m.mark.x
         a.originY = m.mark.y
         editor.meta.anims.append(a)
@@ -681,7 +681,7 @@ struct AnnotationEditor: View {
         let cs = cells
         VStack(alignment: .leading, spacing: 10) {
             if let f = first {
-                Text(cs.count == 1 ? "セル (\(f.col), \(f.row))" : "\(cs.count) セル（マーク範囲）")
+                Text(cs.count == 1 ? L("セル (\(f.col), \(f.row))") : L("\(cs.count) セル（マーク範囲）"))
                     .font(.headline)
                 Form {
                     TextField("名前", text: Binding(get: { f.name }, set: { v in update { $0.name = v } }))

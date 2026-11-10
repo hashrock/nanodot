@@ -1,0 +1,140 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "%@ で待ち受け中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening on %@"
+          }
+        }
+      }
+    },
+    "AI エージェントから nanodot を操作できるようにする（このマシンからの接続だけ受け付けます）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let AI agents operate nanodot (accepts connections from this Mac only)"
+          }
+        }
+      }
+    },
+    "Claude Code に登録するコマンドをコピー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Claude Code Command"
+          }
+        }
+      }
+    },
+    "MCP サーバー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP Server"
+          }
+        }
+      }
+    },
+    "MCP サーバーが %@ で待ち受け中" : {
+      "comment" : "ステータスバーのツールチップ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP server is listening on %@"
+          }
+        }
+      }
+    },
+    "MCP: 写す" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP: Copy"
+          }
+        }
+      }
+    },
+    "MCP: 塗り" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP: Fill"
+          }
+        }
+      }
+    },
+    "MCP: 画素" : {
+      "comment" : "取り消しの名前（編集メニューに出る）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MCP: Pixels"
+          }
+        }
+      }
+    },
+    "ポート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Port"
+          }
+        }
+      }
+    },
+    "ポート番号が不正です" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The port number is invalid."
+          }
+        }
+      }
+    },
+    "停止中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopped"
+          }
+        }
+      }
+    },
+    "起動できません: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not start: %@"
+          }
+        }
+      }
+    },
+    "起動中…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starting…"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

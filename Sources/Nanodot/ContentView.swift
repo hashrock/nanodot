@@ -84,18 +84,18 @@ struct ToolBarView: View {
             Divider().frame(height: 20)
 
             HStack(spacing: 2) {
-                opButton("arrow.left.and.right.righttriangle.left.righttriangle.right", "左右反転") { editor.apply(.flipH) }
-                opButton("arrow.up.and.down.righttriangle.up.righttriangle.down", "上下反転") { editor.apply(.flipV) }
-                opButton("rotate.left", "左に 90° 回転（正方形のとき）") { editor.apply(.rotateCCW) }
+                opButton("arrow.left.and.right.righttriangle.left.righttriangle.right", L("左右反転")) { editor.apply(.flipH) }
+                opButton("arrow.up.and.down.righttriangle.up.righttriangle.down", L("上下反転")) { editor.apply(.flipV) }
+                opButton("rotate.left", L("左に 90° 回転（正方形のとき）")) { editor.apply(.rotateCCW) }
                     .disabled(!editor.canRotateMark)
-                opButton("rotate.right", "右に 90° 回転（正方形のとき）") { editor.apply(.rotateCW) }
+                opButton("rotate.right", L("右に 90° 回転（正方形のとき）")) { editor.apply(.rotateCW) }
                     .disabled(!editor.canRotateMark)
-                opButton("arrow.left", "1 ドット左へシフト") { editor.apply(.shift(-1, 0)) }
-                opButton("arrow.right", "1 ドット右へシフト") { editor.apply(.shift(1, 0)) }
-                opButton("arrow.up", "1 ドット上へシフト") { editor.apply(.shift(0, -1)) }
-                opButton("arrow.down", "1 ドット下へシフト") { editor.apply(.shift(0, 1)) }
-                opButton("square.slash", "マーク範囲を消去") { editor.apply(.clear) }
-                opButton("square.fill.on.square", "マーク範囲を描画色で塗りつぶし") { editor.apply(.fill) }
+                opButton("arrow.left", L("1 ドット左へシフト")) { editor.apply(.shift(-1, 0)) }
+                opButton("arrow.right", L("1 ドット右へシフト")) { editor.apply(.shift(1, 0)) }
+                opButton("arrow.up", L("1 ドット上へシフト")) { editor.apply(.shift(0, -1)) }
+                opButton("arrow.down", L("1 ドット下へシフト")) { editor.apply(.shift(0, 1)) }
+                opButton("square.slash", L("マーク範囲を消去")) { editor.apply(.clear) }
+                opButton("square.fill.on.square", L("マーク範囲を描画色で塗りつぶし")) { editor.apply(.fill) }
             }
 
             Spacer()
@@ -189,7 +189,7 @@ struct StatusBar: View {
             #if !APPSTORE
             if case .running(let port) = state.mcpStatus {
                 Label("MCP :\(port)", systemImage: "antenna.radiowaves.left.and.right")
-                    .help("MCP サーバーが \(state.mcpURL) で待ち受け中")
+                    .help(LM("MCP サーバーが \(state.mcpURL) で待ち受け中"))
             }
             #endif
             Spacer()
@@ -197,10 +197,10 @@ struct StatusBar: View {
             Divider().frame(height: 14)
             Button { editor.undo() } label: { Image(systemName: "arrow.uturn.backward") }
                 .disabled(!editor.canUndo)
-                .help(editor.undoLabel.map { "取り消し: \($0) (⌘Z)" } ?? "取り消し (⌘Z)")
+                .help(editor.undoLabel.map { L("取り消し: \($0) (⌘Z)") } ?? L("取り消し (⌘Z)"))
             Button { editor.redo() } label: { Image(systemName: "arrow.uturn.forward") }
                 .disabled(!editor.canRedo)
-                .help(editor.redoLabel.map { "やり直し: \($0) (⇧⌘Z)" } ?? "やり直し (⇧⌘Z)")
+                .help(editor.redoLabel.map { L("やり直し: \($0) (⇧⌘Z)") } ?? L("やり直し (⇧⌘Z)"))
         }
         .buttonStyle(.borderless)
         .font(.caption.monospacedDigit())
@@ -298,24 +298,24 @@ struct MCPSettings: View {
 
     private var statusText: String {
         switch state.mcpStatus {
-        case .stopped: return "停止中"
-        case .starting: return "起動中…"
-        case .running: return "\(state.mcpURL) で待ち受け中"
-        case .failed(let m): return "起動できません: \(m)"
+        case .stopped: return LM("停止中")
+        case .starting: return LM("起動中…")
+        case .running: return LM("\(state.mcpURL) で待ち受け中")
+        case .failed(let m): return LM("起動できません: \(m)")
         }
     }
 
     var body: some View {
-        Toggle("MCP サーバー", isOn: Binding(get: { state.mcpEnabled }, set: { state.mcpEnabled = $0 }))
-            .help("AI エージェントから nanodot を操作できるようにする（このマシンからの接続だけ受け付けます）")
-        LabeledContent("ポート") {
+        Toggle(LM("MCP サーバー"), isOn: Binding(get: { state.mcpEnabled }, set: { state.mcpEnabled = $0 }))
+            .help(LM("AI エージェントから nanodot を操作できるようにする（このマシンからの接続だけ受け付けます）"))
+        LabeledContent(LM("ポート")) {
             IntField(value: Binding(get: { state.mcpPort }, set: { state.mcpPort = $0 }), min: 1024, max: 65535, width: 64)
         }
         Text(statusText)
             .font(.caption)
             .foregroundStyle(.secondary)
             .textSelection(.enabled)
-        Button("Claude Code に登録するコマンドをコピー") {
+        Button(LM("Claude Code に登録するコマンドをコピー")) {
             let cmd = "claude mcp add --transport http nanodot \(state.mcpURL)"
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(cmd, forType: .string)

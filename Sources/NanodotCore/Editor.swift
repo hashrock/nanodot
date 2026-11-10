@@ -6,13 +6,13 @@ public enum Tool: String, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .pen: return "ペン (B)"
-        case .eraser: return "消しゴム (E)"
-        case .fill: return "塗りつぶし (G)"
-        case .line: return "直線 (L)"
-        case .rect: return "矩形 (R)"
-        case .ellipse: return "楕円 (O)"
-        case .text: return "テキスト (T)"
+        case .pen: return L("ペン (B)")
+        case .eraser: return L("消しゴム (E)")
+        case .fill: return L("塗りつぶし (G)")
+        case .line: return L("直線 (L)")
+        case .rect: return L("矩形 (R)")
+        case .ellipse: return L("楕円 (O)")
+        case .text: return L("テキスト (T)")
         }
     }
 
@@ -120,7 +120,7 @@ public final class Editor {
     }
 
     /// 書き出すファイルの名前のもとになる画像のファイル名（未保存なら 無題.png）
-    public var imageName: String { fileURL?.lastPathComponent ?? "無題.png" }
+    public var imageName: String { fileURL?.lastPathComponent ?? L("無題") + ".png" }
 
     public func markSaved(url: URL) {
         fileURL = url
@@ -299,7 +299,7 @@ public final class Editor {
     }
 
     public func drawShape(_ tool: Tool, from a: IntPoint, to b: IntPoint, filled: Bool, color c: RGBA, clip: IntRect? = nil) {
-        edit(tool == .line ? "直線" : tool == .rect ? "矩形" : "楕円") {
+        edit(tool == .line ? L("直線") : tool == .rect ? L("矩形") : L("楕円")) {
             plot(Self.shapePoints(tool, a, b, filled: filled), color: c, clip: clip)
         }
     }
@@ -309,7 +309,7 @@ public final class Editor {
     public func drawText(_ text: String, at p: IntPoint, settings: TextSettings, color c: RGBA, clip: IntRect? = nil) -> IntRect {
         guard let buf = TextRenderer.render(text, settings: settings, color: c) else { return .zero }
         var r = IntRect.zero
-        edit("テキスト") {
+        edit(L("テキスト")) {
             r = image.paste(buf, at: p, skipTransparent: true, clip: (clip ?? workRect).intersection(image.bounds))
             touched(r)
         }
@@ -348,7 +348,7 @@ public final class Editor {
     public func floodFill(at p: IntPoint, color c: RGBA, clip: IntRect? = nil) {
         let area = (clip ?? workRect).intersection(image.bounds)
         guard area.contains(p), image[p.x, p.y] != c.normalized else { return }
-        edit("塗りつぶし") {
+        edit(L("塗りつぶし")) {
             plot(Raster.floodRegion(image, from: p, clip: area), color: c, clip: area)
         }
     }
@@ -378,7 +378,7 @@ public final class Editor {
     /// クリップボードを貼る。clipToWork ならマーク範囲の外には書かない
     public func stamp(at p: IntPoint, overwrite: Bool, clipToWork: Bool) {
         guard let b = clipboard else { return }
-        edit("スタンプ") {
+        edit(L("スタンプ")) {
             touched(image.paste(b, at: p, skipTransparent: !overwrite, clip: clipToWork ? workRect : nil))
         }
     }
@@ -389,7 +389,7 @@ public final class Editor {
         let dest = clampedMark(dest)
         guard !a.isEmpty, dest != meta.mark else { return }
         let b = IntRect(x: dest.x + (a.x - meta.mark.x), y: dest.y + (a.y - meta.mark.y), width: a.width, height: a.height)
-        edit("入れ替え") {
+        edit(L("入れ替え")) {
             let bufA = image.copy(a), bufB = image.copy(b)
             image.paste(bufB, at: a.origin)
             image.paste(bufA, at: b.origin)
@@ -412,17 +412,17 @@ public final class Editor {
         let label: String
         let out: PixelBuffer
         switch op {
-        case .flipH: out = src.flippedHorizontally(); label = "左右反転"
-        case .flipV: out = src.flippedVertically(); label = "上下反転"
+        case .flipH: out = src.flippedHorizontally(); label = L("左右反転")
+        case .flipV: out = src.flippedVertically(); label = L("上下反転")
         case .rotateCW:
             guard canRotateMark else { return }
-            out = src.rotatedClockwise(); label = "右回転"
+            out = src.rotatedClockwise(); label = L("右回転")
         case .rotateCCW:
             guard canRotateMark else { return }
-            out = src.rotatedCounterClockwise(); label = "左回転"
-        case .shift(let dx, let dy): out = src.shifted(dx, dy); label = "シフト"
-        case .clear: out = PixelBuffer(width: r.width, height: r.height); label = "消去"
-        case .fill: out = PixelBuffer(width: r.width, height: r.height, fill: color); label = "塗りつぶし"
+            out = src.rotatedCounterClockwise(); label = L("左回転")
+        case .shift(let dx, let dy): out = src.shifted(dx, dy); label = L("シフト")
+        case .clear: out = PixelBuffer(width: r.width, height: r.height); label = L("消去")
+        case .fill: out = PixelBuffer(width: r.width, height: r.height, fill: color); label = L("塗りつぶし")
         }
         edit(label) { touched(image.paste(out, at: r.origin)) }
     }
@@ -445,7 +445,7 @@ public final class Editor {
         let area = inMarkOnly ? workRect : image.bounds
         let from = from.normalized, to = to.normalized
         guard from != to, !area.isEmpty else { return }
-        edit("色の置換") {
+        edit(L("色の置換")) {
             var r = IntRect.zero
             for y in area.y..<area.maxY {
                 for x in area.x..<area.maxX where image[x, y] == from {
@@ -468,7 +468,7 @@ public final class Editor {
         out.paste(image, at: .zero)
         image = out
         clampMark()
-        push(HistoryEntry(label: "シートサイズ", rect: nil, before: before, after: out, markBefore: markBefore, markAfter: meta.mark))
+        push(HistoryEntry(label: L("シートサイズ"), rect: nil, before: before, after: out, markBefore: markBefore, markAfter: meta.mark))
         pixelsChanged()
         revision += 1
     }

@@ -1,6 +1,7 @@
 // App Store 用ビルド（APPSTORE）には MCP を入れない
 #if !APPSTORE
 import Foundation
+import NanodotCore
 import Network
 
 /// MCP の Streamable HTTP の最小限の実装。127.0.0.1 だけで待ち受け、POST の JSON-RPC に JSON で答える
@@ -25,7 +26,7 @@ final class MCPHTTPServer {
     func start(port: UInt16) {
         stop()
         guard let p = NWEndpoint.Port(rawValue: port) else {
-            report(.failed("ポート番号が不正です"))
+            report(.failed(LM("ポート番号が不正です")))
             return
         }
         let params = NWParameters.tcp
