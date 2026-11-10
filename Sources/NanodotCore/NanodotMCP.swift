@@ -271,7 +271,7 @@ public enum NanodotMCP {
                 "slots": ["type": "array", "description": "start から順に置く色（null で空にする）", "items": ["type": ["string", "null"]]],
                 "start": prop("integer", "slots を置き始める番号（0〜63、省略時 0）"),
             ]) { a in
-                if let p = a.optString("palette") {
+                if let p = a.optString("palette").map(SamplePalette.currentName) {
                     guard SamplePalette.all.contains(where: { $0.name == p }) else { throw MCPError("パレット \(p) はありません") }
                     e.meta.palette = p
                 }

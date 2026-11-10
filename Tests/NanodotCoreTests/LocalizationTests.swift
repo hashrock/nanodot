@@ -51,7 +51,7 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(Tool.pen.displayName, "ペン (B)")
         XCTAssertEqual(Snap.pixels(4).label, "4 ドット")
         XCTAssertEqual(Snap.cell(2).label, "セルの 1/2")
-        XCTAssertEqual(LName("ゲームボーイ"), "ゲームボーイ")
+        XCTAssertEqual(LName("緑の濃淡"), "緑の濃淡")
         XCTAssertEqual(TileMapDef(name: "村", width: 2, height: 2).layers.map(\.name), ["レイヤー 1", "レイヤー 2"])
     }
 
@@ -79,6 +79,23 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(e.undoLabel, "Fill")
     }
 
+    /// 0.4.0 までのパレット名「ゲームボーイ」は「緑の濃淡」として読める
+    func testRenamedPaletteIsStillReadable() throws {
+        XCTAssertFalse(SamplePalette.all.contains { $0.name == "ゲームボーイ" })
+        XCTAssertEqual(SamplePalette.named("ゲームボーイ").name, "緑の濃淡")
+        XCTAssertEqual(SamplePalette.named("ゲームボーイ").colors.map(\.hex), SamplePalette.named("緑の濃淡").colors.map(\.hex))
+        XCTAssertEqual(SamplePalette.named("緑の濃淡").colors.count, 4)
+
+        // 古いサイドカー: 読むと今の名前になり、保存し直すと今の名前で書かれる
+        var meta = SheetMeta()
+        meta.palette = "緑の濃淡"
+        let old = String(decoding: try SheetFile.encodeMeta(meta), as: UTF8.self).replacingOccurrences(of: "緑の濃淡", with: "ゲームボーイ")
+        XCTAssertTrue(old.contains("ゲームボーイ"))
+        let decoded = try XCTUnwrap(SheetFile.decodeMeta(Data(old.utf8)))
+        XCTAssertEqual(decoded.palette, "緑の濃淡")
+        XCTAssertFalse(String(decoding: try SheetFile.encodeMeta(decoded), as: UTF8.self).contains("ゲームボーイ"))
+    }
+
     /// 保存する値は、どちらの言語で作っても同じ。訳は表示のときだけ当てる
     func testSavedDataDoesNotDependOnLanguage() throws {
         let japanese = try SheetFile.encodeMeta(SheetMeta())
@@ -86,14 +103,14 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(try SheetFile.encodeMeta(SheetMeta()), japanese)
 
         // 同梱パレットは日本語の名前のまま保存し、表示のときに訳す
-        XCTAssertTrue(SamplePalette.all.contains { $0.name == "ゲームボーイ" })
-        XCTAssertEqual(LName("ゲームボーイ"), "Game Boy")
+        XCTAssertTrue(SamplePalette.all.contains { $0.name == "緑の濃淡" })
+        XCTAssertEqual(LName("緑の濃淡"), "Green Shades")
         XCTAssertEqual(LName("PICO-8"), "PICO-8")
         XCTAssertEqual(LName("村の広場"), "村の広場", "ユーザーが付けた名前はそのまま")
         var meta = SheetMeta()
-        meta.palette = "ゲームボーイ"
+        meta.palette = "緑の濃淡"
         let decoded = try XCTUnwrap(SheetFile.decodeMeta(try SheetFile.encodeMeta(meta)))
-        XCTAssertEqual(decoded.palette, "ゲームボーイ")
+        XCTAssertEqual(decoded.palette, "緑の濃淡")
         XCTAssertEqual(SamplePalette.named(decoded.palette).colors.count, 4)
 
         // 名前のないマップ・レイヤーのない古いデータは、どちらの言語で読んでも同じ値になる

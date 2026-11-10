@@ -130,7 +130,7 @@ public struct SheetMeta: Equatable, Sendable, Codable {
         lupeHeight = max(1, (try? c.decode(Int.self, forKey: .lupeHeight)) ?? d.lupeHeight)
         mark = (try? c.decode(IntPoint.self, forKey: .mark)) ?? d.mark
         showCellGrid = (try? c.decode(Bool.self, forKey: .showCellGrid)) ?? d.showCellGrid
-        palette = (try? c.decode(String.self, forKey: .palette)) ?? d.palette
+        palette = (try? c.decode(String.self, forKey: .palette)).map(SamplePalette.currentName) ?? d.palette
         var s = (try? c.decode([RGBA?].self, forKey: .slots)) ?? []
         s = Array(s.prefix(SheetMeta.slotCount))
         s += Array(repeating: nil, count: SheetMeta.slotCount - s.count)

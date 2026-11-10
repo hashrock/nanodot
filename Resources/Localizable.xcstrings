@@ -397,17 +397,6 @@
         }
       }
     },
-    "ゲームボーイ" : {
-      "comment" : "同梱パレットの名前。保存する値は日本語のままで、表示だけ訳す",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Game Boy"
-          }
-        }
-      }
-    },
     "コマがありません" : {
       "localizations" : {
         "en" : {
@@ -1829,6 +1818,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grid"
+          }
+        }
+      }
+    },
+    "緑の濃淡" : {
+      "comment" : "同梱パレットの名前（緑の 4 階調）。保存する値は日本語のままで、表示だけ訳す",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green Shades"
           }
         }
       }
