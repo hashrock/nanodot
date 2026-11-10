@@ -28,29 +28,58 @@ App Store 用のビルドには MCP サーバーを入れません（コード�
 ./scripts/build-app.sh --appstore                              # build/appstore/Nanodot.app を生成（arm64 + x86_64）
 NANODOT_APPSTORE=1 swift test --scratch-path .build/appstore   # App Store 用の構成でテスト
 ./scripts/appstore.sh --check-only                             # ビルドして、App Store 用の条件を満たすか検査する
-./scripts/appstore.sh                                          # 検査 → 署名 → dist/appstore/Nanodot-<版>.pkg
+./scripts/appstore.sh                                          # 検査 → クラウド署名 → dist/appstore/Nanodot-<版>.pkg
 ```
 
 - `NANODOT_APPSTORE=1` を付けると `Package.swift` がコンパイル条件 `APPSTORE` を定義し、`#if !APPSTORE` で囲んだ MCP のコードが落ちます。
 - App Sandbox を有効にして（`Resources/AppStore.entitlements`）ad-hoc 署名するので、手元で Sandbox 下の動作を確かめられます。書類は `open -a build/appstore/Nanodot.app <PNG>` で渡します（起動引数ではアクセス権が付きません）。
 - 通常のビルドと成果物が混ざらないよう、`.build/appstore` でビルドします。
-- `appstore.sh` の検査: MCP の文字列・シンボルがない、Network.framework をリンクしていない、Info.plist の項目、表示言語（ja・en の申告と訳の表。MCP の表は入っていない）、`PrivacyInfo.xcprivacy`、アイコン（1024×1024 まで）、App Sandbox と entitlements（`network.*` なし、決めたもの以外なし）。Apple とは通信しません。
+- `appstore.sh` の検査: MCP の文字列・シンボルがない、Network.framework をリンクしていない、Info.plist の項目、表示言語（ja・en の申告と訳の表。MCP の表は入っていない）、`PrivacyInfo.xcprivacy`、アイコン（1024×1024 まで）、App Sandbox と entitlements（`network.*` なし、決めたもの以外なし）。`--check-only` は Apple と通信しません。
 
 ### App Store に出す
 
-`.pkg` の署名には次の 3 つが要ります（[Apple Developer](https://developer.apple.com/account/resources) で作ってこの Mac に入れる）。
+```sh
+./scripts/appstore.sh        # dist/appstore/Nanodot-<版>.pkg
+```
+
+これだけで提出用の `.pkg` ができます。手元に配布用の証明書は要りません（**クラウド署名**）。要るのは、Xcode の Settings > Accounts にチーム `5WLLZHK49R` の Apple ID でサインインしてあることだけです（別のチームなら `TEAM_ID=<チーム ID>`）。
+
+1. `build/appstore/Nanodot.app` をビルドして検査する（`--check-only` と同じ）
+2. それを `build/appstore/Nanodot.xcarchive` に包む（`Products/Applications/Nanodot.app`、`dSYMs/`、`Info.plist`。版・ビルド番号は `.app` の Info.plist から）
+3. `xcodebuild -exportArchive -allowProvisioningUpdates` が、Apple の側にある証明書（Cloud Managed Apple Distribution）でアプリに署名し、プロファイル（`Mac Team Store Provisioning Profile: com.hashrock.nanodot`）を作って入れ、`.pkg` に署名する（3rd Party Mac Developer Installer）。entitlements には App ID とチーム ID が足される。**Apple と通信するのはここだけ**で、アップロードはしません
+4. できた `.pkg` を展開し、中のアプリを 1 と同じ検査にもう一度かける。加えて、配布用の証明書での署名、App ID・チーム ID、プロファイル（Mac App Store 用で、App ID が合っている）、`.pkg` の署名を確かめる
+
+`xcodebuild` のログは `build/appstore/export.log`、署名に使われた証明書・プロファイル・entitlements の記録は `dist/appstore/Nanodot-<版>.DistributionSummary.plist` に残ります。
+
+アップロードは別に行います。Transporter アプリに `.pkg` をドロップするか、
+
+```sh
+xcrun altool --validate-app -f dist/appstore/Nanodot-<版>.pkg -t macos --apiKey <鍵の ID> --apiIssuer <発行者 ID>
+xcrun altool --upload-app   -f dist/appstore/Nanodot-<版>.pkg -t macos --apiKey <鍵の ID> --apiIssuer <発行者 ID>
+```
+
+同じ版（`CFBundleShortVersionString`）で出し直すときは、`Resources/Info.plist` の `CFBundleVersion` を上げます。
+
+App Store Connect に書く URL（`website/` を GitHub Pages で公開しているもの）:
+
+- プライバシーポリシー: <https://hashrock.github.io/nanodot/privacy.html>
+- サポート: <https://hashrock.github.io/nanodot/support.html>
+
+#### 手元の証明書で署名するとき
+
+クラウド署名を使わず、この Mac の証明書で署名することもできます（Apple と通信しません）。
+
+```sh
+./scripts/appstore.sh --local    # dist/appstore/Nanodot-<版>.pkg
+```
+
+次の 3 つが要ります（[Apple Developer](https://developer.apple.com/account/resources) で作ってこの Mac に入れる）。
 
 1. 証明書 **Apple Distribution**（アプリの署名）
 2. 証明書 **Mac Installer Distribution**（`.pkg` の署名。キーチェーンでは `3rd Party Mac Developer Installer: ...`）
 3. App ID `com.hashrock.nanodot` の **Mac App Store Connect** 用プロビジョニングプロファイル。`Resources/Nanodot_AppStore.provisionprofile` に置く（リポジトリには入れません）か、`PROFILE=<場所>` で渡す
 
-```sh
-./scripts/appstore.sh                       # dist/appstore/Nanodot-<版>.pkg
-xcrun altool --validate-app -f dist/appstore/Nanodot-<版>.pkg -t macos --apiKey <鍵の ID> --apiIssuer <発行者 ID>
-xcrun altool --upload-app   -f dist/appstore/Nanodot-<版>.pkg -t macos --apiKey <鍵の ID> --apiIssuer <発行者 ID>
-```
-
-アップロードは Transporter アプリに `.pkg` をドロップしてもできます。同じ版（`CFBundleShortVersionString`）で出し直すときは、`Resources/Info.plist` の `CFBundleVersion` を上げます。
+証明書の名前は `APP_IDENTITY`・`INSTALLER_IDENTITY` で指定できます（既定はキーチェーンから探す）。できた `.pkg` には、クラウド署名のときと同じ検査をかけます。
 
 ## 基本操作
 
