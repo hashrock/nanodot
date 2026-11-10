@@ -156,8 +156,10 @@ struct SettingsPopover: View {
                     Button("変更...") { state.showSheetSizeDialog() }
                 }
             }
+            #if !APPSTORE
             Divider()
             MCPSettings(state: state)
+            #endif
         }
         .padding()
         .frame(width: 320)
@@ -184,10 +186,12 @@ struct StatusBar: View {
             if let c = editor.clipboard {
                 Text("クリップボード \(c.width)×\(c.height)")
             }
+            #if !APPSTORE
             if case .running(let port) = state.mcpStatus {
                 Label("MCP :\(port)", systemImage: "antenna.radiowaves.left.and.right")
                     .help("MCP サーバーが \(state.mcpURL) で待ち受け中")
             }
+            #endif
             Spacer()
             Text("右クリック: スポイト／右ドラッグ: コピー→スタンプ")
             Divider().frame(height: 14)
@@ -287,6 +291,7 @@ struct TextToolOptions: View {
     }
 }
 
+#if !APPSTORE
 /// MCP サーバーの設定（設定のポップオーバー内）
 struct MCPSettings: View {
     let state: AppState
@@ -318,3 +323,4 @@ struct MCPSettings: View {
         .controlSize(.small)
     }
 }
+#endif

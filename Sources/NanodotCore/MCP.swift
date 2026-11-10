@@ -1,3 +1,5 @@
+// App Store 用ビルド（APPSTORE）には MCP を入れない
+#if !APPSTORE
 import Foundation
 
 /// MCP のツール 1 つ
@@ -172,3 +174,4 @@ public final class MCPServer {
         }
     }
 }
+#endif

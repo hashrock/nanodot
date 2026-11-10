@@ -1,3 +1,5 @@
+// App Store 用ビルド（APPSTORE）には MCP を入れない
+#if !APPSTORE
 import Foundation
 
 /// MCP のツールから見たアプリ側
@@ -452,3 +454,4 @@ public enum NanodotMCP {
         ]
     }
 }
+#endif

@@ -1,3 +1,5 @@
+// App Store 用ビルド（APPSTORE）には MCP を入れない
+#if !APPSTORE
 import Foundation
 import Network
 
@@ -162,3 +164,4 @@ struct HTTPResponse {
         return Data(h.utf8) + body
     }
 }
+#endif

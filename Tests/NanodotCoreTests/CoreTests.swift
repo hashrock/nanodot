@@ -409,6 +409,7 @@ final class TextTests: XCTestCase {
     }
 }
 
+#if !APPSTORE
 final class MCPTests: XCTestCase {
     final class Host: MCPHost {
         let editor = Editor(width: 64, height: 32)
@@ -492,6 +493,7 @@ final class MCPTests: XCTestCase {
         XCTAssertEqual(host.editor.fileURL?.path, path)
     }
 }
+#endif
 
 final class EngineExportTests: XCTestCase {
     private func object(_ d: Data) throws -> [String: Any] {

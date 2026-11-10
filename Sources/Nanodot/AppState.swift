@@ -4,7 +4,7 @@ import Observation
 import UniformTypeIdentifiers
 
 @Observable
-final class AppState: MCPHost {
+final class AppState {
     let editor = Editor()
     /// カーソル下のドット（ステータスバー表示用）
     var cursorDot: IntPoint?
@@ -51,6 +51,7 @@ final class AppState: MCPHost {
     @ObservationIgnored private var imageCache: (version: Int, image: CGImage)?
     @ObservationIgnored private var clipboardChangeCount = -1
 
+    #if !APPSTORE
     // MARK: MCP
     var mcpEnabled: Bool = UserDefaults.standard.bool(forKey: "mcpEnabled") {
         didSet {
@@ -68,13 +69,17 @@ final class AppState: MCPHost {
     @ObservationIgnored private var mcpHTTP: MCPHTTPServer?
 
     var mcpURL: String { "http://127.0.0.1:\(mcpPort)/mcp" }
+    #endif
 
     init() {
         editor.newDocument(width: 256, height: 256, cellWidth: 32, cellHeight: 32)
         editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
+        #if !APPSTORE
         updateMCP()
+        #endif
     }
 
+    #if !APPSTORE
     private func updateMCP() {
         guard mcpEnabled else {
             mcpHTTP?.stop()
@@ -104,6 +109,7 @@ final class AppState: MCPHost {
         stockView?.fitToView()
         requestDisplay()
     }
+    #endif
 
     var title: String {
         let name = editor.fileURL?.lastPathComponent ?? "無題"
@@ -416,3 +422,7 @@ final class AppState: MCPHost {
         alert.runModal()
     }
 }
+
+#if !APPSTORE
+extension AppState: MCPHost {}
+#endif
