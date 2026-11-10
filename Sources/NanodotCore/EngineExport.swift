@@ -1,6 +1,34 @@
 import Foundation
 
-/// ゲームエンジン向けのデータ（保存時に PNG の隣へ書く）
+/// 書き出し先フォルダー。ユーザーが選んだフォルダーをブックマークで覚え、「もう一度書き出す」で使う。
+/// ブックマークはマシンごとなので、サイドカーには入れずアプリの設定に持つ
+public enum ExportFolder {
+    public static func bookmark(for url: URL) throws -> Data {
+        #if os(macOS)
+        // Sandbox の外や権限のない環境では security-scoped にできないことがあるので、普通のブックマークに落とす
+        if let d = try? url.bookmarkData(options: .withSecurityScope) { return d }
+        #endif
+        return try url.bookmarkData()
+    }
+
+    public static func resolve(_ data: Data) -> URL? {
+        var stale = false
+        #if os(macOS)
+        if let u = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, bookmarkDataIsStale: &stale) { return u }
+        #endif
+        return try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &stale)
+    }
+
+    /// フォルダーへのアクセス権を得てから実行する
+    public static func access<T>(_ url: URL, _ body: () throws -> T) rethrows -> T {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        return try body()
+    }
+}
+
+/// ゲームエンジン向けのデータ（「ファイル > ゲームエンジン用データを書き出す...」で、選んだフォルダーへ書く。
+/// App Sandbox では PNG の隣に書けない名前なので、保存のたびには書かない）
 /// - `<名前>.atlas.json`: アニメと名前付きセルのフレーム（Aseprite / TexturePacker の JSON Array 形式）
 /// - `<名前>.<マップ名>.tmj`: マップ（Tiled の JSON 形式。注釈はタイルのプロパティ）
 public enum EngineExport {
@@ -19,6 +47,21 @@ public enum EngineExport {
             out.append(("\(baseName).\(name).tmj", json(tiledMap(m, tileset: ts, meta: meta))))
         }
         return out
+    }
+
+    /// フォルダーへ書き出し、書き出したファイル名を返す（書くものがなければ空）。
+    /// 中身が同じファイルは書き直さない（ゲーム側のホットリロードを無駄に起こさない）
+    @discardableResult
+    public static func write(imageName: String, width: Int, height: Int, meta: SheetMeta, to dir: URL) throws -> [String] {
+        let fs = files(imageName: imageName, width: width, height: height, meta: meta)
+        try ExportFolder.access(dir) {
+            for f in fs {
+                let u = dir.appendingPathComponent(f.name)
+                guard (try? Data(contentsOf: u)) != f.data else { continue }
+                try SheetFile.write(f.data, to: u)
+            }
+        }
+        return fs.map(\.name)
     }
 
     /// アニメのコマ（"アニメ名 番号"）と名前付きセル。frameTags にアニメごとの範囲を持つ

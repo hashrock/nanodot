@@ -119,6 +119,9 @@ public final class Editor {
         revision += 1
     }
 
+    /// 書き出すファイルの名前のもとになる画像のファイル名（未保存なら 無題.png）
+    public var imageName: String { fileURL?.lastPathComponent ?? "無題.png" }
+
     public func markSaved(url: URL) {
         fileURL = url
         isDirty = false

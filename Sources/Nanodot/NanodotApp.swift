@@ -187,7 +187,13 @@ struct AppCommands: Commands {
                 }
             }
             .disabled(state.selectedAnimID == nil)
-            Toggle("保存時にゲームエンジン用データも書き出す", isOn: Binding(get: { editor.meta.engineExport }, set: { editor.meta.engineExport = $0 }))
+            Button("ゲームエンジン用データを書き出す...") { state.exportEngineData() }
+            Button(state.lastExportFolder.map { "「\($0.lastPathComponent)」にもう一度書き出す" } ?? "前回の書き出し先にもう一度書き出す") {
+                state.exportEngineDataAgain()
+            }
+            .keyboardShortcut("e")
+            Divider()
+            Button("設定を読み込む...") { state.importMeta() }
         }
         CommandGroup(replacing: .undoRedo) {
             // マップウィンドウが前面ならマップの取り消し・やり直し

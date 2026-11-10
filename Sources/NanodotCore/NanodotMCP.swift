@@ -18,6 +18,8 @@ public enum NanodotMCP {
     まず get_sheet_info で大きさを、get_image で見た目を確かめてから編集してください。
     描画（set_pixels / draw_shape / fill / fill_rect / draw_text / copy_region / replace_color）は 1 回の呼び出しが 1 回の取り消し単位です。
     注釈・アニメ・マップ・スロットの変更は取り消しの対象外です。保存は save_sheet で明示的に行います。
+    保存は PNG と、設定（セル・注釈・アニメ・マップなど）を入れた隣の <名前>.nanodot の 2 つです。
+    ゲーム側で使うアトラス・マップは保存では書かれないので、export_engine_data で明示的に書き出します。
     """
 
     public static func server(host: MCPHost, version: String) -> MCPServer {
@@ -425,7 +427,7 @@ public enum NanodotMCP {
                 return .json(sheetInfo(e))
             },
 
-            MCPTool("open_sheet", "PNG などの画像を開く（同じ名前の .nanodot.json があれば設定も読む。保存していない変更は失われる）", properties: [
+            MCPTool("open_sheet", "PNG などの画像を開く（隣に同じ名前の .nanodot があれば設定も読む。なければ古い名前の .nanodot.json。保存していない変更は失われる）", properties: [
                 "path": prop("string", "ファイルの絶対パス"),
             ], required: ["path"]) { a in
                 let url = URL(fileURLWithPath: (try a.string("path") as NSString).expandingTildeInPath)
@@ -435,7 +437,7 @@ public enum NanodotMCP {
                 return .json(sheetInfo(e))
             },
 
-            MCPTool("save_sheet", "PNG と <名前>.nanodot.json に保存する。engineExport がオンならゲームエンジン用の <名前>.atlas.json と <名前>.<マップ名>.tmj も書く。path を省くと今のファイルに上書き", properties: [
+            MCPTool("save_sheet", "PNG と、設定を入れた隣の <名前>.nanodot に保存する（ゲームエンジン用データは書かない。export_engine_data を使う）。path を省くと今のファイルに上書き", properties: [
                 "path": prop("string", "保存先の .png の絶対パス（省略時は今のファイル）"),
             ]) { a in
                 let url: URL
@@ -447,9 +449,25 @@ public enum NanodotMCP {
                     throw MCPError("まだ保存先がありません。path を指定してください")
                 }
                 guard url.pathExtension.lowercased() == "png" else { throw MCPError("保存先は .png にしてください") }
-                let warnings = try SheetFile.save(e.image, meta: e.meta, url: url)
+                try SheetFile.save(e.image, meta: e.meta, url: url)
                 e.markSaved(url: url)
-                return .text((["\(url.path) に保存しました"] + warnings).joined(separator: "\n"))
+                return .text("\(url.path) に保存しました")
+            },
+
+            MCPTool("export_engine_data", "ゲームエンジン用データ（<名前>.atlas.json と <名前>.<マップ名>.tmj。<名前> は PNG の名前）をフォルダーへ書き出す。今の編集内容を書くので、PNG も save_sheet で保存しておくこと", properties: [
+                "folder": prop("string", "書き出し先フォルダーの絶対パス（省略時は今の PNG と同じフォルダー）"),
+            ]) { a in
+                let dir: URL
+                if let p = a.optString("folder") {
+                    dir = URL(fileURLWithPath: (p as NSString).expandingTildeInPath)
+                } else if let u = e.fileURL {
+                    dir = u.deletingLastPathComponent()
+                } else {
+                    throw MCPError("まだ保存していません。folder を指定するか、先に save_sheet で保存してください")
+                }
+                let names = try EngineExport.write(imageName: e.imageName, width: e.image.width, height: e.image.height, meta: e.meta, to: dir)
+                guard !names.isEmpty else { return .text("書き出すものがありません（アニメ・名前付きセル・マップがない）") }
+                return .text("\(dir.path) に書き出しました: " + names.joined(separator: ", "))
             },
         ]
     }

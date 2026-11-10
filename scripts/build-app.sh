@@ -46,11 +46,26 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
             <key>LSHandlerRank</key><string>Alternate</string>
             <key>LSItemContentTypes</key><array><string>public.png</string></array>
         </dict>
+        <!-- サイドカー（<名前>.nanodot）。App Sandbox で PNG の隣に読み書きするための関連ファイルの宣言。
+             Role が Editor でないと書けない（None / Viewer は読み取りだけ）。
+             LSHandlerRank を None にして、Finder の「このアプリケーションで開く」の候補には出さない -->
+        <dict>
+            <key>CFBundleTypeName</key><string>Nanodot Sheet Settings</string>
+            <key>CFBundleTypeExtensions</key><array><string>nanodot</string></array>
+            <key>CFBundleTypeRole</key><string>Editor</string>
+            <key>LSHandlerRank</key><string>None</string>
+            <key>NSIsRelatedItemType</key><true/>
+        </dict>
     </array>
 </dict>
 </plist>
 PLIST
-codesign --force --sign - "$APP" >/dev/null 2>&1 || true
+if [ -n "${NANODOT_APPSTORE-}" ]; then
+    # App Sandbox を有効にして ad-hoc 署名する（手元で Sandbox 下の動作を確かめるため。提出用の署名は別途）
+    codesign --force --sign - --entitlements Resources/AppStore.entitlements "$APP" >/dev/null 2>&1 || true
+else
+    codesign --force --sign - "$APP" >/dev/null 2>&1 || true
+fi
 if [ -n "${NANODOT_APPSTORE-}" ]; then
     # MCP の文字列・シンボルが残っていないことを確かめる（memcpy は "mcp" を含むので除く）
     LEFT="$( { strings -a "$APP/Contents/MacOS/Nanodot"; nm "$APP/Contents/MacOS/Nanodot" 2>/dev/null; } | grep -i mcp | grep -vi memcpy || true)"
