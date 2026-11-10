@@ -745,3 +745,33 @@ final class EngineExportTests: XCTestCase {
         XCTAssertNil(ExportFolder.resolve(Data([1, 2, 3])))
     }
 }
+
+final class SettingsMigrationTests: XCTestCase {
+    // 実際の UserDefaults には触らない（空の設定ファイルが残るため）。写す値を決めるところだけを試す
+    func testCopiesOldSettings() throws {
+        let old: [String: Any] = ["dragThreshold": 3, "onionSkin": false, "exportFolders": ["/a.png": Data([1, 2])]]
+        let add = try XCTUnwrap(SettingsMigration.additions(current: [:], legacy: [old]))
+        XCTAssertEqual(add.count, 3)
+        XCTAssertEqual(add["dragThreshold"] as? Int, 3)
+        XCTAssertEqual(add["onionSkin"] as? Bool, false)
+        XCTAssertEqual((add["exportFolders"] as? [String: Any])?["/a.png"] as? Data, Data([1, 2]))
+    }
+
+    func testKeepsNewValues() throws {
+        let add = try XCTUnwrap(SettingsMigration.additions(current: ["dragThreshold": 5], legacy: [["dragThreshold": 3, "onionSkin": false]]))
+        XCTAssertEqual(add.keys.sorted(), ["onionSkin"])
+    }
+
+    func testOnlyOnce() {
+        // 済んだ印があれば何も写さない（新しい側で変えた・消した値を、古い値で戻さない）
+        XCTAssertNil(SettingsMigration.additions(current: [SettingsMigration.doneKey: ["x"]], legacy: [["dragThreshold": 3]]))
+        // 古い設定がなくても、写すものが空で返る（呼び出し側が印を付ける）
+        XCTAssertEqual(SettingsMigration.additions(current: [:], legacy: [])?.count, 0)
+    }
+
+    func testFirstLegacyDomainWins() throws {
+        let add = try XCTUnwrap(SettingsMigration.additions(current: [:], legacy: [["a": 1], ["a": 2, "b": 3]]))
+        XCTAssertEqual(add["a"] as? Int, 1)
+        XCTAssertEqual(add["b"] as? Int, 3)
+    }
+}

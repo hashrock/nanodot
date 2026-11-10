@@ -136,7 +136,13 @@ final class WindowCloseGuard: NSObject, NSWindowDelegate {
 @main
 struct NanodotApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @State private var state = AppState()
+    @State private var state: AppState
+
+    init() {
+        // AppState は作られるときに設定を読むので、その前に古い Bundle ID の設定を引き継ぐ
+        SettingsMigration.run()
+        _state = State(initialValue: AppState())
+    }
 
     var body: some Scene {
         Window("Nanodot", id: "main") {
