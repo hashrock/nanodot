@@ -5,7 +5,28 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 終了処理中（ウィンドウが閉じても開閉状態を記録しない）
     static var isTerminating = false
-    var state: AppState?
+    var state: AppState? {
+        didSet {
+            guard let state else { return }
+            DispatchQueue.main.async { [self] in
+                installCloseGuard()
+                // 書類を渡されて起動したときは、画面ができる前に application(_:open:) が来る。画面ができてから開く
+                guard let url = pendingURL else { return }
+                pendingURL = nil
+                state.open(url: url)
+            }
+        }
+    }
+    private var pendingURL: URL?
+    /// メインウィンドウを開く（SwiftUI の openWindow。メニューを組み立てるときに AppCommands が入れる）
+    var openMainWindow: (() -> Void)? {
+        didSet {
+            guard wantsMainWindow, let openMainWindow else { return }
+            wantsMainWindow = false
+            DispatchQueue.main.async(execute: openMainWindow)
+        }
+    }
+    private var wantsMainWindow = false
     private var keyMonitor: Any?
     private var closeGuard: WindowCloseGuard?
 
@@ -19,11 +40,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return e }
             return self.handleKey(e)
         }
-        DispatchQueue.main.async { [self] in
-            if let state, let window = state.mainView?.window {
-                closeGuard = WindowCloseGuard(window: window, state: state)
-            }
-        }
+        DispatchQueue.main.async { [self] in installCloseGuard() }
+    }
+
+    /// メインウィンドウに、閉じるときの見張りを付ける（ウィンドウができてから。付いていれば何もしない）
+    private func installCloseGuard() {
+        guard let state, let window = state.mainView?.window, closeGuard?.window !== window else { return }
+        closeGuard = WindowCloseGuard(window: window, state: state)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
@@ -35,7 +58,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        if let url = urls.first, let state, state.confirmDiscardChanges() { state.open(url: url) }
+        guard let url = urls.first else { return }
+        guard let state else {
+            // 書類を渡されて起動した。開くイベントを SwiftUI に渡していないので、メインウィンドウは自分で開く
+            pendingURL = url
+            if let openMainWindow {
+                DispatchQueue.main.async(execute: openMainWindow)
+            } else {
+                wantsMainWindow = true
+            }
+            return
+        }
+        if state.confirmDiscardChanges() { state.open(url: url) }
+    }
+
+    /// 実行ファイルに引数でファイルを渡して起動したとき（`Nanodot sheet.png`）は、こちらに来る
+    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
+        application(sender, open: [URL(fileURLWithPath: filename)])
+        return true
     }
 
     /// 単キーのショートカット（テキスト入力中は無視）
@@ -150,18 +190,24 @@ struct NanodotApp: App {
                 .onAppear { delegate.state = state }
         }
         .defaultSize(width: 1280, height: 860)
-        .commands { AppCommands(state: state) }
+        // 書類を開くイベント（Finder や open コマンドから渡されたファイル）は AppDelegate で受ける。
+        // SwiftUI に任せると、ウィンドウを閉じて作り直そうとして、起動時はメインウィンドウが出ず、
+        // 起動中はメインウィンドウが閉じる（ほかにウィンドウがなければアプリごと終了する）
+        .handlesExternalEvents(matching: [])
+        .commands { AppCommands(state: state, delegate: delegate) }
 
         Window("アニメ", id: "anim") {
             AnimWindow(state: state)
         }
         .defaultSize(width: 420, height: 640)
+        .handlesExternalEvents(matching: [])
         .animWindowRestorationDisabled()
 
         Window("マップ", id: "map") {
             MapWindow(state: state, editor: state.editor)
         }
         .defaultSize(width: 900, height: 640)
+        .handlesExternalEvents(matching: [])
         .keyboardShortcut("m", modifiers: [.command, .shift])
         .animWindowRestorationDisabled()
         .keyboardShortcut("a", modifiers: [.command, .shift])
@@ -170,9 +216,13 @@ struct NanodotApp: App {
 
 struct AppCommands: Commands {
     let state: AppState
+    let delegate: AppDelegate
+    @Environment(\.openWindow) private var openWindow
     var editor: Editor { state.editor }
 
     var body: some Commands {
+        // ウィンドウがまだないとき（書類を渡されて起動したとき）に AppDelegate から開けるようにする
+        let _ = { delegate.openMainWindow = { openWindow(id: "main") } }()
         CommandGroup(replacing: .newItem) {
             Button("新規...") {
                 if state.confirmDiscardChanges() { state.showNewDocumentSheet = true }
