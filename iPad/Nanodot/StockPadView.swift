@@ -9,6 +9,7 @@ import UIKit
 ///   - マーク範囲の右下のつまみをドラッグ: ルーペサイズを変える
 ///   - 長押し: マークと同じ大きさの範囲をコピー。そのままドラッグで広げる（Mac 版の右クリック・右ドラッグ）
 ///   - ダブルタップ: クリップボードを貼り付け（スナップした位置が左上）
+///   - スポイトのツールのとき: タップ・ドラッグで色を拾う（ドラッグ中は追従し、離した所で決めて直前のツールに戻る）
 /// - 指 2 本: ドラッグで表示を動かす、ピンチで拡大縮小
 final class StockPadView: UIView, UIGestureRecognizerDelegate {
     let state: PadState
@@ -20,6 +21,8 @@ final class StockPadView: UIView, UIGestureRecognizerDelegate {
         case swap(start: IntPoint, target: IntPoint?)
         case resize
         case copy(start: IntPoint, current: IntPoint)
+        /// スポイトでなぞっている間（original は拾う前の色）
+        case pick(original: RGBA)
     }
 
     private var interaction = Interaction.none
@@ -240,6 +243,10 @@ final class StockPadView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func handleTap(_ g: UITapGestureRecognizer) {
+        if state.eyedropperActive {
+            state.finishEyedropper(at: dot(at: g.location(in: self)))
+            return
+        }
         editor.setMark(editor.meta.snapped(dot(at: g.location(in: self))))
         state.requestDisplay()
     }
@@ -261,7 +268,10 @@ final class StockPadView: UIView, UIGestureRecognizerDelegate {
             let t = g.translation(in: self)
             let start = CGPoint(x: p.x - t.x, y: p.y - t.y)
             let s = dot(at: start)
-            if isOnResizeHandle(start) {
+            if state.eyedropperActive {
+                interaction = .pick(original: editor.color)
+                editor.pick(at: s)
+            } else if isOnResizeHandle(start) {
                 interaction = .resize
             } else if editor.markRect.contains(s) {
                 interaction = .swap(start: s, target: nil)
@@ -273,9 +283,11 @@ final class StockPadView: UIView, UIGestureRecognizerDelegate {
             handleDrag(g, changedTo: d)
         case .ended:
             if case .swap(_, let t?) = interaction { editor.swapMarkRegion(to: t) }
+            if case .pick(let original) = interaction, !state.finishEyedropper(at: d) { editor.color = original }
             interaction = .none
             state.requestDisplay()
         default:
+            if case .pick(let original) = interaction { editor.color = original }
             interaction = .none
             state.requestDisplay()
         }
@@ -283,6 +295,8 @@ final class StockPadView: UIView, UIGestureRecognizerDelegate {
 
     private func handleDrag(_ g: UIPanGestureRecognizer, changedTo d: IntPoint) {
         switch interaction {
+        case .pick:
+            editor.pick(at: d)
         case .moveMark:
             editor.setMark(editor.meta.snapped(d))
             state.requestDisplay()

@@ -39,6 +39,9 @@ final class PadState {
             mainView?.updateGestureConfiguration()
         }
     }
+    /// スポイトのツールを選んでいる（メイン・ストックのタップで色を拾い、拾ったら元のツールに戻る）。
+    /// 描くツール（editor.tool）は変えずに上に重ねるので、抜ければ直前のツールのまま
+    var eyedropperActive = false
     /// スタンプで透明部分を抜く（Mac 版の ⌥ にあたる）
     var stampSkipTransparent = false
     /// 長押しのあと、範囲コピーとみなすまでの移動ドット数（Mac 版の「右ドラッグの判定」）
@@ -140,6 +143,26 @@ final class PadState {
 
     // MARK: - クリップボード
 
+    // MARK: - スポイト
+
+    func setEyedropper(_ on: Bool) {
+        eyedropperActive = on
+        if on { editor.stampActive = false }
+        requestDisplay()
+    }
+
+    /// スポイトで拾った（指・ペンを離した）。シートの中なら色を決めて直前のツールに戻る。
+    /// 透明のドットは透明を拾う（Mac 版の右クリックと同じ）
+    @discardableResult
+    func finishEyedropper(at p: IntPoint) -> Bool {
+        guard editor.image.contains(p.x, p.y) else { return false }
+        editor.pick(at: p)
+        eyedropperActive = false
+        UISelectionFeedbackGenerator().selectionChanged()
+        requestDisplay()
+        return true
+    }
+
     /// 内部のクリップボードに置き、システムのクリップボードにも PNG で書く
     func setClipboard(_ b: PixelBuffer) {
         editor.setClipboard(b)
@@ -167,6 +190,7 @@ final class PadState {
             pasteboardChangeCount = pb.changeCount
         }
         if editor.clipboard != nil {
+            eyedropperActive = false
             editor.stampActive = true
         } else {
             show(L("貼り付ける画像がありません"))

@@ -9,6 +9,8 @@ import SwiftUI
 /// - `-demoSave 1`: `-demo` のあと「保存」する（書類フォルダーに PNG とサイドカーができる）
 /// - `-layout WxH`: 画面をその大きさに切り詰めて並べる（横向き・Split View の幅の確認用）
 /// - `-selftest 1`: メインのドットと画面座標の変換を確かめ、結果を tmp/selftest.txt に書く
+/// - `-eyedropperTest 1`: スポイトのツールで、色のあるドット・透明のドット・シートの外を拾い、結果を tmp/eyedropper.txt に書く。
+///   終わったらスポイトを選んだままにする（ツールバーの確認用）。`-demo 1` と一緒に使う
 /// - `-panel anim|settings|new`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
 ///   `-layout WxH` の幅も効く）。`-demoList 1` は `-demo` のアニメを「登録」にしてコマを 2 つ入れる
 enum SimulatorHooks {
@@ -26,6 +28,9 @@ enum SimulatorHooks {
         if d.bool(forKey: "demoSave") { state.save() }
         if d.bool(forKey: "selftest") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { selftest(state) }
+        }
+        if d.bool(forKey: "eyedropperTest") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { eyedropperTest(state) }
         }
     }
 
@@ -67,6 +72,33 @@ enum SimulatorHooks {
         UserDefaults.standard.set(SidePanel.anim.rawValue, forKey: "pad.sidePanel")
         state.requestDisplay()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { state.stockView?.fitToView() }
+    }
+
+    /// demo の絵（16, 0 からのコマ）で確かめる。(16+5, 8) は体の色、(16, 0) は透明
+    private static func eyedropperTest(_ state: PadState) {
+        let e = state.editor
+        var lines: [String] = []
+        func check(_ name: String, _ ok: Bool) { lines.append((ok ? "OK " : "NG ") + name) }
+        e.tool = .rect
+        e.color = RGBA(1, 2, 3)
+        state.setEyedropper(true)
+        check("active after select", state.eyedropperActive && !e.stampActive)
+        check("outside sheet is ignored", !state.finishEyedropper(at: IntPoint(-1, -1)) && state.eyedropperActive && e.color == RGBA(1, 2, 3))
+        let body = e.image[21, 8]
+        check("pick opaque \(body)", state.finishEyedropper(at: IntPoint(21, 8)) && e.color == body && body.a == 255)
+        check("back to previous tool", !state.eyedropperActive && e.tool == .rect)
+        state.setEyedropper(true)
+        check("pick transparent", state.finishEyedropper(at: IntPoint(16, 0)) && e.color.a == 0 && !state.eyedropperActive)
+        e.stampActive = true
+        state.setEyedropper(true)
+        check("eyedropper ends stamp mode", !e.stampActive)
+        state.setEyedropper(false)
+        check("toggle off keeps tool", !state.eyedropperActive && e.tool == .rect)
+        // 確認の画面用: 体の色を拾い直し、スポイトを選んだままにする
+        _ = state.finishEyedropper(at: IntPoint(21, 8))
+        state.setEyedropper(true)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("eyedropper.txt")
+        try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
     }
 
     private static func selftest(_ state: PadState) {
