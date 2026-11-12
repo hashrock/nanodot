@@ -531,8 +531,8 @@ struct SettingsPanel: View {
                 }
                 Section {
                     Toggle("指で描く", isOn: Binding(get: { state.fingerDrawing }, set: { state.fingerDrawing = $0 }))
-                    Stepper("長押しで範囲コピーにする移動: \(state.dragThreshold) ドット",
-                            value: Binding(get: { state.dragThreshold }, set: { state.dragThreshold = $0 }), in: 1...8)
+                    IntRow("長押しで範囲コピーにする移動", value: Binding(get: { state.dragThreshold }, set: { state.dragThreshold = $0 }),
+                           min: 1, max: 8, unit: state.dragThreshold == 1 ? Text("ドット（単位・1 のとき）") : Text("ドット（単位）"))
                 } header: {
                     Text("入力")
                 } footer: {

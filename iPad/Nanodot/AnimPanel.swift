@@ -249,11 +249,11 @@ struct AnimPanel: View {
                 IntRow("枚数", value: a.count, min: 1)
             }
             PanelGroup("タイミング") {
-                IntRow("間隔", value: a.interval, min: 10, step: 10, unit: "ms")
+                IntRow("間隔", value: a.interval, min: 10, step: 10, unit: Text("ms"))
             }
         case .list:
             PanelGroup("コマを追加") {
-                IntRow("表示時間", value: $newFrameDuration, min: 10, step: 10, unit: "ms")
+                IntRow("表示時間", value: $newFrameDuration, min: 10, step: 10, unit: Text("ms"))
                 Divider()
                 Button {
                     a.wrappedValue.frames.append(AnimFrame(x: editor.meta.mark.x, y: editor.meta.mark.y, duration: newFrameDuration))
@@ -325,9 +325,10 @@ struct IntRow: View {
     var min: Int = 0
     var max: Int = 8192
     var step: Int = 1
-    var unit: LocalizedStringKey?
+    var unit: Text?
 
-    init(_ label: LocalizedStringKey, value: Binding<Int>, min: Int = 0, max: Int = 8192, step: Int = 1, unit: LocalizedStringKey? = nil) {
+    /// unit は値の左に出す単位（数で形が変わる単位は、呼ぶ側で値を見て Text を選ぶ）
+    init(_ label: LocalizedStringKey, value: Binding<Int>, min: Int = 0, max: Int = 8192, step: Int = 1, unit: Text? = nil) {
         self.label = label
         _value = value
         self.min = min
@@ -337,20 +338,35 @@ struct IntRow: View {
     }
 
     var body: some View {
+        // 1 行に収まらない長いラベル（狭い幅・英語）は、ラベルを上、値と −／＋ を下の右寄せにする
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                Text(label).fixedSize()
+                Spacer(minLength: 4)
+                controls
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text(label).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Spacer(minLength: 0)
+                    controls
+                }
+            }
+            .padding(.vertical, 6)
+        }
+        // Form の行は Form が高さを付けるので、PanelGroup の中だけ行の高さをそろえる
+        .frame(minHeight: inPanelGroup ? 44 : nil)
+    }
+
+    private var controls: some View {
         HStack(spacing: 8) {
-            Text(label)
-                .lineLimit(1)
-                .layoutPriority(1)
-            Spacer(minLength: 4)
             if let unit {
-                Text(unit).foregroundStyle(.secondary)
+                unit.foregroundStyle(.secondary).fixedSize()
             }
             IntField(value: $value, min: min, max: max, step: step)
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel(Text(label))
         }
-        // Form の行は Form が高さを付けるので、PanelGroup の中だけ行の高さをそろえる
-        .frame(minHeight: inPanelGroup ? 44 : nil)
     }
 }
 

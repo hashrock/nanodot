@@ -1057,6 +1057,40 @@
         }
       }
     },
+    "ドット（単位・1 のとき）" : {
+      "comment" : "値の横に出す単位だけ（値が 1 のとき）。日本語は「ドット」",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dot"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドット"
+          }
+        }
+      }
+    },
+    "ドット（単位）" : {
+      "comment" : "値の横に出す単位だけ（値が 1 でないとき）。日本語は「ドット」",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dots"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドット"
+          }
+        }
+      }
+    },
     "ドラッグでスロットに登録" : {
       "comment" : "描画色の見本のツールチップ",
       "localizations" : {
@@ -2796,12 +2830,12 @@
         }
       }
     },
-    "長押しで範囲コピーにする移動: %lld ドット" : {
+    "長押しで範囲コピーにする移動" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold-Drag Copy Threshold: %lld dots"
+            "value" : "Hold-Drag Copy Threshold"
           }
         }
       }
