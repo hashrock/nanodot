@@ -1830,6 +1830,16 @@
         }
       }
     },
+    "増やす" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase"
+          }
+        }
+      }
+    },
     "変更" : {
       "comment" : "マップの大きさを確定するボタン",
       "localizations" : {
@@ -2230,6 +2240,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Clear (Delete)"
+          }
+        }
+      }
+    },
+    "減らす" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease"
           }
         }
       }

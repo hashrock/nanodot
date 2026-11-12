@@ -279,7 +279,7 @@ struct PadContentView: View {
                 .accessibilityLabel("設定")
                 .popover(isPresented: $showSettings) {
                     SettingsPanel(state: state, editor: editor)
-                        .frame(width: 360)
+                        .frame(width: 440)
                 }
         }
     }
@@ -501,7 +501,7 @@ struct SettingsPanel: View {
                     LabeledContent("セルの大きさ") {
                         HStack(spacing: 4) {
                             IntField(value: $editor.meta.cellWidth, min: 1)
-                            Text("×")
+                            Text("×").fixedSize()
                             IntField(value: $editor.meta.cellHeight, min: 1)
                         }
                     }
@@ -514,7 +514,7 @@ struct SettingsPanel: View {
                     LabeledContent("ルーペ") {
                         HStack(spacing: 4) {
                             IntField(value: Binding(get: { editor.meta.lupeWidth }, set: { editor.setLupe(width: $0, height: editor.meta.lupeHeight) }), min: 1)
-                            Text("×")
+                            Text("×").fixedSize()
                             IntField(value: Binding(get: { editor.meta.lupeHeight }, set: { editor.setLupe(width: editor.meta.lupeWidth, height: $0) }), min: 1)
                         }
                     }
@@ -526,9 +526,9 @@ struct SettingsPanel: View {
                 Section("シート") {
                     LabeledContent("大きさ（左上を基準に変える）") {
                         HStack(spacing: 4) {
-                            IntField(value: $sheetWidth, min: 1)
-                            Text("×")
-                            IntField(value: $sheetHeight, min: 1)
+                            IntField(value: $sheetWidth, min: 1, step: 16)
+                            Text("×").fixedSize()
+                            IntField(value: $sheetHeight, min: 1, step: 16)
                         }
                     }
                     Button("シートの大きさを変える") {
@@ -575,9 +575,9 @@ struct NewDocumentSheet: View {
                 Section("シート（px）") {
                     LabeledContent("幅 × 高さ") {
                         HStack(spacing: 4) {
-                            IntField(value: $width, min: 1)
-                            Text("×")
-                            IntField(value: $height, min: 1)
+                            IntField(value: $width, min: 1, step: 16)
+                            Text("×").fixedSize()
+                            IntField(value: $height, min: 1, step: 16)
                         }
                     }
                 }
@@ -585,7 +585,7 @@ struct NewDocumentSheet: View {
                     LabeledContent("幅 × 高さ") {
                         HStack(spacing: 4) {
                             IntField(value: $cellWidth, min: 1)
-                            Text("×")
+                            Text("×").fixedSize()
                             IntField(value: $cellHeight, min: 1)
                         }
                     }

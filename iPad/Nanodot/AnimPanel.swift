@@ -208,7 +208,7 @@ struct AnimPanel: View {
             row("コマの大きさ") {
                 HStack(spacing: 4) {
                     IntField(value: a.frameWidth, min: 1)
-                    Text("×")
+                    Text("×").fixedSize()
                     IntField(value: a.frameHeight, min: 1)
                     Menu {
                         Button("セルの大きさ") {
@@ -227,7 +227,7 @@ struct AnimPanel: View {
                 row("起点") {
                     HStack(spacing: 4) {
                         IntField(value: a.originX, min: 0)
-                        Text(",")
+                        Text(",").fixedSize()
                         IntField(value: a.originY, min: 0)
                         Button("マーク位置") {
                             a.wrappedValue.originX = editor.meta.mark.x
@@ -239,21 +239,21 @@ struct AnimPanel: View {
                 row("列 × 行") {
                     HStack(spacing: 4) {
                         IntField(value: a.columns, min: 1)
-                        Text("×")
+                        Text("×").fixedSize()
                         IntField(value: a.rows, min: 1)
                     }
                 }
                 row("枚数") { IntField(value: a.count, min: 1) }
                 row("間隔") {
                     HStack(spacing: 4) {
-                        IntField(value: a.interval, min: 10)
+                        IntField(value: a.interval, min: 10, step: 10)
                         Text("ms")
                     }
                 }
             case .list:
                 row("追加") {
                     HStack(spacing: 4) {
-                        IntField(value: $newFrameDuration, min: 10)
+                        IntField(value: $newFrameDuration, min: 10, step: 10)
                         Text("ms")
                         Button("マーク位置を追加") {
                             a.wrappedValue.frames.append(AnimFrame(x: editor.meta.mark.x, y: editor.meta.mark.y, duration: newFrameDuration))
@@ -295,7 +295,7 @@ struct FrameList: View {
                         .font(.callout.monospacedDigit())
                         .accessibilityHint("マーク位置をこのコマへ")
                     Spacer()
-                    IntField(value: $frames[i].duration, min: 10)
+                    IntField(value: $frames[i].duration, min: 10, step: 10)
                     Text("ms").font(.caption)
                     Menu {
                         Button { frames.swapAt(i, i - 1) } label: { Label("上へ", systemImage: "chevron.up") }
@@ -320,20 +320,45 @@ struct FrameList: View {
     }
 }
 
-/// 整数の入力欄（範囲外は丸める）
+/// 整数の入力欄（範囲外は丸める）。両側の −／＋ で step ずつ変える（押し続けると繰り返す）
 struct IntField: View {
     @Binding var value: Int
     var min: Int = 0
     var max: Int = 8192
-    var width: CGFloat = 60
+    var step: Int = 1
+    var width: CGFloat = 48
+
+    private func set(_ v: Int) { value = Swift.min(Swift.max(v, min), max) }
 
     var body: some View {
-        TextField("", value: Binding(get: { value }, set: { value = Swift.min(Swift.max($0, min), max) }), format: .number.grouping(.never))
-            .labelsHidden()
-            .keyboardType(.numberPad)
-            .multilineTextAlignment(.trailing)
-            .frame(width: width)
-            .textFieldStyle(.roundedBorder)
+        HStack(spacing: 0) {
+            stepButton("minus", L("減らす"), disabled: value <= min) {
+                // step の倍数にそろえながら減らす（17 で −16 なら 16）
+                set(value % step == 0 ? value - step : value - value % step)
+            }
+            TextField("", value: Binding(get: { value }, set: { set($0) }), format: .number.grouping(.never))
+                .labelsHidden()
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.center)
+                .frame(width: width)
+                .textFieldStyle(.roundedBorder)
+            stepButton("plus", L("増やす"), disabled: value >= max) {
+                set(value % step == 0 ? value + step : value - value % step + step)
+            }
+        }
+    }
+
+    private func stepButton(_ symbol: String, _ label: String, disabled: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.footnote.weight(.semibold))
+                .frame(width: 28, height: 34)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .buttonRepeatBehavior(.enabled)
+        .disabled(disabled)
+        .accessibilityLabel(label)
     }
 }
 
