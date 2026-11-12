@@ -170,12 +170,12 @@
         }
       }
     },
-    "Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。" : {
+    "Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。ツールバーのスポイトを選ぶと、メインかストックで触れた所の色を拾い、元のツールに戻ります。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Draw with Apple Pencil. Drag with one or two fingers to move the mark, and pinch to change the loupe size. Touch and hold to pick a color; hold and drag to copy an area and stamp it. Tap with two fingers to undo, three fingers to redo. With Draw with Finger on, use two fingers to move the mark."
+            "value" : "Draw with Apple Pencil. Drag with one or two fingers to move the mark, and pinch to change the loupe size. Touch and hold to pick a color; hold and drag to copy an area and stamp it. With the Eyedropper tool selected, touch the main view or the stock to pick that color and return to the previous tool. Tap with two fingers to undo, three fingers to redo. With Draw with Finger on, use two fingers to move the mark."
           }
         }
       }
@@ -2299,6 +2299,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ellipse (O)"
+          }
+        }
+      }
+    },
+    "スポイト (I)" : {
+      "comment" : "iPad 版のスポイトのツールの名前とキー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eyedropper (I)"
           }
         }
       }

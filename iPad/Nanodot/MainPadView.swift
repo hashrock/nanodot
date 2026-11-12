@@ -7,6 +7,7 @@ import UIKit
 /// - 指 1 本・2 本のドラッグ: マーク位置を動かす（セルの 1/8 単位。Mac 版のスペース + ドラッグ）
 /// - ピンチ: ルーペサイズを 1/2・2 倍にする（Mac 版のホイール）
 /// - 長押し: スポイト。長押しのままドラッグすると範囲をコピーしてスタンプモードへ（Mac 版の右クリック・右ドラッグ）
+/// - スポイトのツール: Apple Pencil か指 1 本で触れた所の色を拾う（ドラッグ中は追従し、離した所で決めて直前のツールに戻る）
 /// - 2 本指タップで取り消し、3 本指タップでやり直し
 /// - 「指で描く」がオンなら、指 1 本でも描く（マーク位置を動かすのは 2 本指）
 final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
@@ -17,6 +18,8 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         case none
         case stroke(touch: UITouch, last: IntPoint, color: RGBA)
         case shape(touch: UITouch, start: IntPoint, current: IntPoint)
+        /// スポイトで触れている間（original は拾う前の色。シートの外で離したり取り消されたりしたら戻す）
+        case pick(touch: UITouch, original: RGBA)
         /// 長押しした直後（離せばスポイト、動かせば範囲コピー）
         case holdPending(start: IntPoint)
         case holdSelect(start: IntPoint, current: IntPoint)
@@ -235,13 +238,18 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
 
     private var activeTouch: UITouch? {
         switch interaction {
-        case .stroke(let t, _, _), .shape(let t, _, _): return t
+        case .stroke(let t, _, _), .shape(let t, _, _), .pick(let t, _): return t
         default: return nil
         }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard case .none = interaction, let t = touches.first(where: canDraw) else { return }
+        guard case .none = interaction else { return }
+        if state.eyedropperActive {
+            beginPick(touches, event)
+            return
+        }
+        guard let t = touches.first(where: canDraw) else { return }
         // 2 本目の指が来ているなら描かない（ジェスチャーに任せる）
         if t.type == .direct, (event?.allTouches?.filter { $0.type == .direct }.count ?? 0) > 1 { return }
         let d = dot(t)
@@ -270,6 +278,10 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = activeTouch, touches.contains(t) else { return }
         switch interaction {
+        case .pick:
+            let d = dot(t)
+            editor.pick(at: d)
+            if t.type == .pencil { setHover(d) }
         case .stroke(_, var last, let c):
             // 速く動かしても点が飛ばないよう、間の入力（coalesced）も全部つなぐ
             for ct in event?.coalescedTouches(for: t) ?? [t] {
@@ -299,6 +311,8 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
             editor.endEdit(editor.tool == .eraser ? L("消しゴム") : L("ペン"))
         case .shape(_, let a, let b):
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
+        case .pick(_, let original):
+            if !state.finishEyedropper(at: dot(t)) { editor.color = original }
         default:
             break
         }
@@ -311,8 +325,28 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         // 指で描き始めたあと 2 本指の操作に変わったときなど。描きかけは取り消す
         guard let t = activeTouch, touches.contains(t) else { return }
         if case .stroke = interaction { editor.cancelEdit() }
+        cancelPick()
         interaction = .none
         setNeedsDisplay()
+    }
+
+    // MARK: - スポイト
+
+    private func beginPick(_ touches: Set<UITouch>, _ event: UIEvent?) {
+        guard let t = touches.first(where: { $0.type == .pencil || $0.type == .direct }) else { return }
+        if t.type == .direct, (event?.allTouches?.filter { $0.type == .direct }.count ?? 0) > 1 { return }
+        let d = dot(t)
+        if t.type == .pencil { setHover(d) }
+        interaction = .pick(touch: t, original: editor.color)
+        editor.pick(at: d)
+        setNeedsDisplay()
+    }
+
+    /// 拾いかけを取り消す（指のドラッグがマーク移動に変わったときなど）。
+    /// 指のタップは handleTap が決めるので、そちらで先に決まっていれば色は戻さない
+    private func cancelPick() {
+        guard case .pick(_, let original) = interaction, state.eyedropperActive else { return }
+        editor.color = original
     }
 
     // MARK: - 指の操作
@@ -391,6 +425,7 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
                 setNeedsDisplay()
                 return
             }
+            cancelPick()
             interaction = .holdPending(start: d)
             editor.pick(at: d)
             UISelectionFeedbackGenerator().selectionChanged()
@@ -412,7 +447,11 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         case .ended:
             if case .holdSelect(let a, let b) = interaction, let buf = editor.copy(IntRect(corner: a, b)) {
                 state.setClipboard(buf)
+                state.eyedropperActive = false
                 editor.stampActive = true
+            } else if case .holdPending(let s) = interaction, state.eyedropperActive {
+                // スポイトのツールのまま長押しで拾ったときも、直前のツールに戻る
+                state.finishEyedropper(at: s)
             }
             interaction = .none
             setNeedsDisplay()
@@ -422,8 +461,12 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         }
     }
 
-    /// 指のタップ: スタンプモードなら押す
+    /// 指のタップ: スポイトなら拾う。スタンプモードなら押す
     @objc private func handleTap(_ g: UITapGestureRecognizer) {
+        if state.eyedropperActive {
+            state.finishEyedropper(at: dot(at: g.location(in: self)))
+            return
+        }
         guard editor.stampActive else { return }
         editor.stamp(at: dot(at: g.location(in: self)), overwrite: !state.stampSkipTransparent, clipToWork: true)
     }
@@ -461,11 +504,13 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
             // 既定: ペンと消しゴムを切り替える（ほかのツールなら消しゴムへ）
             editor.tool = editor.tool == .eraser ? .pen : .eraser
             editor.stampActive = false
+            state.eyedropperActive = false
         }
     }
 
     func cancelInteraction() {
         if case .stroke = interaction { editor.cancelEdit() }
+        cancelPick()
         interaction = .none
         editor.stampActive = false
         setNeedsDisplay()
@@ -480,7 +525,8 @@ struct MainCanvasRepresentable: UIViewRepresentable {
     func updateUIView(_ v: MainPadView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら描き直させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID)
+        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
+             state.eyedropperActive)
         v.setNeedsDisplay()
     }
 }

@@ -16,6 +16,29 @@ enum SidePanel: String, CaseIterable, Identifiable {
     }
 }
 
+/// ツールバーに並べるもの: 描くツールと、iPad 版だけのスポイト（描くツールの上に重ねるモード）
+enum PadTool: Hashable {
+    case draw(Tool)
+    case eyedropper
+
+    /// 並び順（テキストは入れていない）
+    static let all: [PadTool] = [.draw(.pen), .draw(.eraser), .draw(.fill), .eyedropper, .draw(.line), .draw(.rect), .draw(.ellipse)]
+
+    var displayName: String {
+        switch self {
+        case .draw(let t): return t.displayName
+        case .eyedropper: return L("スポイト (I)")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .draw(let t): return t.symbol
+        case .eyedropper: return "eyedropper"
+        }
+    }
+}
+
 struct PadContentView: View {
     let state: PadState
     @Bindable var editor: Editor
@@ -268,7 +291,7 @@ struct PadContentView: View {
             if compact {
                 toolMenu
             } else {
-                ForEach(Self.tools, id: \.self) { toolButton($0) }
+                ForEach(PadTool.all, id: \.self) { toolButton($0) }
                 barButton(editor.shapeFilled ? "square.fill" : "square", selected: editor.shapeFilled,
                           disabled: editor.tool != .rect && editor.tool != .ellipse) { editor.shapeFilled.toggle() }
                     .accessibilityLabel("矩形・楕円を塗りつぶす")
@@ -283,9 +306,6 @@ struct PadContentView: View {
                 }
         }
     }
-
-    /// iPad 版のツール（テキストは入れていない）
-    static let tools: [Tool] = [.pen, .eraser, .fill, .line, .rect, .ellipse]
 
     private var titleView: some View {
         HStack(spacing: 6) {
@@ -364,12 +384,12 @@ struct PadContentView: View {
 
     private var toolMenu: some View {
         Menu {
-            Picker("ツール", selection: Binding(get: { editor.tool }, set: { selectTool($0) })) {
-                ForEach(Self.tools, id: \.self) { t in Label(t.displayName, systemImage: t.symbol).tag(t) }
+            Picker("ツール", selection: Binding(get: { currentTool }, set: { selectTool($0) })) {
+                ForEach(PadTool.all, id: \.self) { t in Label(t.displayName, systemImage: t.symbol).tag(t) }
             }
             Toggle(isOn: $editor.shapeFilled) { Label("矩形・楕円を塗りつぶす", systemImage: "square.fill") }
         } label: {
-            Image(systemName: editor.tool.symbol)
+            Image(systemName: currentTool.symbol)
                 .font(.system(size: 18))
                 .frame(width: 40, height: 40)
                 .foregroundStyle(Color.white)
@@ -428,14 +448,24 @@ struct PadContentView: View {
         }
     }
 
-    private func selectTool(_ t: Tool) {
-        editor.tool = t
-        editor.stampActive = false
-        state.requestDisplay()
+    private var currentTool: PadTool {
+        state.eyedropperActive ? .eyedropper : .draw(editor.tool)
     }
 
-    private func toolButton(_ tool: Tool) -> some View {
-        let on = editor.tool == tool && !editor.stampActive
+    private func selectTool(_ t: PadTool) {
+        switch t {
+        case .draw(let tool):
+            editor.tool = tool
+            editor.stampActive = false
+            state.setEyedropper(false)
+        case .eyedropper:
+            // もう一度押すと、拾わずに直前のツールへ戻る
+            state.setEyedropper(!state.eyedropperActive)
+        }
+    }
+
+    private func toolButton(_ tool: PadTool) -> some View {
+        let on = currentTool == tool && !editor.stampActive
         return Button { selectTool(tool) } label: {
             Image(systemName: tool.symbol)
                 .font(.system(size: 18))
@@ -536,7 +566,7 @@ struct SettingsPanel: View {
                 } header: {
                     Text("入力")
                 } footer: {
-                    Text("Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。")
+                    Text("Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。ツールバーのスポイトを選ぶと、メインかストックで触れた所の色を拾い、元のツールに戻ります。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。")
                 }
             }
             .navigationTitle("設定")
@@ -631,9 +661,10 @@ struct KeyboardShortcuts: View {
             key("l", [], { tool(.line) })
             key("r", [], { tool(.rect) })
             key("o", [], { tool(.ellipse) })
+            key("i", []) { state.setEyedropper(!state.eyedropperActive) }
             key(.escape, []) {
                 editor.stampActive = false
-                state.requestDisplay()
+                state.setEyedropper(false)
             }
             key(.delete, []) { editor.apply(.clear) }
             key(.delete, .option) { editor.apply(.fill) }
@@ -654,7 +685,7 @@ struct KeyboardShortcuts: View {
     private func tool(_ t: Tool) {
         editor.tool = t
         editor.stampActive = false
-        state.requestDisplay()
+        state.setEyedropper(false)
     }
 
     private func key(_ k: KeyEquivalent, _ m: EventModifiers, _ action: @escaping () -> Void) -> some View {
