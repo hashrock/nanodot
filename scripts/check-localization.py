@@ -34,6 +34,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESOURCES = os.path.join(ROOT, 'Resources')
 MAIN, MCP, INFO = 'Localizable', 'MCP', 'InfoPlist'
 SOURCE_DIR = os.path.join(ROOT, 'Sources')
+# iPad 版（iPad/project.yml）も同じ Localizable を使う
+SOURCE_DIRS = [SOURCE_DIR, os.path.join(ROOT, 'iPad')]
 # エージェント向けの文（ツールの説明・結果）を持つファイル。訳さない
 AGENT_FACING = {'NanodotMCP.swift', 'MCP.swift'}
 
@@ -46,8 +48,8 @@ STRING_LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"')
 JAPANESE = re.compile(r'[\u3040-\u30ff\u3400-\u9fff]')
 WRAPPED = re.compile(r'\b(L|LM)\(\s*$')
 # 先頭の引数が LocalizedStringKey になる SwiftUI の部品
-SWIFTUI = re.compile(r'(?:\b(?:Text|Button|Toggle|Picker|Label|LabeledContent|Menu|Stepper|TextField|Window|CommandMenu)'
-                     r'|\.help|\.navigationTitle)\(\s*$')
+SWIFTUI = re.compile(r'(?:\b(?:Text|Button|Toggle|Picker|Label|LabeledContent|Menu|Stepper|TextField|Window|CommandMenu|Section)'
+                     r'|\.help|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint|\.confirmationDialog|\brow)\(\s*$')
 MARK_NAME = re.compile(r'//\s*l10n:\s*LName')
 MARK_SKIP = re.compile(r'//\s*l10n:\s*訳さない')
 
@@ -79,10 +81,11 @@ def unescape(literal):
 
 
 def swift_files():
-    for dirpath, _, names in os.walk(SOURCE_DIR):
-        for name in sorted(names):
-            if name.endswith('.swift'):
-                yield os.path.join(dirpath, name)
+    for source_dir in SOURCE_DIRS:
+        for dirpath, _, names in os.walk(source_dir):
+            for name in sorted(names):
+                if name.endswith('.swift'):
+                    yield os.path.join(dirpath, name)
 
 
 def code_part(line):
