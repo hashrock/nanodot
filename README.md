@@ -125,7 +125,7 @@ open iPad/NanodotPad.xcodeproj        # スキーム NanodotPad を iPad／シ�
 - 「保存」は今の書類に上書きし、まだファイルがなければ「このiPad内 › Nanodot」に作ります。アプリを離れると、アプリのフォルダーの書類は自動で保存します（外の場所のファイルは勝手に上書きしません）。次に起動したときは前の書類を開き直します
 - 初めて起動したとき、書類フォルダーが空なら最初の白紙を `無題.png` として置きます（空だとファイル App に「このiPad内 › Nanodot」が出ないため）
 - PNG の書き出し（1・2・4・8 倍）、共有、アニメの書き出し（GIF・APNG・連番 PNG）
-- シミュレーターでは起動引数で検証できます（`-open <パス>`、`-demo 1`、`-layout 幅x高さ` など。`iPad/Nanodot/SimulatorHooks.swift`。実機のビルドには入りません）
+- シミュレーターでは起動引数で検証できます（`-open <パス>`、`-demo 1`、`-layout 幅x高さ`、パネルだけを出す `-panel anim` など。`iPad/Nanodot/SimulatorHooks.swift`。実機のビルドには入りません）
 
 ## 基本操作
 

@@ -497,51 +497,42 @@ struct SettingsPanel: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("セル") {
-                    LabeledContent("セルの大きさ") {
-                        HStack(spacing: 4) {
-                            IntField(value: $editor.meta.cellWidth, min: 1)
-                            Text("×").fixedSize()
-                            IntField(value: $editor.meta.cellHeight, min: 1)
-                        }
-                    }
+                Section("セルの大きさ") {
+                    IntRow("幅", value: $editor.meta.cellWidth, min: 1)
+                    IntRow("高さ", value: $editor.meta.cellHeight, min: 1)
                     Toggle("セルの格子を表示", isOn: $editor.meta.showCellGrid)
                 }
                 Section("マーク") {
                     Picker("スナップ", selection: $editor.meta.snap) {
                         ForEach(Snap.choices, id: \.self) { Text($0.label).tag($0) }
                     }
-                    LabeledContent("ルーペ") {
-                        HStack(spacing: 4) {
-                            IntField(value: Binding(get: { editor.meta.lupeWidth }, set: { editor.setLupe(width: $0, height: editor.meta.lupeHeight) }), min: 1)
-                            Text("×").fixedSize()
-                            IntField(value: Binding(get: { editor.meta.lupeHeight }, set: { editor.setLupe(width: editor.meta.lupeWidth, height: $0) }), min: 1)
-                        }
-                    }
+                }
+                Section("ルーペの大きさ") {
+                    IntRow("幅", value: Binding(get: { editor.meta.lupeWidth }, set: { editor.setLupe(width: $0, height: editor.meta.lupeHeight) }), min: 1)
+                    IntRow("高さ", value: Binding(get: { editor.meta.lupeHeight }, set: { editor.setLupe(width: editor.meta.lupeWidth, height: $0) }), min: 1)
                     Button("ルーペをセルの大きさに") {
                         editor.setLupe(width: editor.meta.cellWidth, height: editor.meta.cellHeight)
                         state.requestDisplay()
                     }
                 }
-                Section("シート") {
-                    LabeledContent("大きさ（左上を基準に変える）") {
-                        HStack(spacing: 4) {
-                            IntField(value: $sheetWidth, min: 1, step: 16)
-                            Text("×").fixedSize()
-                            IntField(value: $sheetHeight, min: 1, step: 16)
-                        }
-                    }
+                Section {
+                    IntRow("幅", value: $sheetWidth, min: 1, step: 16)
+                    IntRow("高さ", value: $sheetHeight, min: 1, step: 16)
                     Button("シートの大きさを変える") {
                         editor.resizeSheet(width: min(max(sheetWidth, 1), 8192), height: min(max(sheetHeight, 1), 8192))
                         state.stockView?.fitToView()
                         state.requestDisplay()
                     }
                     .disabled(sheetWidth == editor.image.width && sheetHeight == editor.image.height)
+                } header: {
+                    Text("シートの大きさ")
+                } footer: {
+                    Text("左上を基準に大きさを変えます。")
                 }
                 Section {
                     Toggle("指で描く", isOn: Binding(get: { state.fingerDrawing }, set: { state.fingerDrawing = $0 }))
-                    Stepper("長押しで範囲コピーにする移動: \(state.dragThreshold) ドット",
-                            value: Binding(get: { state.dragThreshold }, set: { state.dragThreshold = $0 }), in: 1...8)
+                    IntRow("長押しで範囲コピーにする移動", value: Binding(get: { state.dragThreshold }, set: { state.dragThreshold = $0 }),
+                           min: 1, max: 8, unit: state.dragThreshold == 1 ? Text("ドット（単位・1 のとき）") : Text("ドット（単位）"))
                 } header: {
                     Text("入力")
                 } footer: {
@@ -572,23 +563,13 @@ struct NewDocumentSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("シート（px）") {
-                    LabeledContent("幅 × 高さ") {
-                        HStack(spacing: 4) {
-                            IntField(value: $width, min: 1, step: 16)
-                            Text("×").fixedSize()
-                            IntField(value: $height, min: 1, step: 16)
-                        }
-                    }
+                Section("シートの大きさ（px）") {
+                    IntRow("幅", value: $width, min: 1, step: 16)
+                    IntRow("高さ", value: $height, min: 1, step: 16)
                 }
-                Section("セル（px）") {
-                    LabeledContent("幅 × 高さ") {
-                        HStack(spacing: 4) {
-                            IntField(value: $cellWidth, min: 1)
-                            Text("×").fixedSize()
-                            IntField(value: $cellHeight, min: 1)
-                        }
-                    }
+                Section("セルの大きさ（px）") {
+                    IntRow("幅", value: $cellWidth, min: 1)
+                    IntRow("高さ", value: $cellHeight, min: 1)
                     HStack {
                         ForEach([(16, 16), (24, 32), (32, 32), (48, 48)], id: \.0) { w, h in
                             Button(w == h ? "\(w)" : "\(w)×\(h)") {

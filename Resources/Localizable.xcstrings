@@ -577,6 +577,17 @@
         }
       }
     },
+    "コマ" : {
+      "comment" : "登録アニメのコマの一覧の見出し",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frames"
+          }
+        }
+      }
+    },
     "コマがありません" : {
       "localizations" : {
         "en" : {
@@ -593,6 +604,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Frame Size"
+          }
+        }
+      }
+    },
+    "コマを追加" : {
+      "comment" : "登録アニメにコマを足す欄の見出し",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Frame"
           }
         }
       }
@@ -640,12 +662,32 @@
         }
       }
     },
+    "シートの大きさ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet Size"
+          }
+        }
+      }
+    },
     "シートの大きさを変える" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Resize Sheet"
+          }
+        }
+      }
+    },
+    "シートの大きさ（px）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet Size (px)"
           }
         }
       }
@@ -697,16 +739,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sheet Size…"
-          }
-        }
-      }
-    },
-    "シート（px）" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sheet (px)"
           }
         }
       }
@@ -941,6 +973,16 @@
         }
       }
     },
+    "セルの大きさ（px）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cell Size (px)"
+          }
+        }
+      }
+    },
     "セルの格子を表示" : {
       "comment" : "設定のチェックボックス、表示メニュー",
       "localizations" : {
@@ -963,12 +1005,13 @@
         }
       }
     },
-    "セル（px）" : {
+    "タイミング" : {
+      "comment" : "簡易アニメのコマの間隔の見出し",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cell (px)"
+            "value" : "Timing"
           }
         }
       }
@@ -1010,6 +1053,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text (T)"
+          }
+        }
+      }
+    },
+    "ドット（単位・1 のとき）" : {
+      "comment" : "値の横に出す単位だけ（値が 1 のとき）。日本語は「ドット」",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dot"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドット"
+          }
+        }
+      }
+    },
+    "ドット（単位）" : {
+      "comment" : "値の横に出す単位だけ（値が 1 でないとき）。日本語は「ドット」",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dots"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドット"
           }
         }
       }
@@ -1297,6 +1374,17 @@
         }
       }
     },
+    "マーク位置にする" : {
+      "comment" : "アニメの起点をマーク位置にする",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Mark Position"
+          }
+        }
+      }
+    },
     "マーク位置をこのコマへ" : {
       "localizations" : {
         "en" : {
@@ -1542,6 +1630,17 @@
         }
       }
     },
+    "並び" : {
+      "comment" : "簡易アニメのコマの並び（列・行・枚数）の見出し",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layout"
+          }
+        }
+      }
+    },
     "作成" : {
       "localizations" : {
         "en" : {
@@ -1620,6 +1719,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Play"
+          }
+        }
+      }
+    },
+    "列" : {
+      "comment" : "簡易アニメの、横に並ぶコマの数",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Columns"
           }
         }
       }
@@ -1882,12 +1992,13 @@
         }
       }
     },
-    "大きさ（左上を基準に変える）" : {
+    "大きさを合わせる" : {
+      "comment" : "アニメのコマの大きさを、セルかルーペの大きさにそろえるメニュー",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Size (Anchored at Top Left)"
+            "value" : "Match Size"
           }
         }
       }
@@ -1922,6 +2033,16 @@
         }
       }
     },
+    "左上を基準に大きさを変えます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resizes from the top-left corner."
+          }
+        }
+      }
+    },
     "左右反転" : {
       "comment" : "メニュー、ツールチップ、取り消しの名前",
       "localizations" : {
@@ -1944,12 +2065,13 @@
         }
       }
     },
-    "幅 × 高さ" : {
+    "幅" : {
+      "comment" : "幅（大きさの横）",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Width × Height"
+            "value" : "Width"
           }
         }
       }
@@ -2474,6 +2596,28 @@
         }
       }
     },
+    "行" : {
+      "comment" : "簡易アニメの、縦に並ぶコマの数",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rows"
+          }
+        }
+      }
+    },
+    "表示時間" : {
+      "comment" : "足すコマを表示しておく時間（ms）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duration"
+          }
+        }
+      }
+    },
     "複製" : {
       "localizations" : {
         "en" : {
@@ -2686,12 +2830,12 @@
         }
       }
     },
-    "長押しで範囲コピーにする移動: %lld ドット" : {
+    "長押しで範囲コピーにする移動" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold-Drag Copy Threshold: %lld dots"
+            "value" : "Hold-Drag Copy Threshold"
           }
         }
       }
@@ -2722,6 +2866,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Interval"
+          }
+        }
+      }
+    },
+    "高さ" : {
+      "comment" : "高さ（大きさの縦）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Height"
           }
         }
       }
