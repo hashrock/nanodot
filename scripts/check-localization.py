@@ -47,9 +47,9 @@ INTERPOLATION = re.compile(r'(?<!\\)\\\((?:[^()]|\([^()]*\))*\)')
 STRING_LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"')
 JAPANESE = re.compile(r'[\u3040-\u30ff\u3400-\u9fff]')
 WRAPPED = re.compile(r'\b(L|LM)\(\s*$')
-# 先頭の引数が LocalizedStringKey になる SwiftUI の部品
+# 先頭の引数が LocalizedStringKey になる SwiftUI の部品（iPad 版の IntRow など、自前の部品も）
 SWIFTUI = re.compile(r'(?:\b(?:Text|Button|Toggle|Picker|Label|LabeledContent|Menu|Stepper|TextField|Window|CommandMenu|Section)'
-                     r'|\.help|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint|\.confirmationDialog|\brow)\(\s*$')
+                     r'|\bIntRow|\bPanelGroup|\bPanelButtonLabel|\.help|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint|\.confirmationDialog|\brow)\(\s*$')
 MARK_NAME = re.compile(r'//\s*l10n:\s*LName')
 MARK_SKIP = re.compile(r'//\s*l10n:\s*訳さない')
 

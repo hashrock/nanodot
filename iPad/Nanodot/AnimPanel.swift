@@ -127,7 +127,7 @@ struct AnimPanel: View {
     }
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Picker("アニメ", selection: Binding(get: { state.selectedAnimID }, set: { state.selectedAnimID = $0 })) {
                     if editor.meta.anims.isEmpty { Text("なし").tag(UUID?.none) }
@@ -198,86 +198,79 @@ struct AnimPanel: View {
         }
         .font(.title3)
 
-        VStack(spacing: 8) {
-            row("名前") { TextField("名前", text: a.name).textFieldStyle(.roundedBorder) }
+        PanelGroup {
+            TextField("名前", text: a.name)
+                .padding(.vertical, 10)
+            Divider()
             Picker("種類", selection: a.mode) {
                 Text("簡易").tag(AnimDef.Mode.grid)
                 Text("登録").tag(AnimDef.Mode.list)
             }
             .pickerStyle(.segmented)
-            row("コマの大きさ") {
-                HStack(spacing: 4) {
-                    IntField(value: a.frameWidth, min: 1)
-                    Text("×").fixedSize()
-                    IntField(value: a.frameHeight, min: 1)
-                    Menu {
-                        Button("セルの大きさ") {
-                            a.wrappedValue.frameWidth = editor.meta.cellWidth
-                            a.wrappedValue.frameHeight = editor.meta.cellHeight
-                        }
-                        Button("ルーペの大きさ") {
-                            a.wrappedValue.frameWidth = editor.meta.lupeWidth
-                            a.wrappedValue.frameHeight = editor.meta.lupeHeight
-                        }
-                    } label: { Image(systemName: "ellipsis.circle") }
+            .padding(.vertical, 8)
+        }
+        PanelGroup("コマの大きさ") {
+            IntRow("幅", value: a.frameWidth, min: 1)
+            Divider()
+            IntRow("高さ", value: a.frameHeight, min: 1)
+            Divider()
+            Menu {
+                Button("セルの大きさ") {
+                    a.wrappedValue.frameWidth = editor.meta.cellWidth
+                    a.wrappedValue.frameHeight = editor.meta.cellHeight
+                }
+                Button("ルーペの大きさ") {
+                    a.wrappedValue.frameWidth = editor.meta.lupeWidth
+                    a.wrappedValue.frameHeight = editor.meta.lupeHeight
+                }
+            } label: {
+                PanelButtonLabel("大きさを合わせる", systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+        }
+        switch a.wrappedValue.mode {
+        case .grid:
+            PanelGroup("起点") {
+                IntRow("X", value: a.originX, min: 0)
+                Divider()
+                IntRow("Y", value: a.originY, min: 0)
+                Divider()
+                Button {
+                    a.wrappedValue.originX = editor.meta.mark.x
+                    a.wrappedValue.originY = editor.meta.mark.y
+                } label: {
+                    PanelButtonLabel("マーク位置にする", systemImage: "scope")
                 }
             }
-            switch a.wrappedValue.mode {
-            case .grid:
-                row("起点") {
-                    HStack(spacing: 4) {
-                        IntField(value: a.originX, min: 0)
-                        Text(",").fixedSize()
-                        IntField(value: a.originY, min: 0)
-                        Button("マーク位置") {
-                            a.wrappedValue.originX = editor.meta.mark.x
-                            a.wrappedValue.originY = editor.meta.mark.y
-                        }
-                        .font(.callout)
-                    }
-                }
-                row("列 × 行") {
-                    HStack(spacing: 4) {
-                        IntField(value: a.columns, min: 1)
-                        Text("×").fixedSize()
-                        IntField(value: a.rows, min: 1)
-                    }
-                }
-                row("枚数") { IntField(value: a.count, min: 1) }
-                row("間隔") {
-                    HStack(spacing: 4) {
-                        IntField(value: a.interval, min: 10, step: 10)
-                        Text("ms")
-                    }
-                }
-            case .list:
-                row("追加") {
-                    HStack(spacing: 4) {
-                        IntField(value: $newFrameDuration, min: 10, step: 10)
-                        Text("ms")
-                        Button("マーク位置を追加") {
-                            a.wrappedValue.frames.append(AnimFrame(x: editor.meta.mark.x, y: editor.meta.mark.y, duration: newFrameDuration))
-                        }
-                        .font(.callout)
-                    }
+            PanelGroup("並び") {
+                IntRow("列", value: a.columns, min: 1)
+                Divider()
+                IntRow("行", value: a.rows, min: 1)
+                Divider()
+                IntRow("枚数", value: a.count, min: 1)
+            }
+            PanelGroup("タイミング") {
+                IntRow("間隔", value: a.interval, min: 10, step: 10, unit: "ms")
+            }
+        case .list:
+            PanelGroup("コマを追加") {
+                IntRow("表示時間", value: $newFrameDuration, min: 10, step: 10, unit: "ms")
+                Divider()
+                Button {
+                    a.wrappedValue.frames.append(AnimFrame(x: editor.meta.mark.x, y: editor.meta.mark.y, duration: newFrameDuration))
+                } label: {
+                    PanelButtonLabel("マーク位置を追加", systemImage: "plus.circle")
                 }
             }
         }
 
         if a.wrappedValue.mode == .list {
-            FrameList(frames: a.frames) { f in
-                editor.setMark(IntPoint(f.x, f.y))
-                state.stockView?.scrollMarkToVisible()
-                state.requestDisplay()
+            PanelGroup("コマ") {
+                FrameList(frames: a.frames) { f in
+                    editor.setMark(IntPoint(f.x, f.y))
+                    state.stockView?.scrollMarkToVisible()
+                    state.requestDisplay()
+                }
             }
-        }
-    }
-
-    private func row<C: View>(_ label: LocalizedStringKey, @ViewBuilder _ content: () -> C) -> some View {
-        HStack {
-            Text(label).foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            content()
         }
     }
 }
@@ -287,16 +280,17 @@ struct FrameList: View {
     let jump: (AnimFrame) -> Void
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 0) {
             ForEach(Array(frames.enumerated()), id: \.element.id) { i, f in
+                if i > 0 { Divider() }
                 HStack(spacing: 8) {
                     Text("\(i + 1)").font(.caption.monospacedDigit()).frame(width: 22, alignment: .trailing)
                     Button("(\(f.x), \(f.y))") { jump(f) }
                         .font(.callout.monospacedDigit())
                         .accessibilityHint("マーク位置をこのコマへ")
                     Spacer()
+                    Text("ms").foregroundStyle(.secondary)
                     IntField(value: $frames[i].duration, min: 10, step: 10)
-                    Text("ms").font(.caption)
                     Menu {
                         Button { frames.swapAt(i, i - 1) } label: { Label("上へ", systemImage: "chevron.up") }
                             .disabled(i == 0)
@@ -310,23 +304,63 @@ struct FrameList: View {
                         Image(systemName: "ellipsis.circle").frame(width: 30, height: 30)
                     }
                 }
+                .padding(.vertical, 6)
             }
             if frames.isEmpty {
                 Text("マーク位置を動かしながら「マーク位置を追加」でコマを登録します")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 10)
             }
         }
     }
 }
 
-/// 整数の入力欄（範囲外は丸める）。両側の −／＋ で step ずつ変える（押し続けると繰り返す）
+/// 1 行に 1 つの値: ラベル・値の欄・−／＋（設定の Form でも、パネルの PanelGroup でも使う）
+struct IntRow: View {
+    @Environment(\.inPanelGroup) private var inPanelGroup
+    let label: LocalizedStringKey
+    @Binding var value: Int
+    var min: Int = 0
+    var max: Int = 8192
+    var step: Int = 1
+    var unit: LocalizedStringKey?
+
+    init(_ label: LocalizedStringKey, value: Binding<Int>, min: Int = 0, max: Int = 8192, step: Int = 1, unit: LocalizedStringKey? = nil) {
+        self.label = label
+        _value = value
+        self.min = min
+        self.max = max
+        self.step = step
+        self.unit = unit
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .lineLimit(1)
+                .layoutPriority(1)
+            Spacer(minLength: 4)
+            if let unit {
+                Text(unit).foregroundStyle(.secondary)
+            }
+            IntField(value: $value, min: min, max: max, step: step)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text(label))
+        }
+        // Form の行は Form が高さを付けるので、PanelGroup の中だけ行の高さをそろえる
+        .frame(minHeight: inPanelGroup ? 44 : nil)
+    }
+}
+
+/// 整数の入力欄（範囲外は丸める）。−・値・＋ をひと続きの枠にまとめる。−／＋ は step ずつ変える（押し続けると繰り返す）
 struct IntField: View {
     @Binding var value: Int
     var min: Int = 0
     var max: Int = 8192
     var step: Int = 1
-    var width: CGFloat = 48
+    var width: CGFloat = 52
 
     private func set(_ v: Int) { value = Swift.min(Swift.max(v, min), max) }
 
@@ -336,29 +370,86 @@ struct IntField: View {
                 // step の倍数にそろえながら減らす（17 で −16 なら 16）
                 set(value % step == 0 ? value - step : value - value % step)
             }
+            separator
             TextField("", value: Binding(get: { value }, set: { set($0) }), format: .number.grouping(.never))
                 .labelsHidden()
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.center)
+                .font(.body.monospacedDigit())
                 .frame(width: width)
-                .textFieldStyle(.roundedBorder)
+            separator
             stepButton("plus", L("増やす"), disabled: value >= max) {
                 set(value % step == 0 ? value + step : value - value % step + step)
             }
         }
+        .frame(height: 32)
+        .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 8))
+        .fixedSize()
+    }
+
+    private var separator: some View {
+        Rectangle().fill(Color(uiColor: .separator)).frame(width: 1, height: 18)
     }
 
     private func stepButton(_ symbol: String, _ label: String, disabled: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.footnote.weight(.semibold))
-                .frame(width: 28, height: 34)
+                .frame(width: 34, height: 32)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .buttonRepeatBehavior(.enabled)
         .disabled(disabled)
         .accessibilityLabel(label)
+    }
+}
+
+/// パネルの中で Form のセクションのように見せるまとまり（見出し・角丸の地・行の間の区切り線は呼ぶ側で Divider()）
+struct PanelGroup<Content: View>: View {
+    let title: LocalizedStringKey?
+    @ViewBuilder var content: Content
+
+    init(_ title: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let title {
+                Text(title)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 12)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            VStack(spacing: 0) { content }
+                .environment(\.inPanelGroup, true)
+                .padding(.horizontal, 12)
+                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var inPanelGroup = false
+}
+
+/// PanelGroup の中のボタンの行（行いっぱいを押せる）
+struct PanelButtonLabel: View {
+    let title: LocalizedStringKey
+    let systemImage: String
+
+    init(_ title: LocalizedStringKey, systemImage: String) {
+        self.title = title
+        self.systemImage = systemImage
+    }
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
     }
 }
 

@@ -9,7 +9,11 @@ import SwiftUI
 /// - `-demoSave 1`: `-demo` のあと「保存」する（書類フォルダーに PNG とサイドカーができる）
 /// - `-layout WxH`: 画面をその大きさに切り詰めて並べる（横向き・Split View の幅の確認用）
 /// - `-selftest 1`: メインのドットと画面座標の変換を確かめ、結果を tmp/selftest.txt に書く
+/// - `-panel anim|settings|new`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
+///   `-layout WxH` の幅も効く）。`-demoList 1` は `-demo` のアニメを「登録」にしてコマを 2 つ入れる
 enum SimulatorHooks {
+    static var panel: String? { UserDefaults.standard.string(forKey: "panel") }
+
     static var layoutSize: CGSize? {
         guard let s = UserDefaults.standard.string(forKey: "layout") else { return nil }
         let p = s.split(separator: "x").compactMap { Double($0) }
@@ -51,6 +55,10 @@ enum SimulatorHooks {
         var a = AnimDef(name: "walk", frameWidth: 16, frameHeight: 16)
         a.columns = 3
         a.count = 3
+        if UserDefaults.standard.bool(forKey: "demoList") {
+            a.mode = .list
+            a.frames = [AnimFrame(x: 0, y: 0, duration: 150), AnimFrame(x: 16, y: 0, duration: 200)]
+        }
         e.meta.anims = [a]
         state.selectedAnimID = a.id
         e.setLupe(width: 16, height: 16)
@@ -70,6 +78,29 @@ enum SimulatorHooks {
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("selftest.txt")
         try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+}
+
+/// `-panel` で出す、パネルだけの画面
+struct SimulatorPanelPreview: View {
+    let state: PadState
+    let panel: String
+
+    var body: some View {
+        let width = SimulatorHooks.layoutSize?.width
+        Group {
+            switch panel {
+            case "settings":
+                SettingsPanel(state: state, editor: state.editor)
+            case "new":
+                NewDocumentSheet { _, _, _, _ in }
+            default:
+                ScrollView { AnimPanel(state: state, editor: state.editor).padding(12) }
+            }
+        }
+        .frame(width: width)
+        .border(Color.red)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
