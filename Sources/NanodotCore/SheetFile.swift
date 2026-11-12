@@ -21,12 +21,20 @@ public enum SheetFileError: Error, LocalizedError {
 /// Sandbox の外でも同じ経路を使う
 public enum RelatedFile {
     private final class Presenter: NSObject, NSFilePresenter {
+        // iOS には関連ファイルの仕組みがない（primaryPresentedItemURL は macOS だけ）。iPad 版はアプリのフォルダーの中でだけ
+        // サイドカーを読み書きするので、ふつうの調停で足りる
+        #if os(macOS)
         let primaryPresentedItemURL: URL?
+        #endif
+        let primary: URL
         let presentedItemURL: URL?
         let presentedItemOperationQueue = OperationQueue()
 
         init(primary: URL, related: URL) {
+            #if os(macOS)
             primaryPresentedItemURL = primary
+            #endif
+            self.primary = primary
             presentedItemURL = related
         }
     }
@@ -39,7 +47,7 @@ public enum RelatedFile {
     private static func presenter(primary: URL, related: URL) -> Presenter {
         lock.lock()
         defer { lock.unlock() }
-        if let p = current, p.primaryPresentedItemURL == primary, p.presentedItemURL == related { return p }
+        if let p = current, p.primary == primary, p.presentedItemURL == related { return p }
         if let old = current { NSFileCoordinator.removeFilePresenter(old) }
         let p = Presenter(primary: primary, related: related)
         NSFileCoordinator.addFilePresenter(p)

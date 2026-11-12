@@ -45,6 +45,16 @@
         }
       }
     },
+    "%@は使えません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Unavailable"
+          }
+        }
+      }
+    },
     "%@（%lld 色）" : {
       "comment" : "パレットの名前と色数",
       "localizations" : {
@@ -100,6 +110,16 @@
         }
       }
     },
+    "%lld×%lld をコピーしました（ダブルタップで貼り付け）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied %lld×%lld (double-tap to paste)"
+          }
+        }
+      }
+    },
     "1 ドット上へシフト" : {
       "localizations" : {
         "en" : {
@@ -150,12 +170,52 @@
         }
       }
     },
+    "Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw with Apple Pencil. Drag with one or two fingers to move the mark, and pinch to change the loupe size. Touch and hold to pick a color; hold and drag to copy an area and stamp it. Tap with two fingers to undo, three fingers to redo. With Draw with Finger on, use two fingers to move the mark."
+          }
+        }
+      }
+    },
     "HSL で補間（色相は近い方向に回る）" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Interpolate in HSL (hue takes the shorter way)"
+          }
+        }
+      }
+    },
+    "Nanodot のフォルダーに複製して開く" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate into Nanodot Folder and Open"
+          }
+        }
+      }
+    },
+    "Nanodot のフォルダー（ファイル App の「このiPad内 › Nanodot」か「iCloud Drive › Nanodot」）に移すと全部使えます。「%@.nanodot」があるときは、ファイル App で PNG と一緒に移してください。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move it to the Nanodot folder (On My iPad › Nanodot or iCloud Drive › Nanodot in the Files app) to use everything. If there is a “%@.nanodot”, move it together with the PNG in the Files app."
+          }
+        }
+      }
+    },
+    "PNG を書き出し…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export PNG…"
           }
         }
       }
@@ -177,6 +237,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Export Again to “%@”"
+          }
+        }
+      }
+    },
+    "「%@」に保存しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved “%@”"
+          }
+        }
+      }
+    },
+    "「%@」に保存しました。アプリのフォルダーの外なので、素の PNG として扱います" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved “%@”. It's outside the app's folder, so it's treated as a plain PNG."
+          }
+        }
+      }
+    },
+    "「%@」に保存しましたが、設定（.nanodot）を書けませんでした: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved “%@”, but couldn't write the settings (.nanodot): %@"
+          }
+        }
+      }
+    },
+    "「%@」に書き出しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exported “%@”"
+          }
+        }
+      }
+    },
+    "「このiPad内 › Nanodot」に「%@」を作りました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created “%@” in On My iPad › Nanodot"
+          }
+        }
+      }
+    },
+    "この書類はアプリのフォルダーの外にあるので、設定（隣の「%@.nanodot」）を読み書きしません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This document is outside the app's folder, so its settings (the adjacent “%@.nanodot”) are not read or written."
           }
         }
       }
@@ -272,6 +392,16 @@
         }
       }
     },
+    "やり直しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redone"
+          }
+        }
+      }
+    },
     "アニメ" : {
       "comment" : "ウィンドウの題、パネルの見出し",
       "localizations" : {
@@ -305,6 +435,16 @@
         }
       }
     },
+    "アニメを削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Animation"
+          }
+        }
+      }
+    },
     "アニメを書き出し" : {
       "comment" : "ファイルメニューのサブメニュー",
       "localizations" : {
@@ -312,6 +452,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Export Animation"
+          }
+        }
+      }
+    },
+    "アニメを追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Animation"
           }
         }
       }
@@ -332,6 +482,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Animation window (⇧⌘A)"
+          }
+        }
+      }
+    },
+    "アプリのフォルダーの外にある書類です" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Document Is Outside the App's Folder"
+          }
+        }
+      }
+    },
+    "アプリのフォルダーの外の書類です。素の PNG として開きました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This document is outside the app's folder. Opened as a plain PNG."
           }
         }
       }
@@ -393,6 +563,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Export Game Engine Data…"
+          }
+        }
+      }
+    },
+    "コピー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
           }
         }
       }
@@ -460,6 +640,26 @@
         }
       }
     },
+    "シートの大きさを変える" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resize Sheet"
+          }
+        }
+      }
+    },
+    "シートの幅に合わせる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fit Sheet Width"
+          }
+        }
+      }
+    },
     "シートの幅に合わせる (⌘0)" : {
       "localizations" : {
         "en" : {
@@ -501,6 +701,16 @@
         }
       }
     },
+    "シート（px）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sheet (px)"
+          }
+        }
+      }
+    },
     "スタンプ" : {
       "comment" : "取り消しの名前。コピーした範囲を押すこと",
       "localizations" : {
@@ -523,6 +733,36 @@
         }
       }
     },
+    "スタンプ: 透明部分も上書き" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stamp: Overwrite Transparent Pixels"
+          }
+        }
+      }
+    },
+    "スタンプ: 透明部分を抜く" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stamp: Skip Transparent Pixels"
+          }
+        }
+      }
+    },
+    "スタンプモードを抜ける" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exit Stamp Mode"
+          }
+        }
+      }
+    },
     "スタンプ（⌥ で透明部分を抜く・Esc / 右クリックで解除）" : {
       "comment" : "スタンプモードの間、ツールバーに出る",
       "localizations" : {
@@ -530,6 +770,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stamp (⌥ skips transparent pixels; Esc or right-click to stop)"
+          }
+        }
+      }
+    },
+    "スタンプ（貼り付け）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stamp (Paste)"
           }
         }
       }
@@ -587,6 +837,16 @@
         }
       }
     },
+    "スロット %lld からここまでを選ぶ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select from Slot %lld to Here"
+          }
+        }
+      }
+    },
     "スロット %lld に登録" : {
       "localizations" : {
         "en" : {
@@ -613,6 +873,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add to Slots"
+          }
+        }
+      }
+    },
+    "スロットの操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slot Actions"
           }
         }
       }
@@ -693,12 +963,32 @@
         }
       }
     },
+    "セル（px）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cell (px)"
+          }
+        }
+      }
+    },
     "タイル %lld×%lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tile %lld×%lld"
+          }
+        }
+      }
+    },
+    "ツール" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool"
           }
         }
       }
@@ -731,6 +1021,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Drag to a slot to add this color"
+          }
+        }
+      }
+    },
+    "パネル" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panel"
+          }
+        }
+      }
+    },
+    "パレット" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Palette"
           }
         }
       }
@@ -774,6 +1084,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiragino Sans W6"
+          }
+        }
+      }
+    },
+    "ファイル" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File"
+          }
+        }
+      }
+    },
+    "ファイルを受け取れませんでした" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't receive the file"
+          }
+        }
+      }
+    },
+    "ファイルを受け取れませんでした: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't receive the file: %@"
           }
         }
       }
@@ -987,6 +1327,16 @@
         }
       }
     },
+    "マーク範囲" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked Area"
+          }
+        }
+      }
+    },
     "マーク範囲がシートの外です" : {
       "localizations" : {
         "en" : {
@@ -1007,6 +1357,16 @@
         }
       }
     },
+    "マーク範囲の操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked Area Actions"
+          }
+        }
+      }
+    },
     "マーク範囲をコピー (⌘C)" : {
       "comment" : "編集メニュー",
       "localizations" : {
@@ -1014,6 +1374,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copy Marked Area (⌘C)"
+          }
+        }
+      }
+    },
+    "マーク範囲をコピーしました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied the marked area"
           }
         }
       }
@@ -1055,6 +1425,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loupe"
+          }
+        }
+      }
+    },
+    "ルーペの大きさ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loupe Size"
           }
         }
       }
@@ -1107,6 +1487,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add Layer"
+          }
+        }
+      }
+    },
+    "一時停止" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
           }
         }
       }
@@ -1172,6 +1562,16 @@
         }
       }
     },
+    "保存してから続ける" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save and Continue"
+          }
+        }
+      }
+    },
     "保存に失敗しました: %@" : {
       "comment" : "%@ はエラーの中身",
       "localizations" : {
@@ -1194,6 +1594,36 @@
         }
       }
     },
+    "入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Input"
+          }
+        }
+      }
+    },
+    "共有…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share…"
+          }
+        }
+      }
+    },
+    "再生" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        }
+      }
+    },
     "列 × 行" : {
       "localizations" : {
         "en" : {
@@ -1210,6 +1640,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save As…"
+          }
+        }
+      }
+    },
+    "削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        }
+      }
+    },
+    "前のコマ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Frame"
           }
         }
       }
@@ -1277,6 +1727,16 @@
         }
       }
     },
+    "取り消しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undone"
+          }
+        }
+      }
+    },
     "右に 90° 回転" : {
       "localizations" : {
         "en" : {
@@ -1339,6 +1799,16 @@
         }
       }
     },
+    "名前を付けて保存…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save As…"
+          }
+        }
+      }
+    },
     "塗りつぶし" : {
       "comment" : "取り消しの名前、マップのツール",
       "localizations" : {
@@ -1356,6 +1826,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fill (G)"
+          }
+        }
+      }
+    },
+    "増やす" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase"
           }
         }
       }
@@ -1388,6 +1868,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You have unsaved changes."
+          }
+        }
+      }
+    },
+    "変更を破棄" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard Changes"
+          }
+        }
+      }
+    },
+    "大きさ（左上を基準に変える）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size (Anchored at Top Left)"
           }
         }
       }
@@ -1444,6 +1944,16 @@
         }
       }
     },
+    "幅 × 高さ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Width × Height"
+          }
+        }
+      }
+    },
     "幅に合わせる" : {
       "localizations" : {
         "en" : {
@@ -1475,6 +1985,26 @@
         }
       }
     },
+    "指で描く" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw with Finger"
+          }
+        }
+      }
+    },
+    "描画色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing Color"
+          }
+        }
+      }
+    },
     "描画色でスロット %lld を上書き (⌘↩)" : {
       "localizations" : {
         "en" : {
@@ -1491,6 +2021,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Replace with Drawing Color"
+          }
+        }
+      }
+    },
+    "描画色で塗りつぶし" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill with Drawing Color"
           }
         }
       }
@@ -1548,6 +2088,16 @@
     },
     "新規..." : {
       "comment" : "ファイルメニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New…"
+          }
+        }
+      }
+    },
+    "新規…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1631,6 +2181,16 @@
         }
       }
     },
+    "次のコマ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Frame"
+          }
+        }
+      }
+    },
     "注釈" : {
       "comment" : "セルに付ける通行可否・重なり順・名前",
       "localizations" : {
@@ -1680,6 +2240,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Clear (Delete)"
+          }
+        }
+      }
+    },
+    "減らす" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease"
           }
         }
       }
@@ -1811,6 +2381,26 @@
         }
       }
     },
+    "空きスロット %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty Slot %lld"
+          }
+        }
+      }
+    },
+    "範囲選択をやめる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Range Selection"
+          }
+        }
+      }
+    },
     "簡易" : {
       "comment" : "コマが格子状に並んでいるアニメ",
       "localizations" : {
@@ -1818,6 +2408,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grid"
+          }
+        }
+      }
+    },
+    "素の PNG として開いています。セルの大きさ・スロット・アニメなど（隣の「%@.nanodot」の設定）は読まず、保存しても書きません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's open as a plain PNG. Settings such as cell size, slots, and animations (from the adjacent “%@.nanodot”) are not read, and saving does not write them."
           }
         }
       }
@@ -1853,6 +2453,16 @@
         }
       }
     },
+    "色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color"
+          }
+        }
+      }
+    },
     "色の置換" : {
       "comment" : "取り消しの名前",
       "localizations" : {
@@ -1870,6 +2480,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Duplicate"
+          }
+        }
+      }
+    },
+    "複製に失敗しました: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't duplicate: %@"
+          }
+        }
+      }
+    },
+    "複製は、いまの絵を新しい PNG として作ります。元の書類はそのまま残ります。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicating creates a new PNG from the current image. The original document is left as is."
+          }
+        }
+      }
+    },
+    "設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
           }
         }
       }
@@ -1915,6 +2555,26 @@
         }
       }
     },
+    "貼り付ける画像がありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to paste"
+          }
+        }
+      }
+    },
+    "貼り付ける画像がありません（長押しでコピーします）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to paste (touch and hold to copy)"
+          }
+        }
+      }
+    },
     "起点" : {
       "localizations" : {
         "en" : {
@@ -1941,6 +2601,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Transparent"
+          }
+        }
+      }
+    },
+    "透明部分を抜く" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip Transparent Pixels"
           }
         }
       }
@@ -2006,7 +2676,37 @@
         }
       }
     },
+    "長押しで操作、ドラッグでスロットへ移す" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touch and hold for actions; drag to move to a slot"
+          }
+        }
+      }
+    },
+    "長押しで範囲コピーにする移動: %lld ドット" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold-Drag Copy Threshold: %lld dots"
+          }
+        }
+      }
+    },
     "開く..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open…"
+          }
+        }
+      }
+    },
+    "開く…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2026,6 +2726,16 @@
         }
       }
     },
+    "（この書類には保存されません）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(not saved with this document)"
+          }
+        }
+      }
+    },
     "（無題）" : {
       "comment" : "名前が空のアニメ・マップ",
       "localizations" : {
@@ -2033,6 +2743,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "(Untitled)"
+          }
+        }
+      }
+    },
+    "＋ で、マーク位置からセルの大きさのアニメを作ります" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + to create an animation at the mark, one cell in size"
           }
         }
       }
