@@ -56,17 +56,19 @@ check_app() {
     [ "$(v LSSupportsOpeningDocumentsInPlace)" = true ] || fail "LSSupportsOpeningDocumentsInPlace がない"
     [ "$(v UIDeviceFamily:0)" = 2 ] && ! v UIDeviceFamily:1 >/dev/null || fail "iPad だけ（UIDeviceFamily = [2]）になっていない"
     [ "$(v MinimumOSVersion)" = 17.0 ] || fail "MinimumOSVersion が 17.0 でない"
-    v CFBundleLocalizations | grep -q ja && v CFBundleLocalizations | grep -q en || fail "CFBundleLocalizations に ja・en がない"
+    local locs=$(v CFBundleLocalizations)
+    [[ "$locs" == *ja* && "$locs" == *en* ]] || fail "CFBundleLocalizations に ja・en がない"
     [ -d "$app/ja.lproj" ] && [ -d "$app/en.lproj" ] || fail "ja.lproj・en.lproj がない"
-    [ -f "$app/en.lproj/Localizable.strings" ] || ls "$app/en.lproj" | grep -q Localizable || fail "英語の訳の表がない"
+    [[ "$(ls "$app/en.lproj")" == *Localizable* ]] || fail "英語の訳の表がない"
     [ -f "$app/PrivacyInfo.xcprivacy" ] || fail "PrivacyInfo.xcprivacy がない"
     [ -f "$app/Assets.car" ] || fail "アイコン（Assets.car）がない"
-    v CFBundleIcons~ipad:CFBundlePrimaryIcon:CFBundleIconName | grep -q AppIcon || fail "アイコンの宣言がない"
+    [[ "$(v CFBundleIcons~ipad:CFBundlePrimaryIcon:CFBundleIconName)" == AppIcon ]] || fail "アイコンの宣言がない"
     # MCP（直接配布版だけの機能）が入っていない
-    ! strings "$app/Nanodot" | grep -qi 'mcp' || fail "MCP の文字列が入っている"
-    ! otool -L "$app/Nanodot" | grep -q Network.framework || fail "Network.framework をリンクしている"
+    local strs=$(strings "$app/Nanodot")
+    [[ "${strs:l}" != *mcp* ]] || fail "MCP の文字列が入っている"
+    [[ "$(otool -L "$app/Nanodot")" != *Network.framework* ]] || fail "Network.framework をリンクしている"
     # シミュレーター用の検証の入口が入っていない
-    ! strings "$app/Nanodot" | grep -q 'selftest' || fail "検証用の入口が入っている"
+    [[ "$strs" != *selftest* ]] || fail "検証用の入口が入っている"
     echo "OK: $app"
 }
 
@@ -109,15 +111,16 @@ ditto -x -k "$IPA" "$CHECK"
 APP="$CHECK/Payload/Nanodot.app"
 check_app "$APP"
 codesign --verify --deep --strict "$APP" || fail "署名の検証に失敗"
-codesign -dvv "$APP" 2>&1 | grep -q 'Authority=Apple Distribution' || fail "配布用の証明書で署名されていない"
+SIGN_INFO=$(codesign -dvv "$APP" 2>&1)
+[[ "$SIGN_INFO" == *"Authority=Apple Distribution"* ]] || fail "配布用の証明書で署名されていない"
 security cms -D -i "$APP/embedded.mobileprovision" > "$OUT/profile.plist"
 PROFILE_APPID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$OUT/profile.plist")
 [ "$PROFILE_APPID" = "$TEAM_ID.com.hashrock.nanodot" ] || fail "プロファイルの App ID が違う: $PROFILE_APPID"
 ! /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$OUT/profile.plist" >/dev/null 2>&1 || fail "App Store 用のプロファイルでない（端末の一覧がある）"
 codesign -d --entitlements :- "$APP" > "$OUT/entitlements.plist" 2>/dev/null
 if [ -z "${NO_ICLOUD:-}" ]; then
-    grep -q iCloud.com.hashrock.nanodot "$OUT/entitlements.plist" || fail "iCloud container が entitlements にない"
+    [[ "$(cat "$OUT/entitlements.plist")" == *iCloud.com.hashrock.nanodot* ]] || fail "iCloud container が entitlements にない"
 fi
-if grep -A1 get-task-allow "$OUT/entitlements.plist" | grep -q true; then fail "get-task-allow が true"; fi
+[ "$(/usr/libexec/PlistBuddy -c 'Print :get-task-allow' "$OUT/entitlements.plist" 2>/dev/null)" != true ] || fail "get-task-allow が true"
 echo "プロファイル: $(/usr/libexec/PlistBuddy -c 'Print :Name' "$OUT/profile.plist")"
 echo "できた: $IPA"
