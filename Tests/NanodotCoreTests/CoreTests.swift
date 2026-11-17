@@ -169,6 +169,45 @@ final class EditorTests: XCTestCase {
         XCTAssertEqual(e.image[1, 0], .clear)
     }
 
+    func testRoundPenShape() {
+        XCTAssertEqual(Editor.brushOffsets(size: 1), [IntPoint(0, 0)])
+        XCTAssertEqual(Set(Editor.brushOffsets(size: 3)),
+                       [IntPoint(0, -1), IntPoint(-1, 0), IntPoint(0, 0), IntPoint(1, 0), IntPoint(0, 1)])
+        let five = Set(Editor.brushOffsets(size: 5))
+        XCTAssertEqual(five.count, 21) // 5×5 から四隅を落とす
+        XCTAssertFalse(five.contains(IntPoint(2, 2)))
+        XCTAssertTrue(five.contains(IntPoint(2, 1)))
+    }
+
+    func testThickPenIsClippedToMark() {
+        let e = makeEditor()
+        e.beginEdit()
+        e.plot([IntPoint(1, 1)], color: .black, size: 5) // 中心 (1,1)。マーク範囲の外は塗らない
+        e.endEdit("ペン")
+        XCTAssertEqual(e.image[0, 0], .black)
+        XCTAssertEqual(e.image[3, 1], .black)
+        XCTAssertEqual(e.image[3, 3], .clear) // 角は丸く落ちる
+        e.beginEdit()
+        e.plot([IntPoint(15, 5)], color: .black, size: 3)
+        e.endEdit("ペン")
+        XCTAssertEqual(e.image[15, 4], .black)
+        XCTAssertEqual(e.image[14, 4], .clear)
+        XCTAssertEqual(e.image[16, 5], .clear)
+    }
+
+    func testStampDragIsOneUndo() {
+        let e = makeEditor()
+        e.setClipboard(PixelBuffer(width: 1, height: 1, pixels: [.black]))
+        e.beginEdit()
+        e.stamp(at: IntPoint(0, 0), overwrite: true, clipToWork: true)
+        e.stamp(along: Array(Raster.line(IntPoint(0, 0), IntPoint(5, 0)).dropFirst()), overwrite: true, clipToWork: true)
+        e.endEdit("スタンプ")
+        for x in 0...5 { XCTAssertEqual(e.image[x, 0], .black) }
+        e.undo()
+        XCTAssertFalse(e.canUndo)
+        for x in 0...5 { XCTAssertEqual(e.image[x, 0], .clear) }
+    }
+
     func testFloodFillAndReplace() {
         let e = makeEditor()
         e.color = RGBA(255, 0, 0)

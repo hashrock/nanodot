@@ -75,6 +75,13 @@ struct ToolBarView: View {
                     .toggleStyle(.button)
                     .help("矩形・楕円を塗りつぶす")
                     .disabled(editor.tool != .rect && editor.tool != .ellipse)
+                Picker(selection: $editor.penSize) {
+                    ForEach(Editor.penSizes, id: \.self) { Text(verbatim: "\($0)").tag($0) }
+                } label: { Image(systemName: "pencil.tip") }
+                    .pickerStyle(.menu)
+                    .fixedSize()
+                    .help("ペンと消しゴムの太さ")
+                    .disabled(editor.tool != .pen && editor.tool != .eraser)
             }
 
             if editor.tool == .text {

@@ -44,6 +44,9 @@ public final class Editor {
     // MARK: ツール状態
     public var tool: Tool = .pen
     public var shapeFilled = false
+    /// ペンと消しゴムの太さ（丸いペン先の直径。奇数なので押した点がちょうど真ん中になる）
+    public var penSize = 1
+    public static let penSizes = [1, 3, 5, 7, 9, 11, 15, 21, 31, 45, 63]
     public var textSettings = TextSettings()
     public var color = RGBA.black
     /// パレットで押している色（点滅表示）
@@ -298,6 +301,38 @@ public final class Editor {
         touched(r)
     }
 
+    /// 直径 size の丸いペン先の形（中心からのずれ）。size は奇数を想定し、偶数なら 1 足す
+    public static func brushOffsets(size: Int) -> [IntPoint] {
+        let r = max(0, size / 2)
+        // 半径ちょうどだと上下左右だけ角が出て見えるので、少しふくらませる（3 は十字、5 は角を落とした四角）
+        let limit = 2 * r * r + r
+        var out: [IntPoint] = []
+        for dy in -r...r {
+            for dx in -r...r where 2 * (dx * dx + dy * dy) <= limit { out.append(IntPoint(dx, dy)) }
+        }
+        return out
+    }
+
+    /// 点の並びに沿って、直径 size の丸いペン先で塗る
+    public func plot(_ pts: [IntPoint], color c: RGBA, size: Int, clip: IntRect? = nil) {
+        guard size > 1 else { return plot(pts, color: c, clip: clip) }
+        let clip = (clip ?? workRect).intersection(image.bounds)
+        let offsets = Editor.brushOffsets(size: size)
+        let rad = size / 2
+        var r = IntRect.zero
+        let c = c.normalized
+        for p in pts {
+            let b = IntRect(x: p.x - rad, y: p.y - rad, width: rad * 2 + 1, height: rad * 2 + 1).intersection(clip)
+            guard !b.isEmpty else { continue }
+            for o in offsets {
+                let x = p.x + o.x, y = p.y + o.y
+                if b.contains(IntPoint(x, y)) && image[x, y] != c { image[x, y] = c }
+            }
+            r = r.union(b)
+        }
+        touched(r)
+    }
+
     public func drawShape(_ tool: Tool, from a: IntPoint, to b: IntPoint, filled: Bool, color c: RGBA, clip: IntRect? = nil) {
         edit(tool == .line ? L("直線") : tool == .rect ? L("矩形") : L("楕円")) {
             plot(Self.shapePoints(tool, a, b, filled: filled), color: c, clip: clip)
@@ -377,9 +412,19 @@ public final class Editor {
 
     /// クリップボードを貼る。clipToWork ならマーク範囲の外には書かない
     public func stamp(at p: IntPoint, overwrite: Bool, clipToWork: Bool) {
-        guard let b = clipboard else { return }
+        stamp(along: [p], overwrite: overwrite, clipToWork: clipToWork)
+    }
+
+    /// 点の並びに沿ってスタンプを続けて押す（ドラッグでブラシのように描く）。
+    /// beginEdit 〜 endEdit の間で呼べば、ドラッグ全体が 1 回の取り消し単位になる
+    public func stamp(along pts: [IntPoint], overwrite: Bool, clipToWork: Bool) {
+        guard let b = clipboard, !pts.isEmpty else { return }
         edit(L("スタンプ")) {
-            touched(image.paste(b, at: p, skipTransparent: !overwrite, clip: clipToWork ? workRect : nil))
+            var r = IntRect.zero
+            for p in pts {
+                r = r.union(image.paste(b, at: p, skipTransparent: !overwrite, clip: clipToWork ? workRect : nil))
+            }
+            touched(r)
         }
     }
 

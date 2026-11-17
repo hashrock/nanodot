@@ -11,6 +11,8 @@ final class MainCanvasView: NSView {
         case none
         case stroke(last: IntPoint, color: RGBA)
         case shape(start: IntPoint, current: IntPoint)
+        /// スタンプをドラッグで続けて押している
+        case stamp(last: IntPoint, overwrite: Bool)
         /// 右ボタンを押した直後（離せばスポイト、動かせば範囲選択）
         case rightPending(start: IntPoint)
         case rightSelect(start: IntPoint, current: IntPoint)
@@ -176,8 +178,10 @@ final class MainCanvasView: NSView {
                 Draw.image(ctx, img, in: r, alpha: 0.8)
                 Draw.outline(ctx, r)
             } else if case .rightSelect = interaction {
+            } else if (editor.tool == .pen || editor.tool == .eraser) && (z >= 4 || editor.penSize > 1) {
+                Draw.cursor(ctx, center: screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)), offsets: Editor.brushOffsets(size: editor.penSize))
             } else if z >= 4 {
-                Draw.outline(ctx, screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)))
+                Draw.cursor(ctx, center: screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)), offsets: [IntPoint(0, 0)])
             }
         }
     }
@@ -237,14 +241,17 @@ final class MainCanvasView: NSView {
         let d = dot(e)
         setHover(d)
         if editor.stampActive {
-            editor.stamp(at: d, overwrite: !e.modifierFlags.contains(.option), clipToWork: true)
+            let overwrite = !e.modifierFlags.contains(.option)
+            editor.beginEdit()
+            editor.stamp(at: d, overwrite: overwrite, clipToWork: true)
+            interaction = .stamp(last: d, overwrite: overwrite)
             return
         }
         switch editor.tool {
         case .pen, .eraser:
             let c = editor.tool == .eraser ? RGBA.clear : editor.color
             editor.beginEdit()
-            editor.plot([d], color: c)
+            editor.plot([d], color: c, size: editor.penSize)
             interaction = .stroke(last: d, color: c)
         case .fill:
             editor.floodFill(at: d, color: editor.color)
@@ -276,8 +283,12 @@ final class MainCanvasView: NSView {
         switch interaction {
         case .stroke(let last, let c):
             guard d != last else { return }
-            editor.plot(Raster.line(last, d), color: c)
+            editor.plot(Raster.line(last, d), color: c, size: editor.penSize)
             interaction = .stroke(last: d, color: c)
+        case .stamp(let last, let overwrite):
+            guard d != last else { return }
+            editor.stamp(along: Array(Raster.line(last, d).dropFirst()), overwrite: overwrite, clipToWork: true)
+            interaction = .stamp(last: d, overwrite: overwrite)
         case .shape(let a, _):
             let b = e.modifierFlags.contains(.shift) ? Raster.constrain(a, d, diagonalSnap: editor.tool == .line) : d
             interaction = .shape(start: a, current: b)
@@ -291,6 +302,8 @@ final class MainCanvasView: NSView {
         switch interaction {
         case .stroke:
             editor.endEdit(editor.tool == .eraser ? L("消しゴム") : L("ペン"))
+        case .stamp:
+            editor.endEdit(L("スタンプ"))
         case .shape(let a, let b):
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
         default:
@@ -303,6 +316,7 @@ final class MainCanvasView: NSView {
 
     override func rightMouseDown(with e: NSEvent) {
         if editor.stampActive {
+            if case .stamp = interaction { editor.endEdit(L("スタンプ")) }
             editor.stampActive = false
             interaction = .none
             needsDisplay = true
@@ -385,7 +399,7 @@ struct MainCanvasRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: MainCanvasView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら再描画させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
+        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.penSize, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
         nsView.needsDisplay = true
     }
 }

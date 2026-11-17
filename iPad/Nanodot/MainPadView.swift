@@ -18,6 +18,8 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         case none
         case stroke(touch: UITouch, last: IntPoint, color: RGBA)
         case shape(touch: UITouch, start: IntPoint, current: IntPoint)
+        /// スタンプをドラッグで続けて押している
+        case stamp(touch: UITouch, last: IntPoint)
         /// スポイトで触れている間（original は拾う前の色。シートの外で離したり取り消されたりしたら戻す）
         case pick(touch: UITouch, original: RGBA)
         /// 長押しした直後（離せばスポイト、動かせば範囲コピー）
@@ -197,8 +199,10 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
                 let r = screenRect(IntRect(x: h.x, y: h.y, width: clip.width, height: clip.height))
                 if let cg = SheetFile.cgImage(from: clip) { Draw.image(ctx, cg, in: r, alpha: 0.75) }
                 Draw.outline(ctx, r)
+            } else if (editor.tool == .pen || editor.tool == .eraser) && (z >= 4 || editor.penSize > 1) {
+                Draw.cursor(ctx, center: screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)), offsets: Editor.brushOffsets(size: editor.penSize))
             } else if z >= 4 {
-                Draw.outline(ctx, screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)))
+                Draw.cursor(ctx, center: screenRect(IntRect(x: h.x, y: h.y, width: 1, height: 1)), offsets: [IntPoint(0, 0)])
             }
         } else if editor.stampActive, let clip = editor.clipboard {
             // ホバーできないときは、マーク位置にスタンプの大きさを点線で示す
@@ -238,7 +242,7 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
 
     private var activeTouch: UITouch? {
         switch interaction {
-        case .stroke(let t, _, _), .shape(let t, _, _), .pick(let t, _): return t
+        case .stroke(let t, _, _), .shape(let t, _, _), .pick(let t, _), .stamp(let t, _): return t
         default: return nil
         }
     }
@@ -255,14 +259,16 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         let d = dot(t)
         if t.type == .pencil { setHover(d) }
         if editor.stampActive {
+            editor.beginEdit()
             editor.stamp(at: d, overwrite: !state.stampSkipTransparent, clipToWork: true)
+            interaction = .stamp(touch: t, last: d)
             return
         }
         switch editor.tool {
         case .pen, .eraser:
             let c = editor.tool == .eraser ? RGBA.clear : editor.color
             editor.beginEdit()
-            editor.plot([d], color: c)
+            editor.plot([d], color: c, size: editor.penSize)
             interaction = .stroke(touch: t, last: d, color: c)
         case .fill:
             editor.floodFill(at: d, color: editor.color)
@@ -287,10 +293,21 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
             for ct in event?.coalescedTouches(for: t) ?? [t] {
                 let d = dot(ct)
                 guard d != last else { continue }
-                editor.plot(Raster.line(last, d), color: c)
+                editor.plot(Raster.line(last, d), color: c, size: editor.penSize)
                 last = d
             }
             interaction = .stroke(touch: t, last: last, color: c)
+            if t.type == .pencil { setHover(last) }
+        case .stamp(_, var last):
+            var pts: [IntPoint] = []
+            for ct in event?.coalescedTouches(for: t) ?? [t] {
+                let d = dot(ct)
+                guard d != last else { continue }
+                pts += Raster.line(last, d).dropFirst()
+                last = d
+            }
+            editor.stamp(along: pts, overwrite: !state.stampSkipTransparent, clipToWork: true)
+            interaction = .stamp(touch: t, last: last)
             if t.type == .pencil { setHover(last) }
         case .shape(_, let a, _):
             let d = dot(t)
@@ -309,6 +326,8 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         switch interaction {
         case .stroke:
             editor.endEdit(editor.tool == .eraser ? L("消しゴム") : L("ペン"))
+        case .stamp:
+            editor.endEdit(L("スタンプ"))
         case .shape(_, let a, let b):
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
         case .pick(_, let original):
@@ -324,7 +343,10 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         // 指で描き始めたあと 2 本指の操作に変わったときなど。描きかけは取り消す
         guard let t = activeTouch, touches.contains(t) else { return }
-        if case .stroke = interaction { editor.cancelEdit() }
+        switch interaction {
+        case .stroke, .stamp: editor.cancelEdit()
+        default: break
+        }
         cancelPick()
         interaction = .none
         setNeedsDisplay()
@@ -418,6 +440,7 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         case .began:
             if editor.stampActive {
                 // スタンプモード中の長押しは、Mac 版の右クリックと同じくモードを抜ける
+                if case .stamp = interaction { editor.cancelEdit() }
                 editor.stampActive = false
                 interaction = .none
                 g.isEnabled = false
@@ -509,7 +532,10 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     }
 
     func cancelInteraction() {
-        if case .stroke = interaction { editor.cancelEdit() }
+        switch interaction {
+        case .stroke, .stamp: editor.cancelEdit()
+        default: break
+        }
         cancelPick()
         interaction = .none
         editor.stampActive = false
@@ -525,7 +551,7 @@ struct MainCanvasRepresentable: UIViewRepresentable {
     func updateUIView(_ v: MainPadView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら描き直させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
+        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.penSize, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
              state.eyedropperActive)
         v.setNeedsDisplay()
     }

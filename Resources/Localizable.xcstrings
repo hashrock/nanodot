@@ -2932,6 +2932,16 @@
           }
         }
       }
+    },
+    "ペンと消しゴムの太さ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pen and eraser size"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

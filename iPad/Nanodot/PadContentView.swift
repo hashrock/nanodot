@@ -295,6 +295,7 @@ struct PadContentView: View {
                 barButton(editor.shapeFilled ? "square.fill" : "square", selected: editor.shapeFilled,
                           disabled: editor.tool != .rect && editor.tool != .ellipse) { editor.shapeFilled.toggle() }
                     .accessibilityLabel("矩形・楕円を塗りつぶす")
+                penSizeMenu
             }
             markMenu
             stampButton
@@ -388,6 +389,7 @@ struct PadContentView: View {
                 ForEach(PadTool.all, id: \.self) { t in Label(t.displayName, systemImage: t.symbol).tag(t) }
             }
             Toggle(isOn: $editor.shapeFilled) { Label("矩形・楕円を塗りつぶす", systemImage: "square.fill") }
+            penSizePicker
         } label: {
             Image(systemName: currentTool.symbol)
                 .font(.system(size: 18))
@@ -396,6 +398,23 @@ struct PadContentView: View {
                 .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8))
         }
         .accessibilityLabel("ツール")
+    }
+
+    private var penSizePicker: some View {
+        Picker(selection: $editor.penSize) {
+            ForEach(Editor.penSizes, id: \.self) { Text(verbatim: "\($0)").tag($0) }
+        } label: { Label("ペンと消しゴムの太さ", systemImage: "pencil.tip") }
+            .pickerStyle(.menu)
+    }
+
+    private var penSizeMenu: some View {
+        Menu { penSizePicker.pickerStyle(.inline) } label: {
+            Text(verbatim: "\(editor.penSize)")
+                .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                .frame(width: 40, height: 40)
+        }
+        .disabled(editor.tool != .pen && editor.tool != .eraser)
+        .accessibilityLabel("ペンと消しゴムの太さ")
     }
 
     private var markMenu: some View {

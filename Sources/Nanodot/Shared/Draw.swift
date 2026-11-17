@@ -70,6 +70,34 @@ enum Draw {
         ctx.restoreGState()
     }
 
+    /// ペン先の形のふちを細い実線 1 本で描く（下の色を反転した色。どんな背景でもだいたい見える）。
+    /// center は中心のドットの画面上の矩形、offsets はペン先の形（中心からのずれ）
+    static func cursor(_ ctx: CGContext, center: CGRect, offsets: [IntPoint]) {
+        let cells = Set(offsets)
+        let w = center.width, h = center.height
+        let path = CGMutablePath()
+        for o in offsets {
+            let x0 = center.minX + CGFloat(o.x) * w, y0 = center.minY + CGFloat(o.y) * h
+            let x1 = x0 + w, y1 = y0 + h
+            if !cells.contains(IntPoint(o.x, o.y - 1)) { path.move(to: CGPoint(x: x0, y: y0)); path.addLine(to: CGPoint(x: x1, y: y0)) }
+            if !cells.contains(IntPoint(o.x, o.y + 1)) { path.move(to: CGPoint(x: x0, y: y1)); path.addLine(to: CGPoint(x: x1, y: y1)) }
+            if !cells.contains(IntPoint(o.x - 1, o.y)) { path.move(to: CGPoint(x: x0, y: y0)); path.addLine(to: CGPoint(x: x0, y: y1)) }
+            if !cells.contains(IntPoint(o.x + 1, o.y)) { path.move(to: CGPoint(x: x1, y: y0)); path.addLine(to: CGPoint(x: x1, y: y1)) }
+        }
+        ctx.saveGState()
+        // 線の重なる角で反転が打ち消し合わないよう、いったん普通に描いたものをまとめて反転で重ねる
+        ctx.setBlendMode(.difference)
+        ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+        ctx.setBlendMode(.normal)
+        ctx.setLineCap(.square)
+        ctx.setLineWidth(1)
+        ctx.setStrokeColor(CGColor(gray: 1, alpha: 1))
+        ctx.addPath(path)
+        ctx.strokePath()
+        ctx.endTransparencyLayer()
+        ctx.restoreGState()
+    }
+
     /// 不透明な画素を指定の色に寄せた画像（オニオンスキン用）
     static func tinted(_ b: PixelBuffer, _ tint: RGBA) -> CGImage? {
         var out = b
