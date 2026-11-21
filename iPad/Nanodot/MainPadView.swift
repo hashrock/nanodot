@@ -59,7 +59,6 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         pan.addTarget(self, action: #selector(handlePan(_:)))
         pan.maximumNumberOfTouches = 2
         pinch.addTarget(self, action: #selector(handlePinch(_:)))
-        hold.minimumPressDuration = 0.35
         hold.addTarget(self, action: #selector(handleHold(_:)))
         tap.addTarget(self, action: #selector(handleTap(_:)))
         twoFingerTap.numberOfTouchesRequired = 2
@@ -82,10 +81,17 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+    /// 長押し（スポイト・範囲コピー）とみなすまでの時間
+    static let holdDuration: TimeInterval = 0.35
+    /// 「指で描く」がオンのときの長押しの時間
+    static let fingerDrawingHoldDuration: TimeInterval = 0.8
+
     func updateGestureConfiguration() {
         // 指で描くときは、マーク位置を動かすのは 2 本指だけ
         pan.minimumNumberOfTouches = state.fingerDrawing ? 2 : 1
         tap.isEnabled = !state.fingerDrawing
+        // 指で描くときは、描き始めや直線・矩形の始点で指を止めてもスポイトに変わりにくいよう、長押しの判定を長くする
+        hold.minimumPressDuration = state.fingerDrawing ? Self.fingerDrawingHoldDuration : Self.holdDuration
     }
 
     override func layoutSubviews() {
