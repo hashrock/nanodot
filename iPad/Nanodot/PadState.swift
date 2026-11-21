@@ -178,17 +178,32 @@ final class PadState {
         }
     }
 
+    /// ほかのアプリで画像がコピーされていれば、内部のクリップボードに取り込む
+    private func importPasteboard() {
+        let pb = UIPasteboard.general
+        guard pb.changeCount != pasteboardChangeCount else { return }
+        if let data = pb.data(forPasteboardType: UTType.png.identifier), let b = SheetFile.pixelBuffer(pngData: data) {
+            editor.setClipboard(b)
+        } else if let img = pb.image?.cgImage, let b = SheetFile.pixelBuffer(from: img) {
+            editor.setClipboard(b)
+        }
+        pasteboardChangeCount = pb.changeCount
+    }
+
+    /// クリップボードをマーク位置（左上）に貼り付ける（ストックの貼り付けボタン）
+    func pasteAtMark() {
+        importPasteboard()
+        guard editor.clipboard != nil else {
+            show(L("貼り付ける画像がありません"))
+            return
+        }
+        editor.stamp(at: editor.meta.mark, overwrite: !stampSkipTransparent, clipToWork: false)
+        requestDisplay()
+    }
+
     /// ほかのアプリで画像がコピーされていればそれを取り込んで、スタンプモードへ
     func pasteToStamp() {
-        let pb = UIPasteboard.general
-        if pb.changeCount != pasteboardChangeCount {
-            if let data = pb.data(forPasteboardType: UTType.png.identifier), let b = SheetFile.pixelBuffer(pngData: data) {
-                editor.setClipboard(b)
-            } else if let img = pb.image?.cgImage, let b = SheetFile.pixelBuffer(from: img) {
-                editor.setClipboard(b)
-            }
-            pasteboardChangeCount = pb.changeCount
-        }
+        importPasteboard()
         if editor.clipboard != nil {
             eyedropperActive = false
             editor.stampActive = true

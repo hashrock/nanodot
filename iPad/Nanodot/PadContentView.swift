@@ -513,25 +513,50 @@ struct StockBar: View {
     @Bindable var editor: Editor
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text("ストック").font(.caption.bold())
-            Text("\(Int((state.stockZoom * 100).rounded()))%")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-            Button { state.stockView?.stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass").frame(width: 32, height: 28) }
-                .accessibilityLabel("縮小")
-            Button { state.stockView?.stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass").frame(width: 32, height: 28) }
-                .accessibilityLabel("拡大")
-            Button { state.stockView?.fitToView() } label: { Image(systemName: "arrow.left.and.right.square").frame(width: 32, height: 28) }
-                .accessibilityLabel("シートの幅に合わせる")
-            Toggle(isOn: $editor.meta.showCellGrid) { Image(systemName: "grid") }
-                .toggleStyle(.button)
-                .accessibilityLabel("セルの格子を表示")
+        // 狭い幅（Split View など）では倍率の表示を外してボタンを収める
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) {
+                title
+                zoomLabel
+                Spacer(minLength: 0)
+                buttons
+            }
+            HStack(spacing: 6) {
+                title
+                Spacer(minLength: 0)
+                buttons
+            }
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
         .background(.bar)
+    }
+
+    private var title: some View { Text("ストック").font(.caption.bold()) }
+
+    private var zoomLabel: some View {
+        Text("\(Int((state.stockZoom * 100).rounded()))%")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private var buttons: some View {
+        // 長押し・ダブルタップに気づかなくても使えるように、マーク範囲のコピーとマーク位置への貼り付けを置く
+        Button { state.copyMark() } label: { Image(systemName: "doc.on.doc").frame(width: 32, height: 28) }
+            .accessibilityLabel("マーク範囲をコピー")
+        Button { state.pasteAtMark() } label: { Image(systemName: "doc.on.clipboard").frame(width: 32, height: 28) }
+            .accessibilityLabel("マーク位置に貼り付け")
+        Divider().frame(height: 18)
+        Button { state.stockView?.stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass").frame(width: 32, height: 28) }
+            .accessibilityLabel("縮小")
+        Button { state.stockView?.stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass").frame(width: 32, height: 28) }
+            .accessibilityLabel("拡大")
+        Button { state.stockView?.fitToView() } label: { Image(systemName: "arrow.left.and.right.square").frame(width: 32, height: 28) }
+            .accessibilityLabel("シートの幅に合わせる")
+        Toggle(isOn: $editor.meta.showCellGrid) { Image(systemName: "grid") }
+            .toggleStyle(.button)
+            .accessibilityLabel("セルの格子を表示")
     }
 }
 
