@@ -403,18 +403,16 @@ struct PadContentView: View {
     private var penSizePicker: some View {
         Picker(selection: $editor.penSize) {
             ForEach(Editor.penSizes, id: \.self) { Text(verbatim: "\($0)").tag($0) }
-        } label: { Label("ペンと消しゴムの太さ", systemImage: "pencil.tip") }
+        } label: {
+            Label("ペンと消しゴムの太さ", systemImage: "pencil.tip")
+            Text(verbatim: "\(editor.penSize) px")
+        }
             .pickerStyle(.menu)
     }
 
     private var penSizeMenu: some View {
-        Menu { penSizePicker.pickerStyle(.inline) } label: {
-            Text(verbatim: "\(editor.penSize)")
-                .font(.system(size: 15, weight: .semibold).monospacedDigit())
-                .frame(width: 40, height: 40)
-        }
-        .disabled(editor.tool != .pen && editor.tool != .eraser)
-        .accessibilityLabel("ペンと消しゴムの太さ")
+        PenSizeButton(editor: editor)
+            .disabled(editor.tool != .pen && editor.tool != .eraser)
     }
 
     private var markMenu: some View {
@@ -503,6 +501,85 @@ struct PadContentView: View {
                 .background(selected ? Color.accentColor.opacity(0.2) : .clear, in: RoundedRectangle(cornerRadius: 8))
         }
         .disabled(disabled)
+    }
+}
+
+// MARK: - ペンの太さ
+
+/// ツールバーの太さのボタン。今の太さを丸の大きさと数字で見せ、押すと太さの見本の一覧を出す
+struct PenSizeButton: View {
+    @Bindable var editor: Editor
+    @State private var open = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    /// 見本の丸の直径（太さ 1〜63 を 4pt〜max に）
+    static func dotSize(_ size: Int, max: CGFloat = 20) -> CGFloat {
+        let t = sqrt(CGFloat(size - 1) / CGFloat((Editor.penSizes.last ?? 63) - 1))
+        return 4 + (max - 4) * t
+    }
+
+    var body: some View {
+        Button { open = true } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color(uiColor: .label))
+                    .frame(width: Self.dotSize(editor.penSize, max: 16), height: Self.dotSize(editor.penSize, max: 16))
+                    .frame(width: 16, height: 16)
+                Text(verbatim: "\(editor.penSize) px")
+                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 32)
+            .background(Color.secondary.opacity(isEnabled ? 0.12 : 0.06), in: Capsule())
+            .frame(height: 40)
+        }
+        .accessibilityLabel("ペンと消しゴムの太さ")
+        .accessibilityValue(Text(verbatim: "\(editor.penSize) px"))
+        .popover(isPresented: $open) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("ペンと消しゴムの太さ")
+                    .font(.subheadline.bold())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                Divider()
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(Editor.penSizes, id: \.self) { size in row(size) }
+                    }
+                }
+            }
+            .frame(width: 200)
+            .frame(maxHeight: 480)
+            .presentationCompactAdaptation(.popover)
+        }
+    }
+
+    private func row(_ size: Int) -> some View {
+        Button {
+            editor.penSize = size
+            open = false
+        } label: {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(Color(uiColor: .label))
+                    .frame(width: Self.dotSize(size, max: 26), height: Self.dotSize(size, max: 24))
+                    .frame(width: 28, height: 28)
+                Text(verbatim: "\(size) px")
+                    .font(.body.monospacedDigit())
+                Spacer()
+                if size == editor.penSize {
+                    Image(systemName: "checkmark").font(.body.weight(.semibold))
+                }
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 16)
+            .frame(height: 40)
+            .background(size == editor.penSize ? Color.accentColor.opacity(0.15) : .clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
