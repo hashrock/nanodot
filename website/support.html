@@ -30,15 +30,15 @@
       <p>次のことを書いてもらえると、早く調べられます。</p>
       <dl>
         <dt>アプリの版と、入手元</dt>
-        <dd>版はメニューの「Nanodot ＞ Nanodot について」に出ています。Mac App Store 版か、GitHub からダウンロードした版かも書いてください。</dd>
-        <dt>macOS の版</dt>
-        <dd>「アップル メニュー ＞ この Mac について」に出ています。</dd>
+        <dd>Mac 版はメニューの「Nanodot ＞ Nanodot について」に出ています。Mac App Store 版か、GitHub からダウンロードした版かも書いてください。iPad 版は、iPad の「設定 ＞ 一般 ＞ iPad ストレージ ＞ Nanodot」に出ています。</dd>
+        <dt>macOS・iPadOS の版</dt>
+        <dd>Mac は「アップル メニュー ＞ この Mac について」、iPad は「設定 ＞ 一般 ＞ 情報」に出ています。</dd>
         <dt>起きたことと、その手順</dt>
         <dd>何をしたら、何が起きたか。画面の写真があるとなおよいです。</dd>
       </dl>
 
       <h2>動作環境</h2>
-      <p>macOS 14 以降（Apple シリコン・Intel）。表示言語は日本語と英語です。</p>
+      <p>Mac 版: macOS 14 以降（Apple シリコン・Intel）。iPad 版: iPadOS 17 以降。表示言語は日本語と英語です。App Store では Mac 版と iPad 版を一度入手すれば両方使えます。</p>
 
       <h2>よくある質問</h2>
       <dl>
@@ -50,12 +50,16 @@
         <dd>使えます。GitHub からダウンロードした版は、<code>&lt;名前&gt;.nanodot</code> がなければ古い <code>&lt;名前&gt;.nanodot.json</code> を自動で読みます。Mac App Store 版は自動では読めないので、PNG を開いてから「ファイル ＞ 設定を読み込む...」で古いファイルを選んでください。どちらの版も、保存すると <code>&lt;名前&gt;.nanodot</code> に書きます。古いファイルは消しません。</dd>
         <dt>ゲームエンジンで使うデータは、どう書き出しますか？</dt>
         <dd>「ファイル ＞ ゲームエンジン用データを書き出す...」でフォルダーを選ぶと、<code>&lt;名前&gt;.atlas.json</code>（アニメと名前付きセルのフレーム。Aseprite / TexturePacker 互換）と、マップごとの <code>&lt;名前&gt;.&lt;マップ名&gt;.tmj</code>（Tiled 形式）を書き出します。PNG と同じフォルダーに置くと、そのまま読めます。保存のたびには書き出しません。⌘E で、前回の書き出し先にもう一度書き出せます。</dd>
+        <dt>iPad 版の書類はどこに保存されますか？</dt>
+        <dd>ファイル App の「このiPad内 › Nanodot」です。iCloud Drive を使っていれば「iCloud Drive › Nanodot」にも置け、Mac の Finder の iCloud Drive にも同じフォルダーが出るので、Mac 版と同じ書類を行き来できます。ほかの場所の PNG も開けますが、そのときは設定（<code>&lt;名前&gt;.nanodot</code>）を読み書きしません。PNG と <code>&lt;名前&gt;.nanodot</code> を一緒に Nanodot のフォルダーへ移すと、設定ごと使えます。</dd>
+        <dt>iPad 版でできないことはありますか？</dt>
+        <dd>テキストツール、マップ、注釈の編集、ゲームエンジン用データの書き出し、設定の読み込みは Mac 版だけです。これらのデータは <code>&lt;名前&gt;.nanodot</code> に残るので、iPad 版で保存しても消えません。</dd>
         <dt>Mac App Store 版に MCP サーバーの設定がありません。</dt>
         <dd>MCP サーバーは GitHub からダウンロードした版だけの機能です。Mac App Store 版には入っていません。</dd>
       </dl>
 
       <h2>プライバシー</h2>
-      <p>nanodot はあなたの情報を集めず、インターネットにも接続しません。詳しくは<a class="link" href="./privacy.html">プライバシーポリシー</a>をご覧ください。</p>
+      <p>nanodot はあなたの情報を集めず、自分からインターネットに接続することもありません。詳しくは<a class="link" href="./privacy.html">プライバシーポリシー</a>をご覧ください。</p>
     </article>
 
     <article id="en" lang="en">
@@ -67,15 +71,15 @@
       <p>Including the following helps us look into it quickly.</p>
       <dl>
         <dt>App version, and where you got it</dt>
-        <dd>The version is shown in Nanodot › About Nanodot. Please also say whether it is the Mac App Store version or the one downloaded from GitHub.</dd>
-        <dt>macOS version</dt>
-        <dd>Shown in Apple menu › About This Mac.</dd>
+        <dd>On the Mac, the version is shown in Nanodot › About Nanodot. Please also say whether it is the Mac App Store version or the one downloaded from GitHub. On iPad, it is shown in Settings › General › iPad Storage › Nanodot.</dd>
+        <dt>macOS or iPadOS version</dt>
+        <dd>On the Mac, Apple menu › About This Mac. On iPad, Settings › General › About.</dd>
         <dt>What happened, and how</dt>
         <dd>What you did and what happened. A screenshot helps too.</dd>
       </dl>
 
       <h2>Requirements</h2>
-      <p>macOS 14 or later (Apple silicon and Intel). The app is available in Japanese and English.</p>
+      <p>Mac: macOS 14 or later (Apple silicon and Intel). iPad: iPadOS 17 or later. The app is available in Japanese and English. On the App Store, one purchase covers both the Mac and iPad versions.</p>
 
       <h2>FAQ</h2>
       <dl>
@@ -87,12 +91,16 @@
         <dd>Yes. The version downloaded from GitHub reads the older <code>&lt;name&gt;.nanodot.json</code> automatically when there is no <code>&lt;name&gt;.nanodot</code>. The Mac App Store version cannot read it automatically, so open the PNG and then choose File › Import Settings… and select the older file. Either version writes <code>&lt;name&gt;.nanodot</code> when you save. The older file is not deleted.</dd>
         <dt>How do I export data for a game engine?</dt>
         <dd>Choose File › Export Game Engine Data… and pick a folder. The app writes <code>&lt;name&gt;.atlas.json</code> (frames for animations and named cells, compatible with Aseprite / TexturePacker) and one <code>&lt;name&gt;.&lt;map name&gt;.tmj</code> per map (Tiled format). Put them in the same folder as the PNG and they can be loaded as is. They are not written every time you save. Press ⌘E to export again to the last folder.</dd>
+        <dt>Where does the iPad version save documents?</dt>
+        <dd>In On My iPad › Nanodot in the Files app. If you use iCloud Drive, you can also keep them in iCloud Drive › Nanodot, which shows up as the same folder in iCloud Drive in the Mac Finder, so you can move documents back and forth with the Mac version. You can also open PNGs from other locations, but then the settings (<code>&lt;name&gt;.nanodot</code>) are not read or written. Move the PNG together with <code>&lt;name&gt;.nanodot</code> into the Nanodot folder to use everything.</dd>
+        <dt>Is anything missing from the iPad version?</dt>
+        <dd>The text tool, maps, annotation editing, game engine data export and Import Settings are Mac only. That data stays in <code>&lt;name&gt;.nanodot</code>, so saving from the iPad version does not remove it.</dd>
         <dt>The Mac App Store version has no MCP server setting.</dt>
         <dd>The MCP server is available only in the version downloaded from GitHub. The Mac App Store version does not include it.</dd>
       </dl>
 
       <h2>Privacy</h2>
-      <p>nanodot does not collect your information and does not connect to the internet. See the <a class="link" href="./privacy.html#en">Privacy Policy</a> for details.</p>
+      <p>nanodot does not collect your information and never connects to the internet by itself. See the <a class="link" href="./privacy.html#en">Privacy Policy</a> for details.</p>
     </article>
 
   </main>
