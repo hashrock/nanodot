@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#fafafa">
   <title>nanodot — スプライトシート用ドット絵エディター</title>
-  <meta name="description" content="歩行グラフィックやマップチップなど、同じ大きさの絵が並んだ PNG を編集する macOS 用のドット絵エディター。アニメーション、マップの仮組み、セルの注釈、MCP に対応。">
+  <meta name="description" content="歩行グラフィックやマップチップなど、同じ大きさの絵が並んだ PNG を編集する macOS・iPad 用のドット絵エディター。アニメーション、マップの仮組み、セルの注釈、MCP に対応。">
   <link rel="icon" href="./assets/nanodot.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <script type="module" src="https://repos.hashrock.info/switcher/v1.js"></script>
@@ -23,7 +23,7 @@
   <main>
     <section class="hero wrap" aria-labelledby="headline">
       <h1 id="headline">スプライトシート用<br>ドット絵エディター</h1>
-      <p class="intro">歩行グラフィックやマップチップなど、同じ大きさの絵が格子状に並んだ PNG を編集する macOS 用のアプリです。</p>
+      <p class="intro">歩行グラフィックやマップチップなど、同じ大きさの絵が格子状に並んだ PNG を編集する macOS 用のアプリです。Apple Pencil で描ける <a href="#f-ipad">iPad 版</a>も App Store で公開予定です。</p>
       <a class="button" href="https://github.com/hashrock/nanodot/releases/latest"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg>ダウンロード</a>
       <p class="requirement">macOS 14 以降・無料・表示言語: 日本語・英語 · <a href="https://github.com/hashrock/nanodot#ビルドと起動">ソースからビルド</a></p>
     </section>
@@ -123,6 +123,22 @@
       </div>
       <pre><code>claude mcp add --transport http \
   nanodot http://127.0.0.1:47621/mcp</code></pre>
+    </section>
+
+    <section class="feature wrap" aria-labelledby="f-ipad">
+      <div class="feature-text">
+        <h2 id="f-ipad">iPad 版</h2>
+        <p>iPad では Apple Pencil で描けます。描画のエンジンは Mac 版と同じで、同じ書類を行き来できます。App Store で公開予定です（iPadOS 17 以降）。</p>
+        <ul>
+          <li>Apple Pencil で描き、指でマークを動かす。近づけるとペン先の位置に枠が出る</li>
+          <li>2 本指タップで取り消し、3 本指タップでやり直し。Apple Pencil のダブルタップでペンと消しゴムを切り替え</li>
+          <li>長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。ストックのボタンでもコピー・貼り付け</li>
+          <li>書類はファイル App の「このiPad内」か iCloud Drive に。Mac の Finder の iCloud Drive にも同じフォルダーが出る</li>
+          <li>Magic Keyboard では Mac 版と同じキーが使える</li>
+          <li>テキストツール・マップ・注釈の編集・ゲームエンジン用データの書き出しは Mac 版だけ。iPad で保存してもそれらのデータは消えない</li>
+        </ul>
+      </div>
+      <img class="portrait" src="./assets/ipad.png" width="720" height="960" alt="iPad 版の画面。上にスライムを拡大したメイン、左下にシート全体のストック、右下に色のパネル。" loading="lazy">
     </section>
 
     <section class="formats wrap" aria-labelledby="f-format">
