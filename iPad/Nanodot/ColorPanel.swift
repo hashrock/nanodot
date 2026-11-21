@@ -85,7 +85,6 @@ struct ColorPanel: View {
         selected = id
         rangeEnd = nil
         editor.color = c
-        state.flashHighlight(c)
     }
 
     private var palettes: some View {
@@ -216,8 +215,14 @@ struct ColorPanel: View {
         .disabled(editor.meta.slots.allSatisfy { $0 == nil })
     }
 
+    private func highlightButton(_ c: RGBA) -> some View {
+        Button { state.flashHighlight(c) } label: { Label("使っている場所を点滅", systemImage: "sparkles") }
+    }
+
     @ViewBuilder
     private func colorMenu(_ c: RGBA) -> some View {
+        highlightButton(c)
+        Divider()
         replaceMenu(c)
         Divider()
         Button("スロットに登録") {
@@ -260,6 +265,8 @@ struct ColorPanel: View {
                             rangeButtons(r)
                             Divider()
                         }
+                        highlightButton(c)
+                        Divider()
                         rangeMenuItem(i)
                         Button("描画色で上書き") { editor.meta.slots[i] = editor.color }
                         Button("消去", role: .destructive) { editor.meta.slots[i] = nil }

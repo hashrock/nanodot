@@ -58,7 +58,7 @@ final class PadState {
     @ObservationIgnored weak var stockView: StockPadView?
     @ObservationIgnored weak var previewView: AnimPreviewPadView?
 
-    /// 点滅の表示相（パレットで色を選んだとき、その色の場所を少しの間点滅させる）
+    /// 点滅の表示相（パレットの「使っている場所を点滅」で、その色の場所を少しの間点滅させる）
     @ObservationIgnored private(set) var blinkOn = false
     @ObservationIgnored private var blinkTimer: Timer?
     @ObservationIgnored private var imageCache: (version: Int, image: CGImage)?
@@ -107,7 +107,7 @@ final class PadState {
         }
     }
 
-    /// その色を使っている場所を少しの間点滅させる（Mac 版は押している間。iPad はタップなので時間で止める）
+    /// その色を使っている場所を少しの間点滅させる（パレット・スロットの長押しメニューから）
     func flashHighlight(_ c: RGBA) {
         editor.highlight = c
         blinkTimer?.invalidate()
