@@ -119,6 +119,7 @@ struct PadContentView: View {
         .onOpenURL { url in requestDiscard(.openFile(url, scoped: false)) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background || phase == .inactive { state.autosave() }
+            if phase == .active { state.refreshFingerDrawingDefault() }
         }
         .onChange(of: state.showColorsRequest) { _, _ in
             if sidePanel == .anim { sidePanel = .colors }
@@ -681,13 +682,13 @@ struct SettingsPanel: View {
                     Text("左上を基準に大きさを変えます。")
                 }
                 Section {
-                    Toggle("指で描く", isOn: Binding(get: { state.fingerDrawing }, set: { state.fingerDrawing = $0 }))
+                    Toggle("指で描く", isOn: Binding(get: { state.fingerDrawing }, set: { state.setFingerDrawing($0) }))
                     IntRow("長押しで範囲コピーにする移動", value: Binding(get: { state.dragThreshold }, set: { state.dragThreshold = $0 }),
                            min: 1, max: 8, unit: state.dragThreshold == 1 ? Text("ドット（単位・1 のとき）") : Text("ドット（単位）"))
                 } header: {
                     Text("入力")
                 } footer: {
-                    Text("Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。ツールバーのスポイトを選ぶと、メインかストックで触れた所の色を拾い、元のツールに戻ります。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。")
+                    Text("Apple Pencil で描きます。指は 1 本・2 本のドラッグでマーク位置を動かし、ピンチでルーペの大きさを変えます。長押しでスポイト、長押しのままドラッグで範囲をコピーしてスタンプ。ツールバーのスポイトを選ぶと、メインかストックで触れた所の色を拾い、元のツールに戻ります。2 本指タップで取り消し、3 本指タップでやり直し。「指で描く」をオンにすると、マーク位置を動かすのは 2 本指になります。「指で描く」は、切り替えるまでは iPadOS の「Apple Pencil でのみ描画」の設定に合わせます。")
                 }
             }
             .navigationTitle("設定")

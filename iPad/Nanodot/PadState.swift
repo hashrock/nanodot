@@ -32,12 +32,47 @@ final class PadState {
     @ObservationIgnored var previewFrameRect: IntRect?
 
     // MARK: 入力の設定
-    /// 指でも描く（オフなら指は表示の操作だけ。描くのは Apple Pencil）
-    var fingerDrawing: Bool = UserDefaults.standard.bool(forKey: "pad.fingerDrawing") {
-        didSet {
-            UserDefaults.standard.set(fingerDrawing, forKey: "pad.fingerDrawing")
-            mainView?.updateGestureConfiguration()
-        }
+    /// 指でも描く（オフなら指は表示の操作だけ。描くのは Apple Pencil）。
+    /// 設定で一度も切り替えていない間は、iPadOS の「Apple Pencil でのみ描画」に従う
+    /// （Apple Pencil を使っていない人は初めから指で描ける）。切り替えたらそちらを覚えて優先する
+    var fingerDrawing: Bool = PadState.fingerDrawingDefault() {
+        didSet { mainView?.updateGestureConfiguration() }
+    }
+
+    /// 設定の「指で描く」を切り替えた（以後は iPadOS の設定に従わない）
+    func setFingerDrawing(_ on: Bool) {
+        UserDefaults.standard.set(on, forKey: "pad.fingerDrawing")
+        fingerDrawing = on
+    }
+
+    private static func fingerDrawingDefault() -> Bool {
+        if let v = UserDefaults.standard.object(forKey: "pad.fingerDrawing") as? Bool { return v }
+        return !UIPencilInteraction.prefersPencilOnlyDrawing
+    }
+
+    /// アプリに戻ってきたとき、iPadOS の設定が変わっていれば合わせる（設定で切り替えていなければ）
+    func refreshFingerDrawingDefault() {
+        let v = Self.fingerDrawingDefault()
+        if v != fingerDrawing { fingerDrawing = v }
+    }
+
+    /// Apple Pencil で描いたことがあるか（「指で描く」のヒントを出すかどうか）
+    @ObservationIgnored private var pencilSeen = UserDefaults.standard.bool(forKey: "pad.pencilSeen")
+
+    func notePencilUsed() {
+        guard !pencilSeen else { return }
+        pencilSeen = true
+        UserDefaults.standard.set(true, forKey: "pad.pencilSeen")
+    }
+
+    /// 「指で描く」がオフのまま指でメインをなぞったとき、Apple Pencil を使ったことがなければ、初めの 3 回だけ描き方を出す
+    func fingerDragWithoutDrawing() {
+        guard !fingerDrawing, !pencilSeen else { return }
+        let d = UserDefaults.standard
+        let n = d.integer(forKey: "pad.fingerHintCount")
+        guard n < 3 else { return }
+        d.set(n + 1, forKey: "pad.fingerHintCount")
+        show(L("指で描くには、設定（⚙）の「指で描く」をオンにします"))
     }
     /// スポイトのツールを選んでいる（メイン・ストックのタップで色を拾い、拾ったら元のツールに戻る）。
     /// 描くツール（editor.tool）は変えずに上に重ねるので、抜ければ直前のツールのまま

@@ -257,7 +257,10 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         // 2 本目の指が来ているなら描かない（ジェスチャーに任せる）
         if t.type == .direct, (event?.allTouches?.filter { $0.type == .direct }.count ?? 0) > 1 { return }
         let d = dot(t)
-        if t.type == .pencil { setHover(d) }
+        if t.type == .pencil {
+            setHover(d)
+            state.notePencilUsed()
+        }
         if editor.stampActive {
             editor.beginEdit()
             editor.stamp(at: d, overwrite: !state.stampSkipTransparent, clipToWork: true)
@@ -394,6 +397,7 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         switch g.state {
         case .began:
             panStartMark = editor.meta.mark
+            if g.numberOfTouches == 1 { state.fingerDragWithoutDrawing() }
         case .changed:
             guard let startMark = panStartMark else { return }
             let t = g.translation(in: self)
