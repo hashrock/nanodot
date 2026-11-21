@@ -1385,6 +1385,17 @@
         }
       }
     },
+    "マーク位置に貼り付け" : {
+      "comment" : "iPad のストックの下のバーのボタン。クリップボードをマーク位置に貼る",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste at Mark"
+          }
+        }
+      }
+    },
     "マーク位置をこのコマへ" : {
       "localizations" : {
         "en" : {
@@ -1451,6 +1462,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Marked Area Actions"
+          }
+        }
+      }
+    },
+    "マーク範囲をコピー" : {
+      "comment" : "iPad のストックの下のバーのボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Mark Range"
           }
         }
       }
@@ -1647,6 +1669,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create"
+          }
+        }
+      }
+    },
+    "使っている場所を点滅" : {
+      "comment" : "パレット・スロットの右クリックメニュー。その色の画素を少しの間点滅させる",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flash Where Used"
           }
         }
       }

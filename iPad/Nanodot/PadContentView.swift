@@ -403,18 +403,16 @@ struct PadContentView: View {
     private var penSizePicker: some View {
         Picker(selection: $editor.penSize) {
             ForEach(Editor.penSizes, id: \.self) { Text(verbatim: "\($0)").tag($0) }
-        } label: { Label("ペンと消しゴムの太さ", systemImage: "pencil.tip") }
+        } label: {
+            Label("ペンと消しゴムの太さ", systemImage: "pencil.tip")
+            Text(verbatim: "\(editor.penSize) px")
+        }
             .pickerStyle(.menu)
     }
 
     private var penSizeMenu: some View {
-        Menu { penSizePicker.pickerStyle(.inline) } label: {
-            Text(verbatim: "\(editor.penSize)")
-                .font(.system(size: 15, weight: .semibold).monospacedDigit())
-                .frame(width: 40, height: 40)
-        }
-        .disabled(editor.tool != .pen && editor.tool != .eraser)
-        .accessibilityLabel("ペンと消しゴムの太さ")
+        PenSizeButton(editor: editor)
+            .disabled(editor.tool != .pen && editor.tool != .eraser)
     }
 
     private var markMenu: some View {
@@ -506,6 +504,85 @@ struct PadContentView: View {
     }
 }
 
+// MARK: - ペンの太さ
+
+/// ツールバーの太さのボタン。今の太さを丸の大きさと数字で見せ、押すと太さの見本の一覧を出す
+struct PenSizeButton: View {
+    @Bindable var editor: Editor
+    @State private var open = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    /// 見本の丸の直径（太さ 1〜63 を 4pt〜max に）
+    static func dotSize(_ size: Int, max: CGFloat = 20) -> CGFloat {
+        let t = sqrt(CGFloat(size - 1) / CGFloat((Editor.penSizes.last ?? 63) - 1))
+        return 4 + (max - 4) * t
+    }
+
+    var body: some View {
+        Button { open = true } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color(uiColor: .label))
+                    .frame(width: Self.dotSize(editor.penSize, max: 16), height: Self.dotSize(editor.penSize, max: 16))
+                    .frame(width: 16, height: 16)
+                Text(verbatim: "\(editor.penSize) px")
+                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 32)
+            .background(Color.secondary.opacity(isEnabled ? 0.12 : 0.06), in: Capsule())
+            .frame(height: 40)
+        }
+        .accessibilityLabel("ペンと消しゴムの太さ")
+        .accessibilityValue(Text(verbatim: "\(editor.penSize) px"))
+        .popover(isPresented: $open) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("ペンと消しゴムの太さ")
+                    .font(.subheadline.bold())
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                Divider()
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(Editor.penSizes, id: \.self) { size in row(size) }
+                    }
+                }
+            }
+            .frame(width: 200)
+            .frame(maxHeight: 480)
+            .presentationCompactAdaptation(.popover)
+        }
+    }
+
+    private func row(_ size: Int) -> some View {
+        Button {
+            editor.penSize = size
+            open = false
+        } label: {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(Color(uiColor: .label))
+                    .frame(width: Self.dotSize(size, max: 26), height: Self.dotSize(size, max: 24))
+                    .frame(width: 28, height: 28)
+                Text(verbatim: "\(size) px")
+                    .font(.body.monospacedDigit())
+                Spacer()
+                if size == editor.penSize {
+                    Image(systemName: "checkmark").font(.body.weight(.semibold))
+                }
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 16)
+            .frame(height: 40)
+            .background(size == editor.penSize ? Color.accentColor.opacity(0.15) : .clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - ストックの下のバー
 
 struct StockBar: View {
@@ -513,25 +590,50 @@ struct StockBar: View {
     @Bindable var editor: Editor
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text("ストック").font(.caption.bold())
-            Text("\(Int((state.stockZoom * 100).rounded()))%")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-            Button { state.stockView?.stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass").frame(width: 32, height: 28) }
-                .accessibilityLabel("縮小")
-            Button { state.stockView?.stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass").frame(width: 32, height: 28) }
-                .accessibilityLabel("拡大")
-            Button { state.stockView?.fitToView() } label: { Image(systemName: "arrow.left.and.right.square").frame(width: 32, height: 28) }
-                .accessibilityLabel("シートの幅に合わせる")
-            Toggle(isOn: $editor.meta.showCellGrid) { Image(systemName: "grid") }
-                .toggleStyle(.button)
-                .accessibilityLabel("セルの格子を表示")
+        // 狭い幅（Split View など）では倍率の表示を外してボタンを収める
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) {
+                title
+                zoomLabel
+                Spacer(minLength: 0)
+                buttons
+            }
+            HStack(spacing: 6) {
+                title
+                Spacer(minLength: 0)
+                buttons
+            }
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
         .background(.bar)
+    }
+
+    private var title: some View { Text("ストック").font(.caption.bold()) }
+
+    private var zoomLabel: some View {
+        Text("\(Int((state.stockZoom * 100).rounded()))%")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private var buttons: some View {
+        // 長押し・ダブルタップに気づかなくても使えるように、マーク範囲のコピーとマーク位置への貼り付けを置く
+        Button { state.copyMark() } label: { Image(systemName: "doc.on.doc").frame(width: 32, height: 28) }
+            .accessibilityLabel("マーク範囲をコピー")
+        Button { state.pasteAtMark() } label: { Image(systemName: "doc.on.clipboard").frame(width: 32, height: 28) }
+            .accessibilityLabel("マーク位置に貼り付け")
+        Divider().frame(height: 18)
+        Button { state.stockView?.stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass").frame(width: 32, height: 28) }
+            .accessibilityLabel("縮小")
+        Button { state.stockView?.stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass").frame(width: 32, height: 28) }
+            .accessibilityLabel("拡大")
+        Button { state.stockView?.fitToView() } label: { Image(systemName: "arrow.left.and.right.square").frame(width: 32, height: 28) }
+            .accessibilityLabel("シートの幅に合わせる")
+        Toggle(isOn: $editor.meta.showCellGrid) { Image(systemName: "grid") }
+            .toggleStyle(.button)
+            .accessibilityLabel("セルの格子を表示")
     }
 }
 
