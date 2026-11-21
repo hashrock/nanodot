@@ -77,7 +77,7 @@ struct PalettePanel: View {
         return i < SheetMeta.slotCount ? i : nil
     }
 
-    /// 押す: 描画色にして使用箇所を点滅（空きスロットなら描画色を登録）
+    /// 押す: 描画色にする（使用箇所の点滅は右クリックメニューから）
     /// Shift + 押す: スロットの範囲選択
     /// ドラッグ: スロットへ移動（スロット同士は入れ替え、⌥ でコピー）
     private func swatchGesture(_ id: SwatchID, color: RGBA?) -> some Gesture {
@@ -91,26 +91,18 @@ struct PalettePanel: View {
                         pressIsRange = true
                         return
                     }
-                    if id == .current {
-                        // 描画色のプレビュー: 選択は変えず、使用箇所の点滅だけ
-                        if let color { state.setHighlight(color) }
-                        return
-                    }
+                    // 描画色のプレビュー: 選択は変えず、ドラッグだけ
+                    if id == .current { return }
                     selected = id
                     rangeEnd = nil
-                    if let color {
-                        editor.color = color
-                        state.setHighlight(color)
-                    }
+                    if let color { editor.color = color }
                     return
                 }
                 guard !pressIsRange, let color, hypot(g.translation.width, g.translation.height) > 4 else { return }
-                if drag == nil { state.setHighlight(nil) }
                 drag = (id, color, slotIndex(at: g.location), g.location)
             }
             .onEnded { _ in
                 pressing = false
-                state.setHighlight(nil)
                 if let d = drag, let t = d.target {
                     switch d.source {
                     case .slot(let from):
@@ -320,8 +312,14 @@ struct PalettePanel: View {
         .disabled(editor.meta.slots.allSatisfy { $0 == nil })
     }
 
+    private func highlightButton(_ c: RGBA) -> some View {
+        Button("使っている場所を点滅") { state.flashHighlight(c) }
+    }
+
     @ViewBuilder
     private func colorMenu(_ c: RGBA) -> some View {
+        highlightButton(c)
+        Divider()
         replaceMenu(c)
         Divider()
         Button("スロットに登録") {
@@ -340,6 +338,8 @@ struct PalettePanel: View {
                         rangeButtons(r)
                         Divider()
                     }
+                    highlightButton(c)
+                    Divider()
                     Button("描画色で上書き") { editor.meta.slots[i] = editor.color }
                     Button("消去") { editor.meta.slots[i] = nil }
                     Divider()

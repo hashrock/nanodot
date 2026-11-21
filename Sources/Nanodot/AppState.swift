@@ -133,19 +133,24 @@ final class AppState {
         mapView?.needsDisplay = true
     }
 
-    /// パレットで色を押している間、その色の場所を点滅させる
-    func setHighlight(_ c: RGBA?) {
+    /// その色を使っている場所を少しの間点滅させる（パレットの右クリックメニューから）
+    func flashHighlight(_ c: RGBA) {
         editor.highlight = c
         blinkTimer?.invalidate()
-        blinkTimer = nil
-        blinkOn = c != nil
-        if c != nil {
-            blinkTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
-                guard let self else { return }
-                self.blinkOn.toggle()
-                self.mainView?.needsDisplay = true
-                self.stockView?.needsDisplay = true
+        blinkOn = true
+        var ticks = 0
+        blinkTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] t in
+            guard let self else { return t.invalidate() }
+            ticks += 1
+            self.blinkOn.toggle()
+            if ticks >= 8 {
+                t.invalidate()
+                self.blinkTimer = nil
+                self.blinkOn = false
+                self.editor.highlight = nil
             }
+            self.mainView?.needsDisplay = true
+            self.stockView?.needsDisplay = true
         }
         mainView?.needsDisplay = true
         stockView?.needsDisplay = true
