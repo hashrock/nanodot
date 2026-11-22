@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 public enum Tool: String, CaseIterable, Sendable {
-    case pen, eraser, fill, line, rect, ellipse, text
+    case pen, eraser, fill, line, rect, ellipse, text, select
 
     public var displayName: String {
         switch self {
@@ -13,6 +13,7 @@ public enum Tool: String, CaseIterable, Sendable {
         case .rect: return L("矩形 (R)")
         case .ellipse: return L("楕円 (O)")
         case .text: return L("テキスト (T)")
+        case .select: return L("選択 (M)")
         }
     }
 
@@ -25,6 +26,7 @@ public enum Tool: String, CaseIterable, Sendable {
         case .rect: return "rectangle"
         case .ellipse: return "circle"
         case .text: return "textformat"
+        case .select: return "rectangle.dashed"
         }
     }
 
@@ -36,13 +38,28 @@ public final class Editor {
     public private(set) var image: PixelBuffer
     public var meta: SheetMeta {
         // マーク位置・ルーペ・スナップは表示状態なので、変えても未保存扱いにしない
-        didSet { if !suppressDirty && meta.document != oldValue.document { isDirty = true } }
+        didSet {
+            if !suppressDirty && meta.document != oldValue.document { isDirty = true }
+            // 選択範囲はマーク範囲の中に限るので、マーク範囲が変わったら（浮かせた中身は確定して）解除する
+            if selection != nil && (meta.mark != oldValue.mark || meta.lupeWidth != oldValue.lupeWidth || meta.lupeHeight != oldValue.lupeHeight) {
+                commitSelection()
+                selection = nil
+            }
+        }
     }
     /// 画素が確定するたびに増える（パレット集計などの再計算用）
     public private(set) var revision = 0
 
     // MARK: ツール状態
-    public var tool: Tool = .pen
+    public var tool: Tool = .pen {
+        // 選択範囲は選択のツールの間だけ持つ（浮かせた中身は確定する）
+        didSet {
+            if tool != .select {
+                commitSelection()
+                selection = nil
+            }
+        }
+    }
     public var shapeFilled = false
     /// ペンと消しゴムの太さ（丸いペン先の直径。奇数なので押した点がちょうど真ん中になる）
     public var penSize = 1
@@ -54,6 +71,9 @@ public final class Editor {
     /// スタンプモード
     public var stampActive = false
     public private(set) var clipboard: PixelBuffer?
+    /// 選択範囲（シートの座標。メインで選ぶもので、マーク範囲（作業範囲）の中に限る）。
+    /// あるときは、マーク範囲の操作（反転・回転・消去・塗りつぶし・シフト）がこの範囲にかかる
+    public private(set) var selection: IntRect?
 
     public var fileURL: URL?
     public private(set) var isDirty = false
@@ -82,6 +102,26 @@ public final class Editor {
     @ObservationIgnored private var editMark = IntPoint.zero
     @ObservationIgnored private var editDirty = IntRect.zero
     @ObservationIgnored private var suppressDirty = false
+    /// 選択範囲の中身を持ち上げて浮かせている間の状態（確定かキャンセルまで）。
+    /// base は持ち上げたあと（元の場所を消したあと）の画像、lifted は浮かせている中身
+    private struct Floating {
+        var base: PixelBuffer
+        var lifted: PixelBuffer
+        var start: IntRect
+        var current: IntRect
+        var duplicate: Bool
+        var moved = false
+        /// 動かさずに反転・回転だけしたときの取り消しの名前
+        var label: String?
+    }
+    @ObservationIgnored private var floating: Floating? {
+        didSet { if isFloating != (floating != nil) { isFloating = floating != nil } }
+    }
+    /// 選択範囲の中身を浮かせている（確定かキャンセルを待っている）
+    public private(set) var isFloating = false
+    /// ドラッグで動かしている間の、ドラッグを始めたときの範囲
+    @ObservationIgnored private var dragOrigin: IntRect?
+    @ObservationIgnored private var dragDuplicate = false
 
     // MARK: 表示更新
     /// 画素が変わるたび（編集中も）に増える。表示用キャッシュのキー
@@ -115,6 +155,9 @@ public final class Editor {
         undoStack.removeAll()
         redoStack.removeAll()
         editSnapshot = nil
+        floating = nil
+        dragOrigin = nil
+        selection = nil
         stampActive = false
         updateHistoryFlags()
         isDirty = false
@@ -188,9 +231,16 @@ public final class Editor {
 
     // MARK: - 編集の開始と確定
 
-    public var isEditing: Bool { editSnapshot != nil }
+    /// 描いている・動かしている途中か（中身を浮かせて確定を待っている間は含めない）
+    public var isEditing: Bool { editSnapshot != nil && floating == nil }
 
+    /// 編集を始める。浮かせた中身があれば先に確定する
     public func beginEdit() {
+        commitSelection()
+        beginEditRaw()
+    }
+
+    private func beginEditRaw() {
         if editSnapshot != nil { return }
         editSnapshot = image
         editMark = meta.mark
@@ -200,6 +250,8 @@ public final class Editor {
     public func endEdit(_ label: String) {
         guard let snap = editSnapshot else { return }
         editSnapshot = nil
+        floating = nil
+        dragOrigin = nil
         let r = editDirty.isEmpty ? .zero : image.diffBounds(snap, within: editDirty)
         guard !r.isEmpty || editMark != meta.mark else { return }
         if r.isEmpty {
@@ -217,8 +269,12 @@ public final class Editor {
     public func cancelEdit() {
         guard let snap = editSnapshot else { return }
         editSnapshot = nil
+        let f = floating
+        floating = nil
+        dragOrigin = nil
         image = snap
         meta.mark = editMark
+        if let f { selection = f.start }
         pixelsChanged()
     }
 
@@ -239,6 +295,7 @@ public final class Editor {
 
     /// 1 回で完結する編集
     private func edit(_ label: String, _ body: () -> Void) {
+        commitSelection()
         let nested = editSnapshot != nil
         if !nested { beginEdit() }
         body()
@@ -259,6 +316,8 @@ public final class Editor {
     // MARK: - 履歴
 
     public func undo() {
+        // 浮かせている間の取り消しは、キャンセル（持ち上げる前に戻す）
+        if floating != nil { return cancelSelection() }
         guard editSnapshot == nil, let e = undoStack.popLast() else { return }
         apply(e, forward: false)
         redoStack.append(e)
@@ -281,6 +340,8 @@ public final class Editor {
         }
         meta.mark = forward ? e.markAfter : e.markBefore
         clampMark()
+        // 戻した画素と選択範囲が食い違わないよう、取り消し・やり直しでは選択を解除する
+        selection = nil
         isDirty = true
         pixelsChanged()
         revision += 1
@@ -449,10 +510,42 @@ public final class Editor {
         case flipH, flipV, rotateCW, rotateCCW, shift(Int, Int), clear, fill
     }
 
-    public var canRotateMark: Bool { meta.lupeWidth == meta.lupeHeight }
+    /// 90° 回転できるか。選択範囲があればその範囲（回したあとがマーク範囲に収まるとき）、なければマーク範囲（正方形のとき）
+    public var canRotate: Bool {
+        if let s = selection { return rotatedSelectionRect(s) != nil }
+        return meta.lupeWidth == meta.lupeHeight
+    }
+
+    /// 選択範囲を回したあとの範囲。中心を保ち、マーク範囲からはみ出すなら中へ寄せる。収まらなければ nil
+    private func rotatedSelectionRect(_ s: IntRect) -> IntRect? {
+        if s.width == s.height { return s }
+        let work = workRect
+        guard s.height <= work.width, s.width <= work.height else { return nil }
+        var x = s.x + (s.width - s.height) / 2, y = s.y + (s.height - s.width) / 2
+        x = min(max(x, work.x), work.maxX - s.height)
+        y = min(max(y, work.y), work.maxY - s.width)
+        return IntRect(x: x, y: y, width: s.height, height: s.width)
+    }
+
+    /// 操作をかける範囲（選択範囲があればそれ、なければマーク範囲）
+    public var targetRect: IntRect { selection ?? markRect }
 
     public func apply(_ op: RegionOp) {
-        let r = markRect
+        // 浮かせている中身の反転・回転は、浮かせたまま中身にかける（ほかの操作は確定してから）
+        if floating != nil {
+            switch op {
+            case .flipH, .flipV, .rotateCW, .rotateCCW: return transformFloating(op)
+            default: break
+            }
+        }
+        if let s = selection, s.width != s.height {
+            switch op {
+            case .rotateCW: return rotateSelection(s, clockwise: true)
+            case .rotateCCW: return rotateSelection(s, clockwise: false)
+            default: break
+            }
+        }
+        let r = targetRect
         let src = image.copy(r)
         let label: String
         let out: PixelBuffer
@@ -460,16 +553,150 @@ public final class Editor {
         case .flipH: out = src.flippedHorizontally(); label = L("左右反転")
         case .flipV: out = src.flippedVertically(); label = L("上下反転")
         case .rotateCW:
-            guard canRotateMark else { return }
+            guard canRotate else { return }
             out = src.rotatedClockwise(); label = L("右回転")
         case .rotateCCW:
-            guard canRotateMark else { return }
+            guard canRotate else { return }
             out = src.rotatedCounterClockwise(); label = L("左回転")
         case .shift(let dx, let dy): out = src.shifted(dx, dy); label = L("シフト")
         case .clear: out = PixelBuffer(width: r.width, height: r.height); label = L("消去")
         case .fill: out = PixelBuffer(width: r.width, height: r.height, fill: color); label = L("塗りつぶし")
         }
         edit(label) { touched(image.paste(out, at: r.origin)) }
+    }
+
+    /// 正方形でない選択範囲を回す（範囲の形が変わるので、元の範囲を消してから置く）
+    private func rotateSelection(_ s: IntRect, clockwise: Bool) {
+        guard let nr = rotatedSelectionRect(s) else { return }
+        let src = image.copy(s)
+        let out = clockwise ? src.rotatedClockwise() : src.rotatedCounterClockwise()
+        edit(clockwise ? L("右回転") : L("左回転")) {
+            var r = image.paste(PixelBuffer(width: s.width, height: s.height), at: s.origin)
+            r = r.union(image.paste(out, at: nr.origin))
+            touched(r)
+        }
+        selection = nr
+    }
+
+    // MARK: - 選択範囲
+
+    /// 選択範囲を決める（マーク範囲の中に切り詰める。空なら解除）。浮かせた中身があれば先に確定する
+    public func setSelection(_ r: IntRect?) {
+        commitSelection()
+        let c = r?.intersection(workRect)
+        selection = (c?.isEmpty ?? true) ? nil : c
+    }
+
+    /// 選択範囲の中身を持ち上げて浮かせる（元の場所は透明になる。duplicate なら元を残す）
+    private func lift(duplicate: Bool) {
+        guard let s = selection, floating == nil, editSnapshot == nil else { return }
+        beginEditRaw()
+        let lifted = image.copy(s)
+        if !duplicate { touched(image.paste(PixelBuffer(width: s.width, height: s.height), at: s.origin)) }
+        floating = Floating(base: image, lifted: lifted, start: s, current: s, duplicate: duplicate)
+    }
+
+    /// 浮かせた中身を r に置き直す
+    private func place(_ out: PixelBuffer, at r: IntRect) {
+        guard var f = floating else { return }
+        image.paste(f.base.copy(f.current), at: f.current.origin)
+        image.paste(out, at: r.origin)
+        touched(f.current.union(r))
+        f.lifted = out
+        f.current = r
+        floating = f
+        selection = r
+    }
+
+    /// ドラッグで動かし始める。中身は動かしたときに持ち上げる（duplicate なら元を残す。すでに浮かせていれば効かない）。
+    /// moveSelection で動かし、endMoveSelection でドラッグを終える。中身は commitSelection で確定するまで浮かせたまま
+    public func beginMoveSelection(duplicate: Bool = false) {
+        guard let s = selection, editSnapshot == nil || floating != nil else { return }
+        dragOrigin = s
+        dragDuplicate = duplicate
+    }
+
+    /// ドラッグを始めた位置からのずれ（ドット）。選択範囲がマーク範囲からはみ出さないように止める
+    public func moveSelection(dx: Int, dy: Int) {
+        guard let o = dragOrigin else { return }
+        if floating == nil {
+            guard dx != 0 || dy != 0 else { return }
+            lift(duplicate: dragDuplicate)
+        }
+        guard var f = floating else { return }
+        let work = workRect
+        let x = min(max(o.x + dx, work.x), work.maxX - o.width)
+        let y = min(max(o.y + dy, work.y), work.maxY - o.height)
+        let r = IntRect(x: x, y: y, width: o.width, height: o.height)
+        guard r != f.current else { return }
+        f.moved = true
+        floating = f
+        place(f.lifted, at: r)
+    }
+
+    /// ドラッグを終える（中身は浮かせたまま）
+    public func endMoveSelection() {
+        dragOrigin = nil
+    }
+
+    /// ドラッグをやめて、ドラッグを始めた位置に戻す（それより前に動かした分は浮かせたまま）
+    public func cancelMoveSelection() {
+        guard let o = dragOrigin else { return }
+        if let f = floating, f.current != o { place(f.lifted, at: o) }
+        dragOrigin = nil
+    }
+
+    /// 浮かせた中身を置いて確定する（1 回の取り消し単位）
+    public func commitSelection() {
+        guard let f = floating else { return }
+        let r = f.current
+        endEdit(f.moved ? (f.duplicate ? L("複製") : L("移動")) : (f.label ?? L("移動")))
+        selection = r
+    }
+
+    /// 浮かせた中身を捨てて、持ち上げる前に戻す（選択範囲も元の位置に）
+    public func cancelSelection() {
+        guard floating != nil else { return }
+        cancelEdit()
+    }
+
+    /// 浮かせた中身を反転・回転する（浮かせたまま）
+    private func transformFloating(_ op: RegionOp) {
+        guard var f = floating else { return }
+        var r = f.current
+        let out: PixelBuffer
+        let label: String
+        switch op {
+        case .flipH: out = f.lifted.flippedHorizontally(); label = L("左右反転")
+        case .flipV: out = f.lifted.flippedVertically(); label = L("上下反転")
+        case .rotateCW, .rotateCCW:
+            guard let nr = rotatedSelectionRect(f.current) else { return }
+            r = nr
+            if case .rotateCW = op { out = f.lifted.rotatedClockwise(); label = L("右回転") }
+            else { out = f.lifted.rotatedCounterClockwise(); label = L("左回転") }
+        default: return
+        }
+        f.label = f.label == nil || f.label == label ? label : L("変形")
+        floating = f
+        place(out, at: r)
+    }
+
+    /// 選択範囲の中身を動かす（矢印キー）。中身は浮かせたまま
+    public func nudgeSelection(dx: Int, dy: Int) {
+        guard let s = selection, editSnapshot == nil || floating != nil else { return }
+        dragOrigin = s
+        dragDuplicate = false
+        moveSelection(dx: dx, dy: dy)
+        dragOrigin = nil
+    }
+
+    /// 範囲をコピーしてから消す
+    @discardableResult
+    public func cut(_ r: IntRect) -> PixelBuffer? {
+        guard let b = copy(r) else { return nil }
+        let c = r.intersection(image.bounds)
+        edit(L("切り取り")) { touched(image.paste(PixelBuffer(width: c.width, height: c.height), at: c.origin)) }
+        return b
     }
 
     // MARK: - 色
@@ -507,8 +734,10 @@ public final class Editor {
     /// 左上を基準にシートの大きさを変える
     public func resizeSheet(width: Int, height: Int) {
         guard width > 0, height > 0, width != image.width || height != image.height else { return }
+        commitSelection()
         let before = image
         let markBefore = meta.mark
+        selection = nil
         var out = PixelBuffer(width: width, height: height)
         out.paste(image, at: .zero)
         image = out

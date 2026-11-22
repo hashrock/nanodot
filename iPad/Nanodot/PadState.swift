@@ -206,10 +206,32 @@ final class PadState {
         pasteboardChangeCount = UIPasteboard.general.changeCount
     }
 
+    /// 選択範囲（なければマーク範囲）をコピー
     func copyMark() {
-        if let b = editor.copy(editor.markRect) {
+        let selected = editor.selection != nil
+        if let b = editor.copy(editor.targetRect) {
             setClipboard(b)
-            show(L("マーク範囲をコピーしました"))
+            show(selected ? L("選択範囲をコピーしました") : L("マーク範囲をコピーしました"))
+        }
+    }
+
+    /// 選択範囲（なければマーク範囲）を切り取る
+    func cutMark() {
+        let selected = editor.selection != nil
+        guard !editor.isEditing, let b = editor.cut(editor.targetRect) else { return }
+        setClipboard(b)
+        show(selected ? L("選択範囲を切り取りました") : L("マーク範囲を切り取りました"))
+        requestDisplay()
+    }
+
+    /// 矢印キー: 選択範囲があれば中身を 1 ドット（Shift で 8 ドット）動かし、なければマーク位置を動かす
+    func arrowKey(dx: Int, dy: Int, shift: Bool) {
+        if editor.selection != nil {
+            let n = shift ? 8 : 1
+            editor.nudgeSelection(dx: dx * n, dy: dy * n)
+            requestDisplay()
+        } else {
+            moveMark(dx: dx, dy: dy, byLupe: shift)
         }
     }
 
@@ -377,6 +399,7 @@ final class PadState {
     /// 上書き保存。まだファイルがなければアプリの書類フォルダーに新しく作る
     @discardableResult
     func save(quiet: Bool = false) -> Bool {
+        editor.commitSelection()
         do {
             let url = editor.fileURL ?? uniqueURL(name: documentName)
             try write(to: url)
@@ -416,6 +439,7 @@ final class PadState {
 
     /// アプリを離れるとき、アプリのフォルダーの書類だけ自動で保存する（外の場所のファイルは勝手に上書きしない）
     func autosave() {
+        editor.commitSelection()
         guard editor.isDirty, !editor.isEditing else { return }
         if let u = editor.fileURL, !appFolders.contains(u) { return }
         save(quiet: true)

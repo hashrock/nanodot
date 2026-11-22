@@ -18,6 +18,10 @@ final class MainCanvasView: NSView {
         case rightSelect(start: IntPoint, current: IntPoint)
         /// スペース + ドラッグでマーク位置を動かす
         case pan(start: CGPoint, startMark: IntPoint)
+        /// 選択のツールで範囲を選んでいる（動かさずに離せば選択を解除）
+        case select(start: IntPoint, moved: Bool)
+        /// 選択範囲の中身を動かしている
+        case moveSelection(start: IntPoint)
     }
 
     private var interaction = Interaction.none
@@ -54,6 +58,10 @@ final class MainCanvasView: NSView {
         if case .pan = interaction {
             NSCursor.closedHand.set()
         } else if spaceHeld {
+            NSCursor.openHand.set()
+        } else if case .moveSelection = interaction {
+            NSCursor.closedHand.set()
+        } else if editor.tool == .select, !editor.stampActive, let h = hoverDot, editor.selection?.contains(h) == true {
             NSCursor.openHand.set()
         } else {
             NSCursor.crosshair.set()
@@ -161,6 +169,11 @@ final class MainCanvasView: NSView {
         ctx.restoreGState()
         Draw.outline(ctx, mark.insetBy(dx: -1, dy: -1), color: NSColor.controlAccentColor.cgColor)
 
+        // 選択範囲
+        if let s = editor.selection {
+            Draw.outline(ctx, screenRect(s))
+        }
+
         // 右ドラッグの範囲
         if case .rightSelect(let a, let b) = interaction {
             Draw.outline(ctx, screenRect(IntRect(corner: a, b)))
@@ -223,6 +236,7 @@ final class MainCanvasView: NSView {
         guard d != hoverDot else { return }
         hoverDot = d
         state.cursorDot = d.flatMap { editor.image.contains($0.x, $0.y) ? $0 : nil }
+        if editor.tool == .select, d != nil { updateCursor() }
         needsDisplay = true
     }
 
@@ -260,6 +274,15 @@ final class MainCanvasView: NSView {
             needsDisplay = true
         case .text:
             editor.drawText(editor.textSettings.text, at: d, settings: editor.textSettings, color: editor.color)
+        case .select:
+            if editor.selection?.contains(d) == true {
+                // 選択範囲の中から: 中身を動かす（⌥ なら複製して動かす）
+                editor.beginMoveSelection(duplicate: e.modifierFlags.contains(.option))
+                interaction = .moveSelection(start: d)
+                updateCursor()
+            } else {
+                interaction = .select(start: d, moved: false)
+            }
         }
     }
 
@@ -293,6 +316,14 @@ final class MainCanvasView: NSView {
             let b = e.modifierFlags.contains(.shift) ? Raster.constrain(a, d, diagonalSnap: editor.tool == .line) : d
             interaction = .shape(start: a, current: b)
             needsDisplay = true
+        case .select(let a, let moved):
+            guard moved || d != a else { return }
+            let b = e.modifierFlags.contains(.shift) ? Raster.constrain(a, d, diagonalSnap: false) : d
+            editor.setSelection(IntRect(corner: a, b))
+            interaction = .select(start: a, moved: true)
+            needsDisplay = true
+        case .moveSelection(let a):
+            editor.moveSelection(dx: d.x - a.x, dy: d.y - a.y)
         default:
             break
         }
@@ -306,6 +337,11 @@ final class MainCanvasView: NSView {
             editor.endEdit(L("スタンプ"))
         case .shape(let a, let b):
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
+        case .select(_, let moved):
+            // 動かさずに離した（選択の外をクリックした）: 浮かせた中身は確定して、解除
+            if !moved { editor.setSelection(nil) }
+        case .moveSelection:
+            editor.endMoveSelection()
         default:
             break
         }
@@ -379,10 +415,23 @@ final class MainCanvasView: NSView {
         setHover(dot(e))
     }
 
+    /// Esc: 描きかけをやめる。スタンプモードなら抜け、中身を浮かせていればキャンセル（持ち上げる前に戻す）、
+    /// そうでなければ選択を解除する
     func cancelInteraction() {
-        if case .stroke = interaction { editor.cancelEdit() }
+        switch interaction {
+        case .stroke, .stamp: editor.cancelEdit()
+        case .moveSelection: editor.endMoveSelection()
+        default: break
+        }
         interaction = .none
-        editor.stampActive = false
+        if editor.stampActive {
+            editor.stampActive = false
+        } else if editor.isFloating {
+            editor.cancelSelection()
+        } else {
+            editor.setSelection(nil)
+        }
+        updateCursor()
         needsDisplay = true
     }
 }
@@ -399,7 +448,7 @@ struct MainCanvasRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: MainCanvasView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら再描画させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.penSize, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
+        _ = (e.meta, e.tool, e.stampActive, e.selection, e.isFloating, e.color, e.shapeFilled, e.penSize, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
         nsView.needsDisplay = true
     }
 }

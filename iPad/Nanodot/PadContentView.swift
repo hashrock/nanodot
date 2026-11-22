@@ -22,7 +22,7 @@ enum PadTool: Hashable {
     case eyedropper
 
     /// 並び順（テキストは入れていない）
-    static let all: [PadTool] = [.draw(.pen), .draw(.eraser), .draw(.fill), .eyedropper, .draw(.line), .draw(.rect), .draw(.ellipse)]
+    static let all: [PadTool] = [.draw(.pen), .draw(.eraser), .draw(.fill), .eyedropper, .draw(.line), .draw(.rect), .draw(.ellipse), .draw(.select)]
 
     var displayName: String {
         switch self {
@@ -298,7 +298,9 @@ struct PadContentView: View {
                     .accessibilityLabel("矩形・楕円を塗りつぶす")
                 penSizeMenu
             }
-            markMenu
+            // 選択範囲があるときは、マーク範囲の操作の代わりに選択範囲の操作を出す
+            if editor.selection == nil { markMenu }
+            selectionBar(compact: compact)
             stampButton
             barButton("gearshape", selected: showSettings) { showSettings.toggle() }
                 .accessibilityLabel("設定")
@@ -428,9 +430,9 @@ struct PadContentView: View {
                 Button { editor.apply(.flipH) } label: { Label("左右反転", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right") }
                 Button { editor.apply(.flipV) } label: { Label("上下反転", systemImage: "arrow.up.and.down.righttriangle.up.righttriangle.down") }
                 Button { editor.apply(.rotateCCW) } label: { Label("左に 90° 回転", systemImage: "rotate.left") }
-                    .disabled(!editor.canRotateMark)
+                    .disabled(!editor.canRotate)
                 Button { editor.apply(.rotateCW) } label: { Label("右に 90° 回転", systemImage: "rotate.right") }
-                    .disabled(!editor.canRotateMark)
+                    .disabled(!editor.canRotate)
             }
             Section {
                 Button { editor.apply(.shift(-1, 0)) } label: { Label("1 ドット左へシフト", systemImage: "arrow.left") }
@@ -444,6 +446,88 @@ struct PadContentView: View {
                 .frame(width: 40, height: 40)
         }
         .accessibilityLabel("マーク範囲の操作")
+    }
+
+    /// 選択範囲があるときだけ出す操作。狭いときはメニューにまとめる
+    @ViewBuilder
+    private func selectionBar(compact: Bool) -> some View {
+        if editor.selection != nil {
+            if compact {
+                Menu {
+                    selectionActions
+                } label: {
+                    Image(systemName: "ellipsis.rectangle")
+                        .font(.system(size: 18))
+                        .frame(width: 40, height: 40)
+                        .background(Color.accentColor.opacity(0.2), in: RoundedRectangle(cornerRadius: 8))
+                }
+                .accessibilityLabel("選択範囲の操作")
+                floatingButtons
+            } else {
+                HStack(spacing: 2) {
+                    barButton("doc.on.doc") { state.copyMark() }.accessibilityLabel("コピー")
+                    barButton("scissors") { state.cutMark() }.accessibilityLabel("切り取り")
+                    barButton("square.slash") { editor.apply(.clear) }.accessibilityLabel("消去")
+                    barButton("square.fill.on.square") { editor.apply(.fill) }.accessibilityLabel("描画色で塗りつぶし")
+                    barButton("arrow.left.and.right.righttriangle.left.righttriangle.right") { editor.apply(.flipH) }.accessibilityLabel("左右反転")
+                    barButton("arrow.up.and.down.righttriangle.up.righttriangle.down") { editor.apply(.flipV) }.accessibilityLabel("上下反転")
+                    barButton("rotate.right", disabled: !editor.canRotate) { editor.apply(.rotateCW) }.accessibilityLabel("右に 90° 回転")
+                    if editor.isFloating {
+                        floatingButtons
+                    } else {
+                        barButton("xmark.circle") { deselect() }.accessibilityLabel("選択を解除")
+                    }
+                }
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var selectionActions: some View {
+        Section("選択範囲") {
+            Button { state.copyMark() } label: { Label("コピー", systemImage: "doc.on.doc") }
+            Button { state.cutMark() } label: { Label("切り取り", systemImage: "scissors") }
+            Button { editor.apply(.clear) } label: { Label("消去", systemImage: "square.slash") }
+            Button { editor.apply(.fill) } label: { Label("描画色で塗りつぶし", systemImage: "square.fill.on.square") }
+        }
+        Section {
+            Button { editor.apply(.flipH) } label: { Label("左右反転", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right") }
+            Button { editor.apply(.flipV) } label: { Label("上下反転", systemImage: "arrow.up.and.down.righttriangle.up.righttriangle.down") }
+            Button { editor.apply(.rotateCCW) } label: { Label("左に 90° 回転", systemImage: "rotate.left") }
+                .disabled(!editor.canRotate)
+            Button { editor.apply(.rotateCW) } label: { Label("右に 90° 回転", systemImage: "rotate.right") }
+                .disabled(!editor.canRotate)
+        }
+        Button { deselect() } label: { Label("選択を解除", systemImage: "xmark.circle") }
+    }
+
+    /// 中身を動かして浮かせている間だけ出す: キャンセル（持ち上げる前に戻す）と確定
+    @ViewBuilder
+    private var floatingButtons: some View {
+        if editor.isFloating {
+            barButton("xmark") {
+                editor.cancelSelection()
+                state.requestDisplay()
+            }
+            .accessibilityLabel("キャンセル")
+            Button {
+                editor.commitSelection()
+                state.requestDisplay()
+            } label: {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 40, height: 40)
+                    .foregroundStyle(Color.white)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityLabel("確定")
+        }
+    }
+
+    private func deselect() {
+        editor.setSelection(nil)
+        state.requestDisplay()
     }
 
     /// スタンプモードの間だけ出す（透明部分を抜くかの切り替えと、抜ける）
@@ -772,6 +856,7 @@ struct KeyboardShortcuts: View {
             key("z", .command) { editor.undo() }
             key("z", [.command, .shift]) { editor.redo() }
             key("c", .command) { state.copyMark() }
+            key("x", .command) { state.cutMark() }
             key("v", .command) { state.pasteToStamp() }
             key("'", .command) { editor.meta.showCellGrid.toggle() }
             key("0", .command) { state.stockView?.fitToView() }
@@ -783,21 +868,28 @@ struct KeyboardShortcuts: View {
             key("l", [], { tool(.line) })
             key("r", [], { tool(.rect) })
             key("o", [], { tool(.ellipse) })
+            key("m", [], { tool(.select) })
             key("i", []) { state.setEyedropper(!state.eyedropperActive) }
             key(.escape, []) {
-                editor.stampActive = false
+                state.mainView?.cancelInteraction()
                 state.setEyedropper(false)
             }
+            // 浮かせている間だけ受ける（ほかのときは文字入力などの Return を横取りしない）
+            key(.return, []) {
+                editor.commitSelection()
+                state.requestDisplay()
+            }
+            .disabled(!editor.isFloating)
             key(.delete, []) { editor.apply(.clear) }
             key(.delete, .option) { editor.apply(.fill) }
-            key(.leftArrow, []) { state.moveMark(dx: -1, dy: 0, byLupe: false) }
-            key(.rightArrow, []) { state.moveMark(dx: 1, dy: 0, byLupe: false) }
-            key(.upArrow, []) { state.moveMark(dx: 0, dy: -1, byLupe: false) }
-            key(.downArrow, []) { state.moveMark(dx: 0, dy: 1, byLupe: false) }
-            key(.leftArrow, .shift) { state.moveMark(dx: -1, dy: 0, byLupe: true) }
-            key(.rightArrow, .shift) { state.moveMark(dx: 1, dy: 0, byLupe: true) }
-            key(.upArrow, .shift) { state.moveMark(dx: 0, dy: -1, byLupe: true) }
-            key(.downArrow, .shift) { state.moveMark(dx: 0, dy: 1, byLupe: true) }
+            key(.leftArrow, []) { state.arrowKey(dx: -1, dy: 0, shift: false) }
+            key(.rightArrow, []) { state.arrowKey(dx: 1, dy: 0, shift: false) }
+            key(.upArrow, []) { state.arrowKey(dx: 0, dy: -1, shift: false) }
+            key(.downArrow, []) { state.arrowKey(dx: 0, dy: 1, shift: false) }
+            key(.leftArrow, .shift) { state.arrowKey(dx: -1, dy: 0, shift: true) }
+            key(.rightArrow, .shift) { state.arrowKey(dx: 1, dy: 0, shift: true) }
+            key(.upArrow, .shift) { state.arrowKey(dx: 0, dy: -1, shift: true) }
+            key(.downArrow, .shift) { state.arrowKey(dx: 0, dy: 1, shift: true) }
         }
         .frame(width: 0, height: 0)
         .opacity(0)

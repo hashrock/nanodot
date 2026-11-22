@@ -526,6 +526,16 @@
         }
       }
     },
+    "キャンセル (Esc)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel (Esc)"
+          }
+        }
+      }
+    },
     "クリア" : {
       "localizations" : {
         "en" : {
@@ -1498,6 +1508,27 @@
         }
       }
     },
+    "マーク範囲を切り取り (⌘X)" : {
+      "comment" : "編集メニュー",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut Marked Area (⌘X)"
+          }
+        }
+      }
+    },
+    "マーク範囲を切り取りました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut the marked area"
+          }
+        }
+      }
+    },
     "マーク範囲を描画色で塗りつぶし" : {
       "localizations" : {
         "en" : {
@@ -1756,6 +1787,16 @@
         }
       }
     },
+    "切り取り" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut"
+          }
+        }
+      }
+    },
     "列" : {
       "comment" : "簡易アニメの、横に並ぶコマの数",
       "localizations" : {
@@ -1979,6 +2020,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Increase"
+          }
+        }
+      }
+    },
+    "変形" : {
+      "comment" : "取り消しの名前（浮かせた選択範囲を何度か反転・回転したとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transform"
           }
         }
       }
@@ -2547,6 +2599,50 @@
         }
       }
     },
+    "確定" : {
+      "comment" : "浮かせた選択範囲を置く",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commit"
+          }
+        }
+      }
+    },
+    "確定 (↩)" : {
+      "comment" : "浮かせた選択範囲を置く",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commit (↩)"
+          }
+        }
+      }
+    },
+    "移動" : {
+      "comment" : "取り消しの名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move"
+          }
+        }
+      }
+    },
+    "移動中（↩ で確定・Esc でキャンセル）" : {
+      "comment" : "選択範囲の中身を浮かせている間、ツールバーに出る",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moving (↩ to commit; Esc to cancel)"
+          }
+        }
+      }
+    },
     "種類" : {
       "comment" : "アニメの種類",
       "localizations" : {
@@ -2851,6 +2947,139 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PNG Sequence"
+          }
+        }
+      }
+    },
+    "選択 (M)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select (M)"
+          }
+        }
+      }
+    },
+    "選択を解除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect"
+          }
+        }
+      }
+    },
+    "選択範囲" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selection"
+          }
+        }
+      }
+    },
+    "選択範囲の操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selection Actions"
+          }
+        }
+      }
+    },
+    "選択範囲をコピー (⌘C)" : {
+      "comment" : "編集メニュー、ツールチップ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Selection (⌘C)"
+          }
+        }
+      }
+    },
+    "選択範囲をコピーしました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied the selection"
+          }
+        }
+      }
+    },
+    "選択範囲を切り取り (⌘X)" : {
+      "comment" : "編集メニュー、ツールチップ",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut Selection (⌘X)"
+          }
+        }
+      }
+    },
+    "選択範囲を切り取りました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cut the selection"
+          }
+        }
+      }
+    },
+    "選択範囲を右に 90° 回転" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate the selection 90° right"
+          }
+        }
+      }
+    },
+    "選択範囲を左に 90° 回転" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate the selection 90° left"
+          }
+        }
+      }
+    },
+    "選択範囲を描画色で塗りつぶし" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill the selection with the drawing color"
+          }
+        }
+      }
+    },
+    "選択範囲を消去" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the selection"
+          }
+        }
+      }
+    },
+    "選択範囲（ドラッグで移動・⌥ で複製・矢印で 1 ドット・Esc で解除）" : {
+      "comment" : "選択範囲があるとき、ツールバーに出る",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selection (drag to move; ⌥ duplicates; arrows nudge 1 px; Esc to deselect)"
           }
         }
       }
