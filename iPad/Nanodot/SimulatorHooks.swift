@@ -11,6 +11,8 @@ import SwiftUI
 /// - `-selftest 1`: メインのドットと画面座標の変換を確かめ、結果を tmp/selftest.txt に書く
 /// - `-eyedropperTest 1`: スポイトのツールで、色のあるドット・透明のドット・シートの外を拾い、結果を tmp/eyedropper.txt に書く。
 ///   終わったらスポイトを選んだままにする（ツールバーの確認用）。`-demo 1` と一緒に使う
+/// - `-selectTest 1`: 選択のツールで範囲を選び、動かす・回す・取り消すを確かめ、結果を tmp/select.txt に書く。
+///   終わったら範囲を選んだままにする（ツールバーの確認用）。`-demo 1` と一緒に使う
 /// - `-panel anim|settings|new`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
 ///   `-layout WxH` の幅も効く）。`-demoList 1` は `-demo` のアニメを「登録」にしてコマを 2 つ入れる
 enum SimulatorHooks {
@@ -32,6 +34,31 @@ enum SimulatorHooks {
         if d.bool(forKey: "eyedropperTest") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { eyedropperTest(state) }
         }
+        if d.bool(forKey: "selectTest") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { selectTest(state) }
+        }
+    }
+
+    /// 選択範囲: `-demo` の 2 コマ目（マーク (16, 0)）の頭を選んで動かす
+    private static func selectTest(_ state: PadState) {
+        let e = state.editor
+        var lines: [String] = []
+        func check(_ name: String, _ ok: Bool) { lines.append("\(ok ? "ok" : "NG") \(name)") }
+        let hair = e.image[21, 2]
+        e.tool = .select
+        e.setSelection(IntRect(x: 21, y: 2, width: 6, height: 2))
+        check("selected", e.selection == IntRect(x: 21, y: 2, width: 6, height: 2))
+        e.beginMoveSelection()
+        e.moveSelection(dx: 0, dy: 10)
+        e.endMoveSelection()
+        check("moved", e.image[21, 12] == hair && e.image[21, 2].a == 0 && e.undoLabel == L("移動"))
+        e.undo()
+        check("undo", e.image[21, 2] == hair && e.selection == nil)
+        e.setSelection(IntRect(x: 20, y: 2, width: 8, height: 6))
+        check("can rotate non-square", e.canRotate)
+        state.mainView?.setNeedsDisplay()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("select.txt")
+        try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
     }
 
     /// 16×16 のキャラを 3 コマ（左から）描く

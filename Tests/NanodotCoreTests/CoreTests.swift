@@ -257,6 +257,125 @@ final class EditorTests: XCTestCase {
         e.undo()
         XCTAssertEqual(e.image.width, 64)
     }
+
+    /// 選択範囲はマーク範囲の中に切り詰め、選択のツールの間・同じマーク範囲の間だけ持つ
+    func testSelectionIsClippedAndCleared() {
+        let e = makeEditor() // マーク (0,0) 16x16
+        e.tool = .select
+        e.setSelection(IntRect(x: 10, y: 10, width: 20, height: 20))
+        XCTAssertEqual(e.selection, IntRect(x: 10, y: 10, width: 6, height: 6))
+        XCTAssertEqual(e.targetRect, e.selection)
+        e.setSelection(IntRect(x: 20, y: 20, width: 4, height: 4))
+        XCTAssertNil(e.selection, "マーク範囲の外だけなら選ばない")
+
+        e.setSelection(IntRect(x: 2, y: 2, width: 4, height: 4))
+        e.setMark(IntPoint(16, 16))
+        XCTAssertNil(e.selection, "マーク位置を動かしたら解除")
+        e.setSelection(IntRect(x: 18, y: 18, width: 4, height: 4))
+        e.tool = .pen
+        XCTAssertNil(e.selection, "ほかのツールに変えたら解除")
+        XCTAssertEqual(e.targetRect, e.markRect)
+    }
+
+    func testMoveSelectionIsOneUndo() {
+        let e = makeEditor()
+        e.tool = .select
+        e.beginEdit()
+        e.plot([IntPoint(1, 1), IntPoint(2, 1)], color: .black)
+        e.endEdit("ペン")
+        e.setSelection(IntRect(x: 1, y: 1, width: 2, height: 1))
+
+        e.beginMoveSelection()
+        XCTAssertEqual(e.image[1, 1], .clear, "持ち上げると元の場所は透明")
+        e.moveSelection(dx: 1, dy: 0)
+        e.moveSelection(dx: 3, dy: 2)
+        e.endMoveSelection()
+        XCTAssertEqual(e.selection, IntRect(x: 4, y: 3, width: 2, height: 1))
+        XCTAssertEqual(e.image[4, 3], .black)
+        XCTAssertEqual(e.image[5, 3], .black)
+        XCTAssertEqual(e.image[1, 1], .clear)
+        XCTAssertEqual(e.image[2, 1], .clear, "途中の位置（2,1）〜（3,1）にも残らない")
+        XCTAssertEqual(e.image[3, 1], .clear)
+        XCTAssertEqual(e.undoLabel, "移動")
+
+        e.undo()
+        XCTAssertEqual(e.image[1, 1], .black)
+        XCTAssertEqual(e.image[4, 3], .clear)
+        XCTAssertNil(e.selection, "取り消したら選択は解除")
+
+        // マーク範囲からはみ出さないように止まる
+        e.setSelection(IntRect(x: 1, y: 1, width: 2, height: 1))
+        e.beginMoveSelection()
+        e.moveSelection(dx: 100, dy: -100)
+        e.endMoveSelection()
+        XCTAssertEqual(e.selection, IntRect(x: 14, y: 0, width: 2, height: 1))
+        XCTAssertEqual(e.image[14, 0], .black)
+    }
+
+    func testDuplicateAndCancelMove() {
+        let e = makeEditor()
+        e.tool = .select
+        e.beginEdit()
+        e.plot([IntPoint(0, 0)], color: .black)
+        e.endEdit("ペン")
+        e.setSelection(IntRect(x: 0, y: 0, width: 1, height: 1))
+        e.beginMoveSelection(duplicate: true)
+        e.moveSelection(dx: 2, dy: 0)
+        e.endMoveSelection()
+        XCTAssertEqual(e.image[0, 0], .black, "複製は元を残す")
+        XCTAssertEqual(e.image[2, 0], .black)
+        XCTAssertEqual(e.undoLabel, "複製")
+
+        e.beginMoveSelection()
+        e.moveSelection(dx: 5, dy: 5)
+        e.cancelMoveSelection()
+        XCTAssertFalse(e.isEditing)
+        XCTAssertEqual(e.selection, IntRect(x: 2, y: 0, width: 1, height: 1))
+        XCTAssertEqual(e.image[2, 0], .black)
+        XCTAssertEqual(e.image[7, 5], .clear)
+
+        e.nudgeSelection(dx: 0, dy: 1)
+        XCTAssertEqual(e.image[2, 1], .black)
+        XCTAssertEqual(e.image[2, 0], .clear)
+        XCTAssertEqual(e.selection, IntRect(x: 2, y: 1, width: 1, height: 1))
+    }
+
+    /// マーク範囲の操作は、選択範囲があればその範囲にかかる
+    func testRegionOpsOnSelection() {
+        let e = makeEditor()
+        e.tool = .select
+        e.color = .black
+        e.setSelection(IntRect(x: 2, y: 2, width: 3, height: 1))
+        e.apply(.fill)
+        XCTAssertEqual(e.image[2, 2], .black)
+        XCTAssertEqual(e.image[4, 2], .black)
+        XCTAssertEqual(e.image[5, 2], .clear)
+        XCTAssertEqual(e.image[0, 0], .clear)
+
+        // 正方形でなくても回せる（中心を保つ）
+        XCTAssertTrue(e.canRotate)
+        e.apply(.rotateCW)
+        XCTAssertEqual(e.selection, IntRect(x: 3, y: 1, width: 1, height: 3))
+        XCTAssertEqual(e.image[2, 2], .clear)
+        XCTAssertEqual(e.image[3, 1], .black)
+        XCTAssertEqual(e.image[3, 3], .black)
+
+        // 回すとマーク範囲からはみ出すなら中へ寄せ、収まらなければ回さない
+        e.setLupe(width: 16, height: 8)
+        e.setSelection(IntRect(x: 0, y: 0, width: 12, height: 2))
+        XCTAssertFalse(e.canRotate, "12×2 は 16×8 の中で回せない")
+        e.setLupe(width: 16, height: 16)
+        e.setSelection(IntRect(x: 0, y: 0, width: 4, height: 2))
+        XCTAssertTrue(e.canRotate)
+        e.apply(.rotateCCW)
+        XCTAssertEqual(e.selection, IntRect(x: 1, y: 0, width: 2, height: 4))
+
+        let b = e.cut(e.targetRect)
+        XCTAssertEqual(b?.width, 2)
+        XCTAssertEqual(e.clipboard?.height, 4)
+        XCTAssertEqual(e.undoLabel, "切り取り")
+        XCTAssertEqual(e.image[1, 1], .clear)
+    }
 }
 
 final class AnimTests: XCTestCase {

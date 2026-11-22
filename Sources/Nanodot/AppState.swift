@@ -264,8 +264,26 @@ final class AppState {
         clipboardChangeCount = pb.changeCount
     }
 
+    /// 選択範囲（なければマーク範囲）をコピー
     func copyMark() {
-        if let b = editor.copy(editor.markRect) { setClipboard(b) }
+        if let b = editor.copy(editor.targetRect) { setClipboard(b) }
+    }
+
+    /// 選択範囲（なければマーク範囲）を切り取る
+    func cutMark() {
+        guard !editor.isEditing, let b = editor.cut(editor.targetRect) else { return }
+        setClipboard(b)
+    }
+
+    /// 矢印キー: 選択範囲があれば中身を 1 ドット（Shift で 8 ドット）動かし、なければマーク位置を動かす
+    func arrowKey(dx: Int, dy: Int, shift: Bool) {
+        if editor.selection != nil {
+            let n = shift ? 8 : 1
+            editor.nudgeSelection(dx: dx * n, dy: dy * n)
+            requestDisplay()
+        } else {
+            moveMark(dx: dx, dy: dy, byLupe: shift)
+        }
     }
 
     /// 他のアプリで画像がコピーされていればそれを取り込んでスタンプモードへ

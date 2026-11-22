@@ -206,10 +206,32 @@ final class PadState {
         pasteboardChangeCount = UIPasteboard.general.changeCount
     }
 
+    /// 選択範囲（なければマーク範囲）をコピー
     func copyMark() {
-        if let b = editor.copy(editor.markRect) {
+        let selected = editor.selection != nil
+        if let b = editor.copy(editor.targetRect) {
             setClipboard(b)
-            show(L("マーク範囲をコピーしました"))
+            show(selected ? L("選択範囲をコピーしました") : L("マーク範囲をコピーしました"))
+        }
+    }
+
+    /// 選択範囲（なければマーク範囲）を切り取る
+    func cutMark() {
+        let selected = editor.selection != nil
+        guard !editor.isEditing, let b = editor.cut(editor.targetRect) else { return }
+        setClipboard(b)
+        show(selected ? L("選択範囲を切り取りました") : L("マーク範囲を切り取りました"))
+        requestDisplay()
+    }
+
+    /// 矢印キー: 選択範囲があれば中身を 1 ドット（Shift で 8 ドット）動かし、なければマーク位置を動かす
+    func arrowKey(dx: Int, dy: Int, shift: Bool) {
+        if editor.selection != nil {
+            let n = shift ? 8 : 1
+            editor.nudgeSelection(dx: dx * n, dy: dy * n)
+            requestDisplay()
+        } else {
+            moveMark(dx: dx, dy: dy, byLupe: shift)
         }
     }
 

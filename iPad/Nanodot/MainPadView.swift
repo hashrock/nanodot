@@ -10,6 +10,8 @@ import UIKit
 /// - スポイトのツール: Apple Pencil か指 1 本で触れた所の色を拾う（ドラッグ中は追従し、離した所で決めて直前のツールに戻る）
 /// - 2 本指タップで取り消し、3 本指タップでやり直し
 /// - 「指で描く」がオンなら、指 1 本でも描く（マーク位置を動かすのは 2 本指）
+/// - 選択のツール: Apple Pencil か指 1 本のドラッグで範囲を選ぶ（マーク位置を動かすのは 2 本指）。範囲の中からドラッグすると中身が動き、
+///   離すと確定する。選択の外をタップすると解除
 final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
     let state: PadState
     var editor: Editor { state.editor }
@@ -25,6 +27,10 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         /// 長押しした直後（離せばスポイト、動かせば範囲コピー）
         case holdPending(start: IntPoint)
         case holdSelect(start: IntPoint, current: IntPoint)
+        /// 選択のツールで範囲を選んでいる（動かさずに離せば選択を解除）
+        case select(touch: UITouch, start: IntPoint, moved: Bool)
+        /// 選択範囲の中身を動かしている
+        case moveSelection(touch: UITouch, start: IntPoint)
     }
 
     private var interaction = Interaction.none
@@ -86,12 +92,17 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     /// 「指で描く」がオンのときの長押しの時間
     static let fingerDrawingHoldDuration: TimeInterval = 0.8
 
+    /// 指 1 本がツールに使われる（「指で描く」がオンか、選択のツール）
+    private var fingerUsesTool: Bool { state.fingerDrawing || editor.tool == .select }
+
     func updateGestureConfiguration() {
+        let finger = fingerUsesTool
         // 指で描くときは、マーク位置を動かすのは 2 本指だけ
-        pan.minimumNumberOfTouches = state.fingerDrawing ? 2 : 1
-        tap.isEnabled = !state.fingerDrawing
+        if pan.minimumNumberOfTouches != (finger ? 2 : 1) { pan.minimumNumberOfTouches = finger ? 2 : 1 }
+        if tap.isEnabled == finger { tap.isEnabled = !finger }
         // 指で描くときは、描き始めや直線・矩形の始点で指を止めてもスポイトに変わりにくいよう、長押しの判定を長くする
-        hold.minimumPressDuration = state.fingerDrawing ? Self.fingerDrawingHoldDuration : Self.holdDuration
+        let duration = finger ? Self.fingerDrawingHoldDuration : Self.holdDuration
+        if hold.minimumPressDuration != duration { hold.minimumPressDuration = duration }
     }
 
     override func layoutSubviews() {
@@ -194,6 +205,11 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         ctx.restoreGState()
         Draw.outline(ctx, mark.insetBy(dx: -1, dy: -1), color: tintColor.cgColor)
 
+        // 選択範囲
+        if let s = editor.selection {
+            Draw.outline(ctx, screenRect(s))
+        }
+
         // 長押しドラッグの範囲
         if case .holdSelect(let a, let b) = interaction {
             Draw.outline(ctx, screenRect(IntRect(corner: a, b)))
@@ -243,12 +259,12 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     // MARK: - 描く（Apple Pencil。「指で描く」なら指も）
 
     private func canDraw(_ t: UITouch) -> Bool {
-        t.type == .pencil || (t.type == .direct && state.fingerDrawing)
+        t.type == .pencil || (t.type == .direct && fingerUsesTool)
     }
 
     private var activeTouch: UITouch? {
         switch interaction {
-        case .stroke(let t, _, _), .shape(let t, _, _), .pick(let t, _), .stamp(let t, _): return t
+        case .stroke(let t, _, _), .shape(let t, _, _), .pick(let t, _), .stamp(let t, _), .select(let t, _, _), .moveSelection(let t, _): return t
         default: return nil
         }
     }
@@ -287,6 +303,13 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         case .text:
             // テキストツールは iPad 版にはない（キーボードでも選べない）
             break
+        case .select:
+            if editor.selection?.contains(d) == true {
+                editor.beginMoveSelection()
+                interaction = .moveSelection(touch: t, start: d)
+            } else {
+                interaction = .select(touch: t, start: d, moved: false)
+            }
         }
     }
 
@@ -325,6 +348,19 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
             interaction = .shape(touch: t, start: a, current: b)
             if t.type == .pencil { hoverDot = d }
             setNeedsDisplay()
+        case .select(_, let a, let moved):
+            let d = dot(t)
+            if t.type == .pencil { hoverDot = d }
+            guard moved || d != a else { return }
+            let shift = event?.modifierFlags.contains(.shift) ?? false
+            editor.setSelection(IntRect(corner: a, shift ? Raster.constrain(a, d, diagonalSnap: false) : d))
+            interaction = .select(touch: t, start: a, moved: true)
+            setNeedsDisplay()
+        case .moveSelection(_, let a):
+            let d = dot(t)
+            if t.type == .pencil { hoverDot = d }
+            editor.moveSelection(dx: d.x - a.x, dy: d.y - a.y)
+            setNeedsDisplay()
         default:
             break
         }
@@ -341,6 +377,11 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
         case .pick(_, let original):
             if !state.finishEyedropper(at: dot(t)) { editor.color = original }
+        case .select(_, _, let moved):
+            // 動かさずに離した（選択の外をタップした）: 解除
+            if !moved { editor.setSelection(nil) }
+        case .moveSelection:
+            editor.endMoveSelection()
         default:
             break
         }
@@ -354,6 +395,7 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         guard let t = activeTouch, touches.contains(t) else { return }
         switch interaction {
         case .stroke, .stamp: editor.cancelEdit()
+        case .moveSelection: editor.cancelMoveSelection()
         default: break
         }
         cancelPick()
@@ -390,6 +432,13 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
     override func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
         // ペンで描いている間は指の操作をしない（手のひらが触れても動かないように）
         if let t = activeTouch, t.type == .pencil { return false }
+        // 指で範囲を選んだり動かしたりしている間は、止めても長押しにしない
+        if g === hold {
+            switch interaction {
+            case .select, .moveSelection: return false
+            default: break
+            }
+        }
         if g === pan || g === pinch || g === hold { return !editor.isEditing || activeTouch?.type == .direct }
         return true
     }
@@ -541,14 +590,17 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         }
     }
 
+    /// Esc: 描きかけ・動かしかけをやめ、スタンプモードと選択を解除する
     func cancelInteraction() {
         switch interaction {
         case .stroke, .stamp: editor.cancelEdit()
+        case .moveSelection: editor.cancelMoveSelection()
         default: break
         }
         cancelPick()
         interaction = .none
         editor.stampActive = false
+        editor.setSelection(nil)
         setNeedsDisplay()
     }
 }
@@ -561,8 +613,9 @@ struct MainCanvasRepresentable: UIViewRepresentable {
     func updateUIView(_ v: MainPadView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら描き直させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.color, e.shapeFilled, e.penSize, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
+        _ = (e.meta, e.tool, e.stampActive, e.selection, e.color, e.shapeFilled, e.penSize, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
              state.eyedropperActive)
+        v.updateGestureConfiguration()
         v.setNeedsDisplay()
     }
 }

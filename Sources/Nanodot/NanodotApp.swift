@@ -103,6 +103,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case "c":
                 state.copyMark()
                 return nil
+            case "x":
+                state.cutMark()
+                return nil
             case "v":
                 state.pasteToStamp()
                 return nil
@@ -118,10 +121,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case 53: // escape
             state.mainView?.cancelInteraction()
             return nil
-        case 123: state.moveMark(dx: -1, dy: 0, byLupe: flags.contains(.shift)); return nil
-        case 124: state.moveMark(dx: 1, dy: 0, byLupe: flags.contains(.shift)); return nil
-        case 125: state.moveMark(dx: 0, dy: 1, byLupe: flags.contains(.shift)); return nil
-        case 126: state.moveMark(dx: 0, dy: -1, byLupe: flags.contains(.shift)); return nil
+        case 123: state.arrowKey(dx: -1, dy: 0, shift: flags.contains(.shift)); return nil
+        case 124: state.arrowKey(dx: 1, dy: 0, shift: flags.contains(.shift)); return nil
+        case 125: state.arrowKey(dx: 0, dy: 1, shift: flags.contains(.shift)); return nil
+        case 126: state.arrowKey(dx: 0, dy: -1, shift: flags.contains(.shift)); return nil
         default: break
         }
         let tool: Tool
@@ -133,6 +136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "r": tool = .rect
         case "o": tool = .ellipse
         case "t": tool = .text
+        case "m": tool = .select
         default: return e
         }
         editor.tool = tool
@@ -266,7 +270,8 @@ struct AppCommands: Commands {
         }
         CommandGroup(after: .pasteboard) {
             Divider()
-            Button("マーク範囲をコピー (⌘C)") { state.copyMark() }
+            Button(editor.selection != nil ? L("選択範囲をコピー (⌘C)") : L("マーク範囲をコピー (⌘C)")) { state.copyMark() }
+            Button(editor.selection != nil ? L("選択範囲を切り取り (⌘X)") : L("マーク範囲を切り取り (⌘X)")) { state.cutMark() }
             Button("スタンプ (⌘V)") { state.pasteToStamp() }
                 .disabled(editor.clipboard == nil && !NSPasteboard.general.canReadItem(withDataConformingToTypes: ["public.png", "public.tiff"]))
         }
@@ -279,9 +284,9 @@ struct AppCommands: Commands {
             Button("左右反転") { editor.apply(.flipH) }
             Button("上下反転") { editor.apply(.flipV) }
             Button("左に 90° 回転") { editor.apply(.rotateCCW) }
-                .disabled(!editor.canRotateMark)
+                .disabled(!editor.canRotate)
             Button("右に 90° 回転") { editor.apply(.rotateCW) }
-                .disabled(!editor.canRotateMark)
+                .disabled(!editor.canRotate)
             Divider()
             Button("消去 (Delete)") { editor.apply(.clear) }
             Button("描画色で塗りつぶし (⌥Delete)") { editor.apply(.fill) }

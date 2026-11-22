@@ -90,25 +90,37 @@ struct ToolBarView: View {
 
             Divider().frame(height: 20)
 
+            // 選択範囲があればその範囲に、なければマーク範囲にかかる
+            let selected = editor.selection != nil
             HStack(spacing: 2) {
+                if selected {
+                    opButton("doc.on.doc", L("選択範囲をコピー (⌘C)")) { state.copyMark() }
+                    opButton("scissors", L("選択範囲を切り取り (⌘X)")) { state.cutMark() }
+                }
                 opButton("arrow.left.and.right.righttriangle.left.righttriangle.right", L("左右反転")) { editor.apply(.flipH) }
                 opButton("arrow.up.and.down.righttriangle.up.righttriangle.down", L("上下反転")) { editor.apply(.flipV) }
-                opButton("rotate.left", L("左に 90° 回転（正方形のとき）")) { editor.apply(.rotateCCW) }
-                    .disabled(!editor.canRotateMark)
-                opButton("rotate.right", L("右に 90° 回転（正方形のとき）")) { editor.apply(.rotateCW) }
-                    .disabled(!editor.canRotateMark)
+                opButton("rotate.left", selected ? L("選択範囲を左に 90° 回転") : L("左に 90° 回転（正方形のとき）")) { editor.apply(.rotateCCW) }
+                    .disabled(!editor.canRotate)
+                opButton("rotate.right", selected ? L("選択範囲を右に 90° 回転") : L("右に 90° 回転（正方形のとき）")) { editor.apply(.rotateCW) }
+                    .disabled(!editor.canRotate)
                 opButton("arrow.left", L("1 ドット左へシフト")) { editor.apply(.shift(-1, 0)) }
                 opButton("arrow.right", L("1 ドット右へシフト")) { editor.apply(.shift(1, 0)) }
                 opButton("arrow.up", L("1 ドット上へシフト")) { editor.apply(.shift(0, -1)) }
                 opButton("arrow.down", L("1 ドット下へシフト")) { editor.apply(.shift(0, 1)) }
-                opButton("square.slash", L("マーク範囲を消去")) { editor.apply(.clear) }
-                opButton("square.fill.on.square", L("マーク範囲を描画色で塗りつぶし")) { editor.apply(.fill) }
+                opButton("square.slash", selected ? L("選択範囲を消去") : L("マーク範囲を消去")) { editor.apply(.clear) }
+                opButton("square.fill.on.square", selected ? L("選択範囲を描画色で塗りつぶし") : L("マーク範囲を描画色で塗りつぶし")) { editor.apply(.fill) }
             }
+            .padding(.horizontal, selected ? 4 : 0)
+            .background(selected ? Color.accentColor.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 5))
 
             Spacer()
 
             if editor.stampActive {
                 Label("スタンプ（⌥ で透明部分を抜く・Esc / 右クリックで解除）", systemImage: "seal")
+                    .font(.caption)
+                    .foregroundStyle(Color.accentColor)
+            } else if selected {
+                Label("選択範囲（ドラッグで移動・⌥ で複製・矢印で 1 ドット・Esc で解除）", systemImage: "rectangle.dashed")
                     .font(.caption)
                     .foregroundStyle(Color.accentColor)
             }
