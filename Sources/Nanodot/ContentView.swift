@@ -93,6 +93,11 @@ struct ToolBarView: View {
             // 選択範囲があればその範囲に、なければマーク範囲にかかる
             let selected = editor.selection != nil
             HStack(spacing: 2) {
+                if editor.isFloating {
+                    opButton("checkmark.circle.fill", L("確定 (↩)")) { editor.commitSelection() }
+                    opButton("xmark.circle", L("キャンセル (Esc)")) { editor.cancelSelection() }
+                    Divider().frame(height: 16)
+                }
                 if selected {
                     opButton("doc.on.doc", L("選択範囲をコピー (⌘C)")) { state.copyMark() }
                     opButton("scissors", L("選択範囲を切り取り (⌘X)")) { state.cutMark() }
@@ -117,6 +122,10 @@ struct ToolBarView: View {
 
             if editor.stampActive {
                 Label("スタンプ（⌥ で透明部分を抜く・Esc / 右クリックで解除）", systemImage: "seal")
+                    .font(.caption)
+                    .foregroundStyle(Color.accentColor)
+            } else if editor.isFloating {
+                Label("移動中（↩ で確定・Esc でキャンセル）", systemImage: "arrow.up.and.down.and.arrow.left.and.right")
                     .font(.caption)
                     .foregroundStyle(Color.accentColor)
             } else if selected {

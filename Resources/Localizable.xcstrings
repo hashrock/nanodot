@@ -526,6 +526,16 @@
         }
       }
     },
+    "キャンセル (Esc)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel (Esc)"
+          }
+        }
+      }
+    },
     "クリア" : {
       "localizations" : {
         "en" : {
@@ -2014,6 +2024,17 @@
         }
       }
     },
+    "変形" : {
+      "comment" : "取り消しの名前（浮かせた選択範囲を何度か反転・回転したとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transform"
+          }
+        }
+      }
+    },
     "変更" : {
       "comment" : "マップの大きさを確定するボタン",
       "localizations" : {
@@ -2578,6 +2599,28 @@
         }
       }
     },
+    "確定" : {
+      "comment" : "浮かせた選択範囲を置く",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commit"
+          }
+        }
+      }
+    },
+    "確定 (↩)" : {
+      "comment" : "浮かせた選択範囲を置く",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commit (↩)"
+          }
+        }
+      }
+    },
     "移動" : {
       "comment" : "取り消しの名前",
       "localizations" : {
@@ -2585,6 +2628,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Move"
+          }
+        }
+      }
+    },
+    "移動中（↩ で確定・Esc でキャンセル）" : {
+      "comment" : "選択範囲の中身を浮かせている間、ツールバーに出る",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moving (↩ to commit; Esc to cancel)"
           }
         }
       }

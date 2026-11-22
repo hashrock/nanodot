@@ -399,6 +399,7 @@ final class PadState {
     /// 上書き保存。まだファイルがなければアプリの書類フォルダーに新しく作る
     @discardableResult
     func save(quiet: Bool = false) -> Bool {
+        editor.commitSelection()
         do {
             let url = editor.fileURL ?? uniqueURL(name: documentName)
             try write(to: url)
@@ -438,6 +439,7 @@ final class PadState {
 
     /// アプリを離れるとき、アプリのフォルダーの書類だけ自動で保存する（外の場所のファイルは勝手に上書きしない）
     func autosave() {
+        editor.commitSelection()
         guard editor.isDirty, !editor.isEditing else { return }
         if let u = editor.fileURL, !appFolders.contains(u) { return }
         save(quiet: true)

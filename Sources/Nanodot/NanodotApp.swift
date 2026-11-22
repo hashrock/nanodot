@@ -121,6 +121,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case 53: // escape
             state.mainView?.cancelInteraction()
             return nil
+        case 36, 76: // return: 浮かせた中身を確定
+            guard editor.isFloating else { return e }
+            editor.commitSelection()
+            state.requestDisplay()
+            return nil
         case 123: state.arrowKey(dx: -1, dy: 0, shift: flags.contains(.shift)); return nil
         case 124: state.arrowKey(dx: 1, dy: 0, shift: flags.contains(.shift)); return nil
         case 125: state.arrowKey(dx: 0, dy: 1, shift: flags.contains(.shift)); return nil

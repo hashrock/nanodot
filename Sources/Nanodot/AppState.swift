@@ -369,10 +369,12 @@ final class AppState {
     }
 
     func save() {
+        editor.commitSelection()
         if let url = editor.fileURL { write(to: url) } else { saveAs() }
     }
 
     func saveAs() {
+        editor.commitSelection()
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = editor.fileURL?.deletingPathExtension().lastPathComponent ?? L("無題")

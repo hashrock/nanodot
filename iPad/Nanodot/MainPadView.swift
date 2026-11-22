@@ -10,8 +10,8 @@ import UIKit
 /// - スポイトのツール: Apple Pencil か指 1 本で触れた所の色を拾う（ドラッグ中は追従し、離した所で決めて直前のツールに戻る）
 /// - 2 本指タップで取り消し、3 本指タップでやり直し
 /// - 「指で描く」がオンなら、指 1 本でも描く（マーク位置を動かすのは 2 本指）
-/// - 選択のツール: Apple Pencil か指 1 本のドラッグで範囲を選ぶ（マーク位置を動かすのは 2 本指）。範囲の中からドラッグすると中身が動き、
-///   離すと確定する。選択の外をタップすると解除
+/// - 選択のツール: Apple Pencil か指 1 本のドラッグで範囲を選ぶ（マーク位置を動かすのは 2 本指）。範囲の中からドラッグすると中身が動く。
+///   動かした中身は、ツールバーの確定かキャンセルまで浮かせたまま（何度でも動かせる）。選択の外をタップすると確定して解除
 final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
     let state: PadState
     var editor: Editor { state.editor }
@@ -378,7 +378,7 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         case .pick(_, let original):
             if !state.finishEyedropper(at: dot(t)) { editor.color = original }
         case .select(_, _, let moved):
-            // 動かさずに離した（選択の外をタップした）: 解除
+            // 動かさずに離した（選択の外をタップした）: 浮かせた中身は確定して、解除
             if !moved { editor.setSelection(nil) }
         case .moveSelection:
             editor.endMoveSelection()
@@ -590,17 +590,23 @@ final class MainPadView: UIView, UIGestureRecognizerDelegate, UIPencilInteractio
         }
     }
 
-    /// Esc: 描きかけ・動かしかけをやめ、スタンプモードと選択を解除する
+    /// Esc: 描きかけをやめる。スタンプモードなら抜け、中身を浮かせていればキャンセル（持ち上げる前に戻す）、
+    /// そうでなければ選択を解除する
     func cancelInteraction() {
         switch interaction {
         case .stroke, .stamp: editor.cancelEdit()
-        case .moveSelection: editor.cancelMoveSelection()
+        case .moveSelection: editor.endMoveSelection()
         default: break
         }
         cancelPick()
         interaction = .none
-        editor.stampActive = false
-        editor.setSelection(nil)
+        if editor.stampActive {
+            editor.stampActive = false
+        } else if editor.isFloating {
+            editor.cancelSelection()
+        } else {
+            editor.setSelection(nil)
+        }
         setNeedsDisplay()
     }
 }
@@ -613,7 +619,7 @@ struct MainCanvasRepresentable: UIViewRepresentable {
     func updateUIView(_ v: MainPadView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら描き直させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.selection, e.color, e.shapeFilled, e.penSize, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
+        _ = (e.meta, e.tool, e.stampActive, e.selection, e.isFloating, e.color, e.shapeFilled, e.penSize, e.clipboard?.width, state.animPanelVisible, state.onionSkin, state.selectedAnimID,
              state.eyedropperActive)
         v.updateGestureConfiguration()
         v.setNeedsDisplay()

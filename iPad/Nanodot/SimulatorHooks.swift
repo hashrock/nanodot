@@ -11,8 +11,8 @@ import SwiftUI
 /// - `-selftest 1`: メインのドットと画面座標の変換を確かめ、結果を tmp/selftest.txt に書く
 /// - `-eyedropperTest 1`: スポイトのツールで、色のあるドット・透明のドット・シートの外を拾い、結果を tmp/eyedropper.txt に書く。
 ///   終わったらスポイトを選んだままにする（ツールバーの確認用）。`-demo 1` と一緒に使う
-/// - `-selectTest 1`: 選択のツールで範囲を選び、動かす・回す・取り消すを確かめ、結果を tmp/select.txt に書く。
-///   終わったら範囲を選んだままにする（ツールバーの確認用）。`-demo 1` と一緒に使う
+/// - `-selectTest 1`: 選択のツールで範囲を選び、動かす・確定・取り消す・キャンセルを確かめ、結果を tmp/select.txt に書く。
+///   終わったら中身を動かして浮かせたままにする（確定・キャンセルのボタンの確認用）。`-demo 1` と一緒に使う
 /// - `-panel anim|settings|new`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
 ///   `-layout WxH` の幅も効く）。`-demoList 1` は `-demo` のアニメを「登録」にしてコマを 2 つ入れる
 enum SimulatorHooks {
@@ -51,11 +51,17 @@ enum SimulatorHooks {
         e.beginMoveSelection()
         e.moveSelection(dx: 0, dy: 10)
         e.endMoveSelection()
-        check("moved", e.image[21, 12] == hair && e.image[21, 2].a == 0 && e.undoLabel == L("移動"))
+        check("floating", e.isFloating && e.image[21, 12] == hair && e.image[21, 2].a == 0)
+        e.commitSelection()
+        check("committed", !e.isFloating && e.undoLabel == L("移動"))
         e.undo()
         check("undo", e.image[21, 2] == hair && e.selection == nil)
         e.setSelection(IntRect(x: 20, y: 2, width: 8, height: 6))
         check("can rotate non-square", e.canRotate)
+        e.nudgeSelection(dx: 0, dy: 4)
+        e.cancelSelection()
+        check("cancel", !e.isFloating && e.image[21, 2] == hair && e.selection == IntRect(x: 20, y: 2, width: 8, height: 6))
+        e.nudgeSelection(dx: 0, dy: 4)
         state.mainView?.setNeedsDisplay()
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("select.txt")
         try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)

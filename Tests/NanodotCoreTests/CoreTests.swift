@@ -277,7 +277,8 @@ final class EditorTests: XCTestCase {
         XCTAssertEqual(e.targetRect, e.markRect)
     }
 
-    func testMoveSelectionIsOneUndo() {
+    /// 動かした中身は確定かキャンセルまで浮かせたまま。何度動かしても、確定すれば 1 回の取り消し単位
+    func testFloatingMoveAndCommit() {
         let e = makeEditor()
         e.tool = .select
         e.beginEdit()
@@ -285,59 +286,130 @@ final class EditorTests: XCTestCase {
         e.endEdit("ペン")
         e.setSelection(IntRect(x: 1, y: 1, width: 2, height: 1))
 
+        // 触っただけ（動かさない）なら持ち上げない
         e.beginMoveSelection()
-        XCTAssertEqual(e.image[1, 1], .clear, "持ち上げると元の場所は透明")
+        e.endMoveSelection()
+        XCTAssertFalse(e.isFloating)
+
+        e.beginMoveSelection()
         e.moveSelection(dx: 1, dy: 0)
+        XCTAssertTrue(e.isFloating)
+        XCTAssertFalse(e.isEditing, "浮かせている間は描いている途中に数えない")
+        XCTAssertEqual(e.image[1, 1], .clear, "持ち上げると元の場所は透明")
         e.moveSelection(dx: 3, dy: 2)
         e.endMoveSelection()
-        XCTAssertEqual(e.selection, IntRect(x: 4, y: 3, width: 2, height: 1))
-        XCTAssertEqual(e.image[4, 3], .black)
+        XCTAssertTrue(e.isFloating, "離しても確定しない")
+        XCTAssertEqual(e.undoLabel, "ペン")
+        // 2 回目のドラッグは今の位置から
+        e.beginMoveSelection()
+        e.moveSelection(dx: 1, dy: 0)
+        e.endMoveSelection()
+        XCTAssertEqual(e.selection, IntRect(x: 5, y: 3, width: 2, height: 1))
         XCTAssertEqual(e.image[5, 3], .black)
-        XCTAssertEqual(e.image[1, 1], .clear)
-        XCTAssertEqual(e.image[2, 1], .clear, "途中の位置（2,1）〜（3,1）にも残らない")
-        XCTAssertEqual(e.image[3, 1], .clear)
-        XCTAssertEqual(e.undoLabel, "移動")
+        XCTAssertEqual(e.image[4, 3], .clear, "途中の位置に残らない")
 
+        e.commitSelection()
+        XCTAssertFalse(e.isFloating)
+        XCTAssertEqual(e.selection, IntRect(x: 5, y: 3, width: 2, height: 1))
+        XCTAssertEqual(e.undoLabel, "移動")
         e.undo()
         XCTAssertEqual(e.image[1, 1], .black)
-        XCTAssertEqual(e.image[4, 3], .clear)
+        XCTAssertEqual(e.image[5, 3], .clear)
+        XCTAssertEqual(e.undoLabel, "ペン")
         XCTAssertNil(e.selection, "取り消したら選択は解除")
 
         // マーク範囲からはみ出さないように止まる
         e.setSelection(IntRect(x: 1, y: 1, width: 2, height: 1))
-        e.beginMoveSelection()
-        e.moveSelection(dx: 100, dy: -100)
-        e.endMoveSelection()
+        e.nudgeSelection(dx: 100, dy: -100)
         XCTAssertEqual(e.selection, IntRect(x: 14, y: 0, width: 2, height: 1))
+        XCTAssertTrue(e.isFloating, "矢印でも浮かせたまま")
+        // ほかのツールに変えると確定
+        e.tool = .pen
+        XCTAssertFalse(e.isFloating)
         XCTAssertEqual(e.image[14, 0], .black)
+        XCTAssertEqual(e.undoLabel, "移動")
     }
 
-    func testDuplicateAndCancelMove() {
+    func testCancelFloatingAndDuplicate() {
         let e = makeEditor()
         e.tool = .select
         e.beginEdit()
         e.plot([IntPoint(0, 0)], color: .black)
         e.endEdit("ペン")
         e.setSelection(IntRect(x: 0, y: 0, width: 1, height: 1))
+
+        // キャンセルは持ち上げる前に戻す（選択も元の位置）
+        e.nudgeSelection(dx: 3, dy: 0)
+        e.nudgeSelection(dx: 0, dy: 2)
+        e.apply(.flipH)
+        e.cancelSelection()
+        XCTAssertFalse(e.isFloating)
+        XCTAssertEqual(e.image[0, 0], .black)
+        XCTAssertEqual(e.image[3, 2], .clear)
+        XCTAssertEqual(e.selection, IntRect(x: 0, y: 0, width: 1, height: 1))
+        XCTAssertEqual(e.undoLabel, "ペン", "履歴に残らない")
+
+        // 浮かせている間の取り消しはキャンセル
+        e.nudgeSelection(dx: 1, dy: 0)
+        e.undo()
+        XCTAssertFalse(e.isFloating)
+        XCTAssertEqual(e.image[0, 0], .black)
+        XCTAssertEqual(e.undoLabel, "ペン")
+
+        // ドラッグの途中でやめたら、そのドラッグの前の位置に戻る（浮かせたまま）
+        e.nudgeSelection(dx: 1, dy: 0)
+        e.beginMoveSelection()
+        e.moveSelection(dx: 4, dy: 4)
+        e.cancelMoveSelection()
+        XCTAssertTrue(e.isFloating)
+        XCTAssertEqual(e.selection, IntRect(x: 1, y: 0, width: 1, height: 1))
+        XCTAssertEqual(e.image[1, 0], .black)
+        XCTAssertEqual(e.image[5, 4], .clear)
+        e.cancelSelection()
+
+        // 複製（Mac の ⌥）は元を残す
         e.beginMoveSelection(duplicate: true)
         e.moveSelection(dx: 2, dy: 0)
         e.endMoveSelection()
-        XCTAssertEqual(e.image[0, 0], .black, "複製は元を残す")
+        e.commitSelection()
+        XCTAssertEqual(e.image[0, 0], .black)
         XCTAssertEqual(e.image[2, 0], .black)
         XCTAssertEqual(e.undoLabel, "複製")
 
-        e.beginMoveSelection()
-        e.moveSelection(dx: 5, dy: 5)
-        e.cancelMoveSelection()
-        XCTAssertFalse(e.isEditing)
-        XCTAssertEqual(e.selection, IntRect(x: 2, y: 0, width: 1, height: 1))
-        XCTAssertEqual(e.image[2, 0], .black)
-        XCTAssertEqual(e.image[7, 5], .clear)
-
+        // マーク位置を動かすと確定して解除
         e.nudgeSelection(dx: 0, dy: 1)
+        e.setMark(IntPoint(16, 16))
+        XCTAssertFalse(e.isFloating)
+        XCTAssertNil(e.selection)
         XCTAssertEqual(e.image[2, 1], .black)
-        XCTAssertEqual(e.image[2, 0], .clear)
-        XCTAssertEqual(e.selection, IntRect(x: 2, y: 1, width: 1, height: 1))
+        XCTAssertEqual(e.undoLabel, "移動")
+    }
+
+    /// 浮かせている中身の反転・回転は浮かせたまま。ほかの操作は確定してからかける
+    func testTransformFloating() {
+        let e = makeEditor()
+        e.tool = .select
+        e.color = .black
+        e.setSelection(IntRect(x: 2, y: 2, width: 3, height: 1))
+        e.apply(.fill)
+        e.beginEdit()
+        e.plot([IntPoint(2, 2)], color: .white)
+        e.endEdit("ペン")
+        e.setSelection(IntRect(x: 2, y: 2, width: 3, height: 1))
+        e.nudgeSelection(dx: 0, dy: 3)
+        e.apply(.rotateCW)
+        XCTAssertTrue(e.isFloating)
+        XCTAssertEqual(e.selection, IntRect(x: 3, y: 4, width: 1, height: 3))
+        XCTAssertEqual(e.image[3, 4], .white, "右に回すと左端が上に")
+        XCTAssertEqual(e.image[2, 5], .clear)
+        e.apply(.clear)
+        XCTAssertFalse(e.isFloating)
+        XCTAssertEqual(e.image[3, 4], .clear)
+        XCTAssertEqual(e.undoLabel, "消去")
+        e.undo()
+        XCTAssertEqual(e.undoLabel, "移動")
+        XCTAssertEqual(e.image[3, 4], .white)
+
     }
 
     /// マーク範囲の操作は、選択範囲があればその範囲にかかる

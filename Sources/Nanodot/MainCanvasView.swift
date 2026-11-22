@@ -338,7 +338,7 @@ final class MainCanvasView: NSView {
         case .shape(let a, let b):
             editor.drawShape(editor.tool, from: a, to: b, filled: editor.shapeFilled, color: editor.color)
         case .select(_, let moved):
-            // 動かさずに離した（選択の外をクリックした）: 解除
+            // 動かさずに離した（選択の外をクリックした）: 浮かせた中身は確定して、解除
             if !moved { editor.setSelection(nil) }
         case .moveSelection:
             editor.endMoveSelection()
@@ -415,16 +415,23 @@ final class MainCanvasView: NSView {
         setHover(dot(e))
     }
 
-    /// Esc: 描きかけ・動かしかけをやめ、スタンプモードと選択を解除する
+    /// Esc: 描きかけをやめる。スタンプモードなら抜け、中身を浮かせていればキャンセル（持ち上げる前に戻す）、
+    /// そうでなければ選択を解除する
     func cancelInteraction() {
         switch interaction {
         case .stroke, .stamp: editor.cancelEdit()
-        case .moveSelection: editor.cancelMoveSelection()
+        case .moveSelection: editor.endMoveSelection()
         default: break
         }
         interaction = .none
-        editor.stampActive = false
-        editor.setSelection(nil)
+        if editor.stampActive {
+            editor.stampActive = false
+        } else if editor.isFloating {
+            editor.cancelSelection()
+        } else {
+            editor.setSelection(nil)
+        }
+        updateCursor()
         needsDisplay = true
     }
 }
@@ -441,7 +448,7 @@ struct MainCanvasRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: MainCanvasView, context: Context) {
         // 表示に関わる状態を読んでおき、変わったら再描画させる
         let e = state.editor
-        _ = (e.meta, e.tool, e.stampActive, e.selection, e.color, e.shapeFilled, e.penSize, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
+        _ = (e.meta, e.tool, e.stampActive, e.selection, e.isFloating, e.color, e.shapeFilled, e.penSize, e.highlight, e.textSettings, state.animWindowVisible, state.onionSkin, state.selectedAnimID)
         nsView.needsDisplay = true
     }
 }

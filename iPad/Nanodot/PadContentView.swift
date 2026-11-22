@@ -462,6 +462,7 @@ struct PadContentView: View {
                         .background(Color.accentColor.opacity(0.2), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .accessibilityLabel("選択範囲の操作")
+                floatingButtons
             } else {
                 HStack(spacing: 2) {
                     barButton("doc.on.doc") { state.copyMark() }.accessibilityLabel("コピー")
@@ -471,7 +472,11 @@ struct PadContentView: View {
                     barButton("arrow.left.and.right.righttriangle.left.righttriangle.right") { editor.apply(.flipH) }.accessibilityLabel("左右反転")
                     barButton("arrow.up.and.down.righttriangle.up.righttriangle.down") { editor.apply(.flipV) }.accessibilityLabel("上下反転")
                     barButton("rotate.right", disabled: !editor.canRotate) { editor.apply(.rotateCW) }.accessibilityLabel("右に 90° 回転")
-                    barButton("xmark.circle") { deselect() }.accessibilityLabel("選択を解除")
+                    if editor.isFloating {
+                        floatingButtons
+                    } else {
+                        barButton("xmark.circle") { deselect() }.accessibilityLabel("選択を解除")
+                    }
                 }
                 .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
             }
@@ -495,6 +500,29 @@ struct PadContentView: View {
                 .disabled(!editor.canRotate)
         }
         Button { deselect() } label: { Label("選択を解除", systemImage: "xmark.circle") }
+    }
+
+    /// 中身を動かして浮かせている間だけ出す: キャンセル（持ち上げる前に戻す）と確定
+    @ViewBuilder
+    private var floatingButtons: some View {
+        if editor.isFloating {
+            barButton("xmark") {
+                editor.cancelSelection()
+                state.requestDisplay()
+            }
+            .accessibilityLabel("キャンセル")
+            Button {
+                editor.commitSelection()
+                state.requestDisplay()
+            } label: {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 40, height: 40)
+                    .foregroundStyle(Color.white)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityLabel("確定")
+        }
     }
 
     private func deselect() {
@@ -846,6 +874,12 @@ struct KeyboardShortcuts: View {
                 state.mainView?.cancelInteraction()
                 state.setEyedropper(false)
             }
+            // 浮かせている間だけ受ける（ほかのときは文字入力などの Return を横取りしない）
+            key(.return, []) {
+                editor.commitSelection()
+                state.requestDisplay()
+            }
+            .disabled(!editor.isFloating)
             key(.delete, []) { editor.apply(.clear) }
             key(.delete, .option) { editor.apply(.fill) }
             key(.leftArrow, []) { state.arrowKey(dx: -1, dy: 0, shift: false) }
