@@ -13,6 +13,6 @@
 リポジトリの Settings → Pages → Build and deployment → Source で **GitHub Actions** を選択してください。
 `main` に push すると `.github/workflows/pages.yml` が `website/` を公開します。Actions から手動実行も可能です。
 
-ダウンロードボタンは最新の GitHub Release にリンクしています。
+App Store のバッジは Mac と iPad のアプリ（<https://apps.apple.com/jp/app/nanodot/id6833071131>）へリンクしています。GitHub のボタンは最新の GitHub Release にリンクしています。
 
 アプリの挙動（保存するもの、Sandbox でできること、メニューの名前）を変えたら、`privacy.html` と `support.html` も合わせて直し、プライバシーポリシーは最終更新日を改めます。
