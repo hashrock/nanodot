@@ -263,15 +263,15 @@ struct AppCommands: Commands {
         CommandGroup(replacing: .undoRedo) {
             // マップウィンドウが前面ならマップの取り消し・やり直し
             Button(editor.undoLabel.map { L("取り消し: \($0)") } ?? L("取り消し")) {
-                if state.isMapWindowKey { state.mapUndo() } else { editor.undo() }
+                if state.isMapWindowKey { state.mapSession.undo() } else { editor.undo() }
             }
             .keyboardShortcut("z")
-            .disabled(!editor.canUndo && !state.canMapUndo)
+            .disabled(!editor.canUndo && !state.mapSession.canUndo)
             Button(editor.redoLabel.map { L("やり直し: \($0)") } ?? L("やり直し")) {
-                if state.isMapWindowKey { state.mapRedo() } else { editor.redo() }
+                if state.isMapWindowKey { state.mapSession.redo() } else { editor.redo() }
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
-            .disabled(!editor.canRedo && !state.canMapRedo)
+            .disabled(!editor.canRedo && !state.mapSession.canRedo)
         }
         CommandGroup(after: .pasteboard) {
             Divider()

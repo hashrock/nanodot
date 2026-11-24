@@ -2,26 +2,6 @@ import AppKit
 import NanodotCore
 import SwiftUI
 
-enum MapTool: String, CaseIterable {
-    case pen, eraser, fill
-
-    var label: String {
-        switch self {
-        case .pen: return L("ペン")
-        case .eraser: return L("消しゴム")
-        case .fill: return L("塗りつぶし")
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .pen: return "pencil"
-        case .eraser: return "eraser"
-        case .fill: return "drop.fill"
-        }
-    }
-}
-
 /// マップの仮組みキャンバス。ストックで選んだセル（マーク範囲）をタイルとして置く
 final class MapCanvasView: NSView {
     let state: AppState
@@ -37,13 +17,12 @@ final class MapCanvasView: NSView {
     }
 
     private var interaction = Interaction.none
-    private var zoom: CGFloat = 2
-    private var origin = CGPoint(x: 16, y: 16)
+    private var viewport = MapViewport(origin: CGPoint(x: 16, y: 16), zoom: 2, cellWidth: 1, cellHeight: 1)
     private var hoverTile: IntPoint?
     private var spaceHeld = false
     private var magnifyAccum: CGFloat = 0
     private var trackingArea: NSTrackingArea?
-    private static let zoomLevels: [CGFloat] = [0.25, 0.5, 1, 2, 3, 4, 6, 8]
+    var session: MapSession { state.mapSession }
 
     init(state: AppState) {
         self.state = state
@@ -67,29 +46,25 @@ final class MapCanvasView: NSView {
         super.updateTrackingAreas()
     }
 
-    private var map: TileMapDef? { state.mapIndex.map { editor.meta.maps[$0] } }
-    private var tileSize: CGSize { CGSize(width: CGFloat(editor.meta.cellWidth) * zoom, height: CGFloat(editor.meta.cellHeight) * zoom) }
+    private var map: TileMapDef? { session.map }
 
-    private func tileRect(_ x: Int, _ y: Int, w: Int = 1, h: Int = 1) -> CGRect {
-        let t = tileSize
-        return CGRect(x: origin.x + CGFloat(x) * t.width, y: origin.y + CGFloat(y) * t.height, width: t.width * CGFloat(w), height: t.height * CGFloat(h))
+    /// セルの大きさは描くたびにシートから取る
+    private var vp: MapViewport {
+        var v = viewport
+        v.cellWidth = editor.meta.cellWidth
+        v.cellHeight = editor.meta.cellHeight
+        return v
     }
 
-    private func tile(_ e: NSEvent) -> IntPoint {
-        let p = convert(e.locationInWindow, from: nil), t = tileSize
-        return IntPoint(Int(floor((p.x - origin.x) / t.width)), Int(floor((p.y - origin.y) / t.height)))
-    }
+    private func tile(_ e: NSEvent) -> IntPoint { vp.tile(at: convert(e.locationInWindow, from: nil)) }
 
     // MARK: - 表示
 
     func stepZoom(_ d: Int, around p: CGPoint? = nil) {
         let p = p ?? CGPoint(x: bounds.midX, y: bounds.midY)
-        let i = Self.zoomLevels.firstIndex { $0 >= zoom } ?? Self.zoomLevels.count - 1
-        let nz = Self.zoomLevels[min(max(0, i + d), Self.zoomLevels.count - 1)]
-        guard nz != zoom else { return }
-        let ix = (p.x - origin.x) / zoom, iy = (p.y - origin.y) / zoom
-        zoom = nz
-        origin = CGPoint(x: (p.x - ix * nz).rounded(), y: (p.y - iy * nz).rounded())
+        let nz = MapDraw.steppedZoom(viewport.zoom, by: d)
+        guard nz != viewport.zoom else { return }
+        viewport.setZoom(nz, around: p)
         needsDisplay = true
     }
 
@@ -98,78 +73,23 @@ final class MapCanvasView: NSView {
         ctx.interpolationQuality = .none
         ctx.setFillColor(NSColor.underPageBackgroundColor.cgColor)
         ctx.fill(bounds)
-        guard let map else { return }
-        let area = tileRect(0, 0, w: map.width, h: map.height)
-        Draw.fillChecker(ctx, area, origin: area.origin, dot: zoom)
-
-        // 見えている範囲のタイルだけ描く
-        let t = tileSize
-        let x0 = max(0, Int(floor(-origin.x / t.width))), y0 = max(0, Int(floor(-origin.y / t.height)))
-        let x1 = min(map.width - 1, Int(ceil((bounds.width - origin.x) / t.width))), y1 = min(map.height - 1, Int(ceil((bounds.height - origin.y) / t.height)))
-        guard x0 <= x1, y0 <= y1 else { return }
-        for (li, layer) in map.layers.enumerated() where layer.visible {
-            for y in y0...y1 {
-                for x in x0...x1 {
-                    let idx = layer.tiles[y * map.width + x]
-                    guard idx >= 0, let img = state.cellImage(idx) else { continue }
-                    // 選択中より上のレイヤーは薄く
-                    Draw.image(ctx, img, in: CGRect(origin: tileRect(x, y).origin,
-                                                    size: CGSize(width: CGFloat(img.width) * zoom, height: CGFloat(img.height) * zoom)),
-                               alpha: li > state.mapLayer ? 0.45 : 1)
-                }
-            }
-        }
-
-        // 通れないタイル（表示中のどれかのレイヤーで通行不可）に ×
-        if state.showAnnotations {
-            let cols = state.sheetColumns
-            let blocked = Set(editor.meta.annotations.filter { !$0.passable }.map { SheetMeta.cellIndex(col: $0.col, row: $0.row, columns: cols) })
-            if !blocked.isEmpty {
-                ctx.saveGState()
-                ctx.setStrokeColor(CGColor(srgbRed: 1, green: 0.2, blue: 0.25, alpha: 0.9))
-                ctx.setLineWidth(2)
-                for y in y0...y1 {
-                    for x in x0...x1 where map.layers.contains(where: { $0.visible && blocked.contains($0.tiles[y * map.width + x]) }) {
-                        let r = tileRect(x, y).insetBy(dx: t.width * 0.3, dy: t.height * 0.3)
-                        ctx.move(to: CGPoint(x: r.minX, y: r.minY)); ctx.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
-                        ctx.move(to: CGPoint(x: r.maxX, y: r.minY)); ctx.addLine(to: CGPoint(x: r.minX, y: r.maxY))
-                    }
-                }
-                ctx.strokePath()
-                ctx.restoreGState()
-            }
-        }
-
-        Draw.grid(ctx, area: area.intersection(bounds), origin: area.origin, stepX: t.width, stepY: t.height,
-                  color: CGColor(gray: 0.5, alpha: 0.25))
-        Draw.outline(ctx, area.insetBy(dx: -1, dy: -1), color: CGColor(gray: 0.4, alpha: 0.8))
+        guard map != nil else { return }
+        let v = vp
+        MapDraw.map(ctx, bounds: bounds, viewport: v, session: session, sheet: state.sheetImage, showAnnotations: state.showAnnotations)
 
         // カーソル位置にブラシの影、右ドラッグの範囲
         if case .rightSelect(let a, let b) = interaction {
             let r = IntRect(corner: a, b)
-            Draw.outline(ctx, tileRect(r.x, r.y, w: r.width, h: r.height))
+            Draw.outline(ctx, v.tileRect(r.x, r.y, w: r.width, h: r.height))
         } else if let h = hoverTile, !spaceHeld {
-            let b = state.mapTool == .fill ? MapBrush.single(state.mapBrush.tiles.first ?? -1) : state.mapBrush
-            let p = brushOrigin(for: h)
-            if state.mapTool == .pen || state.mapTool == .fill {
-                for by in 0..<b.height {
-                    for bx in 0..<b.width {
-                        guard let img = state.cellImage(b.tiles[by * b.width + bx]) else { continue }
-                        Draw.image(ctx, img, in: CGRect(origin: tileRect(p.x + bx, p.y + by).origin,
-                                                        size: CGSize(width: CGFloat(img.width) * zoom, height: CGFloat(img.height) * zoom)), alpha: 0.6)
-                    }
-                }
-            }
-            Draw.outline(ctx, tileRect(p.x, p.y, w: b.width, h: b.height))
+            MapDraw.brushGhost(ctx, viewport: v, session: session, sheet: state.sheetImage, at: brushOrigin(for: h))
         }
     }
 
     /// ドラッグ中はドラッグ開始位置からブラシの大きさ単位でそろえる
     private func brushOrigin(for t: IntPoint) -> IntPoint {
-        guard case .paint(let start, _) = interaction, state.mapTool != .fill else { return t }
-        let b = state.mapBrush
-        func align(_ v: Int, _ s: Int, _ n: Int) -> Int { s + Int((Double(v - s) / Double(n)).rounded(.down)) * n }
-        return IntPoint(align(t.x, start.x, b.width), align(t.y, start.y, b.height))
+        guard case .paint(let start, _) = interaction, session.tool != .fill else { return t }
+        return session.brush.alignedOrigin(t, start: start)
     }
 
     // MARK: - マウス
@@ -204,17 +124,16 @@ final class MapCanvasView: NSView {
         window?.makeFirstResponder(self)
         if spaceHeld && !CGEventSource.keyState(.combinedSessionState, key: 49) { spaceHeld = false }
         if spaceHeld {
-            interaction = .pan(start: convert(e.locationInWindow, from: nil), startOrigin: origin)
+            interaction = .pan(start: convert(e.locationInWindow, from: nil), startOrigin: viewport.origin)
             NSCursor.closedHand.set()
             return
         }
-        guard let map, map.layers.indices.contains(state.mapLayer) else { return }
+        guard let map, map.layers.indices.contains(session.layer) else { return }
         let t = tile(e)
-        state.beginMapEdit()
-        switch state.mapTool {
+        session.beginEdit()
+        switch session.tool {
         case .fill:
-            let v = state.mapBrush.tiles.first ?? -1
-            state.mutateMap { $0.fill(state.mapLayer, t.x, t.y, v) }
+            session.apply(at: t)
             interaction = .none
         case .pen, .eraser:
             interaction = .paint(start: t, last: nil)
@@ -227,19 +146,13 @@ final class MapCanvasView: NSView {
         let p = brushOrigin(for: t)
         guard p != last else { return }
         interaction = .paint(start: start, last: p)
-        let b = state.mapBrush
-        let layer = state.mapLayer
-        if state.mapTool == .eraser {
-            state.mutateMap { $0.stamp(layer, p.x, p.y, MapBrush(width: b.width, height: b.height, tiles: Array(repeating: -1, count: b.tiles.count)), eraseEmpty: true) }
-        } else {
-            state.mutateMap { $0.stamp(layer, p.x, p.y, b) }
-        }
+        session.apply(at: p)
     }
 
     override func mouseDragged(with e: NSEvent) {
         if case .pan(let start, let o) = interaction {
             let p = convert(e.locationInWindow, from: nil)
-            origin = CGPoint(x: o.x + p.x - start.x, y: o.y + p.y - start.y)
+            viewport.origin = CGPoint(x: o.x + p.x - start.x, y: o.y + p.y - start.y)
             needsDisplay = true
             return
         }
@@ -272,17 +185,11 @@ final class MapCanvasView: NSView {
     }
 
     override func rightMouseUp(with e: NSEvent) {
-        guard let map else { return }
         switch interaction {
-        case .rightPending(let s):
-            state.mapBrushOverride = .single(map.tile(state.mapLayer, s.x, s.y))
-        case .rightSelect(let a, let b):
-            let r = IntRect(corner: a, b).intersection(IntRect(x: 0, y: 0, width: map.width, height: map.height))
-            if !r.isEmpty { state.mapBrushOverride = map.brush(state.mapLayer, r) }
-        default:
-            break
+        case .rightPending(let s): session.pickTile(at: s)
+        case .rightSelect(let a, let b): session.pickRange(a, b)
+        default: break
         }
-        if state.mapTool == .eraser { state.mapTool = .pen }
         interaction = .none
         needsDisplay = true
     }
@@ -299,8 +206,8 @@ final class MapCanvasView: NSView {
             dx *= 16; dy *= 16
             if e.modifierFlags.contains(.shift) && dx == 0 { swap(&dx, &dy) }
         }
-        origin.x += dx
-        origin.y += dy
+        viewport.origin.x += dx
+        viewport.origin.y += dy
         needsDisplay = true
     }
 
@@ -324,8 +231,9 @@ struct MapCanvasRepresentable: NSViewRepresentable {
 
     func updateNSView(_ nsView: MapCanvasView, context: Context) {
         let e = state.editor
+        let s = state.mapSession
         _ = (e.meta.maps, e.meta.annotations, e.meta.cellWidth, e.meta.mark, e.meta.lupeWidth, e.meta.lupeHeight,
-             state.selectedMapID, state.mapLayer, state.mapTool, state.mapBrushOverride, state.showAnnotations)
+             s.selectedMapID, s.layer, s.tool, s.brushOverride, state.showAnnotations)
         nsView.needsDisplay = true
     }
 }
@@ -342,7 +250,7 @@ struct MapWindow: View {
         VStack(spacing: 0) {
             toolbar
             Divider()
-            if let i = state.mapIndex {
+            if let i = state.mapSession.index {
                 HStack(spacing: 0) {
                     LayerList(state: state, map: $editor.meta.maps[i])
                         .frame(width: 180)
@@ -362,20 +270,20 @@ struct MapWindow: View {
         .frame(minWidth: 520, minHeight: 360)
         .onAppear {
             UserDefaults.standard.set(true, forKey: Self.openKey)
-            if state.mapIndex == nil { state.selectedMapID = editor.meta.maps.first?.id }
+            if state.mapSession.index == nil { state.mapSession.selectedMapID = editor.meta.maps.first?.id }
         }
         .onDisappear {
             if !AppDelegate.isTerminating { UserDefaults.standard.set(false, forKey: Self.openKey) }
         }
         // ストックでマーク位置を選び直したら、拾ったブラシをやめてマーク範囲のセルに戻す
-        .onChange(of: editor.meta.mark) { _, _ in state.mapBrushOverride = nil }
-        .onChange(of: editor.meta.lupeWidth) { _, _ in state.mapBrushOverride = nil }
-        .onChange(of: editor.meta.lupeHeight) { _, _ in state.mapBrushOverride = nil }
+        .onChange(of: editor.meta.mark) { _, _ in state.mapSession.brushOverride = nil }
+        .onChange(of: editor.meta.lupeWidth) { _, _ in state.mapSession.brushOverride = nil }
+        .onChange(of: editor.meta.lupeHeight) { _, _ in state.mapSession.brushOverride = nil }
     }
 
     private var toolbar: some View {
         HStack(spacing: 8) {
-            Picker("", selection: Binding(get: { state.selectedMapID }, set: { state.selectedMapID = $0; state.mapLayer = 0 })) {
+            Picker("", selection: Binding(get: { state.mapSession.selectedMapID }, set: { state.mapSession.select($0) })) {
                 if editor.meta.maps.isEmpty { Text("なし").tag(UUID?.none) }
                 ForEach(editor.meta.maps) { m in Text(m.name.isEmpty ? L("（無題）") : m.name).tag(UUID?.some(m.id)) }
             }
@@ -384,16 +292,12 @@ struct MapWindow: View {
             Button { addMap() } label: { Image(systemName: "plus") }
                 .help("マップを追加")
             Button {
-                if let i = state.mapIndex {
-                    editor.meta.maps.remove(at: i)
-                    state.selectedMapID = editor.meta.maps.first?.id
-                    state.resetMapHistory()
-                }
+                state.mapSession.removeMap()
             } label: { Image(systemName: "minus") }
-                .disabled(state.mapIndex == nil)
+                .disabled(state.mapSession.index == nil)
                 .help("マップを削除")
 
-            if let i = state.mapIndex {
+            if let i = state.mapSession.index {
                 TextField("名前", text: $editor.meta.maps[i].name)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 110)
@@ -402,7 +306,7 @@ struct MapWindow: View {
 
             Spacer(minLength: 0)
 
-            Picker("", selection: Binding(get: { state.mapTool }, set: { state.mapTool = $0 })) {
+            Picker("", selection: Binding(get: { state.mapSession.tool }, set: { state.mapSession.tool = $0 })) {
                 ForEach(MapTool.allCases, id: \.self) { t in Image(systemName: t.symbol).help(t.label).tag(t) }
             }
             .pickerStyle(.segmented)
@@ -413,11 +317,11 @@ struct MapWindow: View {
                 .help("通行不可のタイルに × を表示（ストックの「注釈」と共通）")
             Button { state.mapView?.stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass") }
             Button { state.mapView?.stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass") }
-            Button { state.mapUndo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .disabled(!state.canMapUndo)
+            Button { state.mapSession.undo() } label: { Image(systemName: "arrow.uturn.backward") }
+                .disabled(!state.mapSession.canUndo)
                 .help("マップの取り消し (⌘Z)")
-            Button { state.mapRedo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .disabled(!state.canMapRedo)
+            Button { state.mapSession.redo() } label: { Image(systemName: "arrow.uturn.forward") }
+                .disabled(!state.mapSession.canRedo)
                 .help("マップのやり直し (⇧⌘Z)")
         }
         .buttonStyle(.borderless)
@@ -427,9 +331,9 @@ struct MapWindow: View {
     }
 
     private func statusBar(_ m: TileMapDef) -> some View {
-        let b = state.mapBrush
+        let b = state.mapSession.brush
         return HStack(spacing: 12) {
-            Text(state.mapBrushOverride == nil ? L("ブラシ \(b.width)×\(b.height)（マーク範囲）") : L("ブラシ \(b.width)×\(b.height)（マップから拾った）"))
+            Text(state.mapSession.brushOverride == nil ? L("ブラシ \(b.width)×\(b.height)（マーク範囲）") : L("ブラシ \(b.width)×\(b.height)（マップから拾った）"))
             Text("タイル \(editor.meta.cellWidth)×\(editor.meta.cellHeight)")
             Spacer()
             Text("ストックでセルを選んで置く・右クリックで拾う・右ドラッグで範囲を拾う")
@@ -440,12 +344,7 @@ struct MapWindow: View {
         .frame(height: 22)
     }
 
-    private func addMap() {
-        let m = TileMapDef(name: L("マップ \(editor.meta.maps.count + 1)"), width: 20, height: 15)
-        editor.meta.maps.append(m)
-        state.selectedMapID = m.id
-        state.mapLayer = 0
-    }
+    private func addMap() { state.mapSession.addMap() }
 }
 
 /// マップの大きさ（確定したときに変える）
@@ -461,8 +360,7 @@ private struct MapSizeFields: View {
             Text("×")
             IntField(value: $h, min: 1, max: 512, width: 40)
             Button("変更") {
-                state.beginMapEdit()
-                state.mutateMap { $0.resize(width: w, height: h) }
+                state.mapSession.resize(width: w, height: h)
             }
             .disabled(w == map.width && h == map.height)
         }
@@ -512,8 +410,8 @@ private struct LayerList: View {
                     .contentShape(Rectangle())
                     // 1 回目のクリックですぐ選ぶ（ダブルクリック判定を待たない）。2 回目で名前の編集
                     .onTapGesture(count: 2) { if editing != i { beginRename(i) } }
-                    .simultaneousGesture(TapGesture().onEnded { if state.mapLayer != i || (editing != nil && editing != i) { select(i) } })
-                    .background(state.mapLayer == i ? Color.accentColor.opacity(0.2) : Color.clear)
+                    .simultaneousGesture(TapGesture().onEnded { if state.mapSession.layer != i || (editing != nil && editing != i) { select(i) } })
+                    .background(state.mapSession.layer == i ? Color.accentColor.opacity(0.2) : Color.clear)
                 }
                 }
             }
@@ -523,23 +421,23 @@ private struct LayerList: View {
             }
             Divider()
             HStack(spacing: 4) {
-                Button { commitRename(); state.beginMapEdit(); map.addLayer(); state.mapLayer = map.layers.count - 1 } label: { Image(systemName: "plus") }
+                Button { commitRename(); state.mapSession.beginEdit(); map.addLayer(); state.mapSession.layer = map.layers.count - 1 } label: { Image(systemName: "plus") }
                     .help("レイヤーを追加")
                 Button {
                     guard map.layers.count > 1 else { return }
                     commitRename()
-                    state.beginMapEdit()
-                    map.layers.remove(at: state.mapLayer)
-                    state.mapLayer = min(state.mapLayer, map.layers.count - 1)
+                    state.mapSession.beginEdit()
+                    map.layers.remove(at: state.mapSession.layer)
+                    state.mapSession.layer = min(state.mapSession.layer, map.layers.count - 1)
                 } label: { Image(systemName: "minus") }
                     .disabled(map.layers.count <= 1)
                     .help("レイヤーを削除")
                 Spacer()
                 Button { move(1) } label: { Image(systemName: "chevron.up") }
-                    .disabled(state.mapLayer >= map.layers.count - 1)
+                    .disabled(state.mapSession.layer >= map.layers.count - 1)
                     .help("上へ")
                 Button { move(-1) } label: { Image(systemName: "chevron.down") }
-                    .disabled(state.mapLayer <= 0)
+                    .disabled(state.mapSession.layer <= 0)
                     .help("下へ")
             }
             .buttonStyle(.borderless)
@@ -549,12 +447,12 @@ private struct LayerList: View {
 
     private func select(_ i: Int) {
         commitRename()
-        state.mapLayer = i
+        state.mapSession.layer = i
     }
 
     private func beginRename(_ i: Int) {
         commitRename()
-        state.mapLayer = i
+        state.mapSession.layer = i
         draft = map.layers[i].name
         editing = i
         // 入力欄ができてからフォーカスを移す
@@ -574,10 +472,10 @@ private struct LayerList: View {
 
     private func move(_ d: Int) {
         commitRename()
-        let i = state.mapLayer, j = i + d
+        let i = state.mapSession.layer, j = i + d
         guard map.layers.indices.contains(j) else { return }
-        state.beginMapEdit()
+        state.mapSession.beginEdit()
         map.layers.swapAt(i, j)
-        state.mapLayer = j
+        state.mapSession.layer = j
     }
 }

@@ -3215,6 +3215,215 @@
           }
         }
       }
+    },
+    "タイルを拾いました" : {
+      "comment" : "iPad のマップで長押しして、タイルを 1 枚ブラシにした",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picked up tile"
+          }
+        }
+      }
+    },
+    "%lld×%lld のタイルを拾いました" : {
+      "comment" : "iPad のマップで長押しドラッグして、範囲のタイルをブラシにした",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picked up %lld×%lld tiles"
+          }
+        }
+      }
+    },
+    "マップを削除しますか？" : {
+      "comment" : "iPad のマップの削除の確認",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this map?"
+          }
+        }
+      }
+    },
+    "マップの削除は取り消せません。" : {
+      "comment" : "iPad のマップの削除の確認の説明",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can't undo deleting a map."
+          }
+        }
+      }
+    },
+    "大きさを変える" : {
+      "comment" : "iPad のマップのパネル。入力した幅・高さにマップの大きさを変えるボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resize"
+          }
+        }
+      }
+    },
+    "通行不可のタイルに × を表示" : {
+      "comment" : "iPad のマップのパネル。Mac 版の「注釈」のチェックボックスにあたる",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show × on Impassable Tiles"
+          }
+        }
+      }
+    },
+    "＋ でマップを作ります。ストックで選んだセルをタイルとして置きます" : {
+      "comment" : "iPad のマップのパネル。マップがないとき",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + to create a map. Cells you select in the Stock are placed as tiles."
+          }
+        }
+      }
+    },
+    "レイヤーの名前" : {
+      "comment" : "iPad のマップのレイヤーの名前を変える入力の題",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layer Name"
+          }
+        }
+      }
+    },
+    "レイヤー" : {
+      "comment" : "iPad のマップのパネルの見出し",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layers"
+          }
+        }
+      }
+    },
+    "隠す" : {
+      "comment" : "iPad のマップのレイヤーの目のボタン（表示中のとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        }
+      }
+    },
+    "表示する" : {
+      "comment" : "iPad のマップのレイヤーの目のボタン（隠しているとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
+          }
+        }
+      }
+    },
+    "名前を変更" : {
+      "comment" : "iPad のマップのレイヤーの名前を変える",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        }
+      }
+    },
+    "マーク範囲に戻す" : {
+      "comment" : "iPad のマップ。拾ったブラシをやめてマーク範囲のセルに戻す",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Marked Area"
+          }
+        }
+      }
+    },
+    "ストックでセルを選んで、Apple Pencil で置きます。長押しでタイルを拾い、長押しのままドラッグで範囲を拾います。指でスクロール、ピンチで拡大縮小。" : {
+      "comment" : "iPad のマップのパネルの操作の説明",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select cells in the Stock and place them with Apple Pencil. Touch and hold to pick up a tile; hold and drag to pick up an area. Scroll with your finger and pinch to zoom."
+          }
+        }
+      }
+    },
+    "マップの取り消し" : {
+      "comment" : "iPad のツールバーの取り消しボタン（マップを出しているとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo Map Edit"
+          }
+        }
+      }
+    },
+    "マップのやり直し" : {
+      "comment" : "iPad のツールバーのやり直しボタン（マップを出しているとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo Map Edit"
+          }
+        }
+      }
+    },
+    "マップを閉じる (⇧⌘M)" : {
+      "comment" : "iPad のツールバーのマップのボタン（マップを出しているとき）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Map (⇧⌘M)"
+          }
+        }
+      }
+    },
+    "マップの仮組み (⇧⌘M)" : {
+      "comment" : "iPad のツールバーのマップのボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map Mockup (⇧⌘M)"
+          }
+        }
+      }
+    },
+    "全体を表示" : {
+      "comment" : "iPad のマップを全体が見える大きさにするボタン",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom to Fit"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
