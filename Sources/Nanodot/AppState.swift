@@ -30,17 +30,9 @@ final class AppState {
     }
 
     // MARK: マップ
-    var selectedMapID: UUID?
-    var mapLayer = 0
-    var mapTool = MapTool.pen
-    /// マップで右クリック・右ドラッグで拾ったブラシ（なければマーク範囲のセル）
-    var mapBrushOverride: MapBrush?
-    var canMapUndo = false
-    var canMapRedo = false
+    /// マップの仮組みの編集状態（NanodotCore。iPad 版と共有）
+    let mapSession: MapSession
     @ObservationIgnored weak var mapView: MapCanvasView?
-    @ObservationIgnored private var mapUndoStack: [(id: UUID, map: TileMapDef)] = []
-    @ObservationIgnored private var mapRedoStack: [(id: UUID, map: TileMapDef)] = []
-    @ObservationIgnored private var cellImageCache: (version: Int, cw: Int, ch: Int, images: [Int: CGImage]) = (-1, 0, 0, [:])
 
     @ObservationIgnored weak var mainView: MainCanvasView?
     @ObservationIgnored weak var stockView: StockView?
@@ -75,6 +67,8 @@ final class AppState {
 
     init() {
         editor.newDocument(width: 256, height: 256, cellWidth: 32, cellHeight: 32)
+        mapSession = MapSession(editor: editor)
+        mapSession.onChange = { [weak self] in self?.mapView?.needsDisplay = true }
         editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
         refreshRecentFiles()
         #if !APPSTORE
@@ -105,10 +99,7 @@ final class AppState {
     /// MCP から開く・新規にしたとき
     func sheetReplaced() {
         selectedAnimID = editor.meta.anims.first?.id
-        selectedMapID = editor.meta.maps.first?.id
-        mapLayer = 0
-        mapBrushOverride = nil
-        resetMapHistory()
+        mapSession.sheetReplaced()
         stockView?.fitToView()
         requestDisplay()
     }
@@ -173,86 +164,14 @@ final class AppState {
     // MARK: - マップ
 
     /// シートの列数（セル番号の計算に使う）
-    var sheetColumns: Int { editor.meta.columns(imageWidth: editor.image.width) }
-
-    /// マーク範囲にかかるセルをブラシにしたもの
-    var markBrush: MapBrush {
-        let m = editor.meta, cw = max(1, m.cellWidth), ch = max(1, m.cellHeight)
-        let c0 = m.mark.x / cw, r0 = m.mark.y / ch
-        let c1 = max(c0, (m.mark.x + m.lupeWidth - 1) / cw), r1 = max(r0, (m.mark.y + m.lupeHeight - 1) / ch)
-        let cols = sheetColumns, rows = m.rows(imageHeight: editor.image.height)
-        var tiles: [Int] = []
-        for r in r0...r1 {
-            for c in c0...c1 { tiles.append(c < cols && r < rows ? SheetMeta.cellIndex(col: c, row: r, columns: cols) : -1) }
-        }
-        return MapBrush(width: c1 - c0 + 1, height: r1 - r0 + 1, tiles: tiles)
-    }
-
-    var mapBrush: MapBrush { mapBrushOverride ?? markBrush }
+    var sheetColumns: Int { mapSession.sheetColumns }
 
     /// セル番号の画像（画素が変わったら作り直す）
-    func cellImage(_ index: Int) -> CGImage? {
-        guard index >= 0, let sheet = sheetImage else { return nil }
-        let cw = editor.meta.cellWidth, ch = editor.meta.cellHeight
-        if cellImageCache.version != editor.pixelVersion || cellImageCache.cw != cw || cellImageCache.ch != ch {
-            cellImageCache = (editor.pixelVersion, cw, ch, [:])
-        }
-        if let img = cellImageCache.images[index] { return img }
-        let (c, r) = SheetMeta.cellPosition(index, columns: sheetColumns)
-        let rect = editor.meta.cellRect(col: c, row: r).intersection(editor.image.bounds)
-        guard !rect.isEmpty, let img = Draw.crop(sheet, rect) else { return nil }
-        cellImageCache.images[index] = img
-        return img
-    }
+    func cellImage(_ index: Int) -> CGImage? { mapSession.cellImage(index, sheet: sheetImage) }
 
     var isMapWindowKey: Bool {
         guard let w = mapView?.window else { return false }
         return NSApp.keyWindow === w
-    }
-
-    var mapIndex: Int? { editor.meta.maps.firstIndex { $0.id == selectedMapID } }
-
-    /// マップ編集の取り消し点を記録する（ドラッグ 1 回につき 1 回）
-    func beginMapEdit() {
-        guard let i = mapIndex else { return }
-        let m = editor.meta.maps[i]
-        mapUndoStack.append((m.id, m))
-        if mapUndoStack.count > 100 { mapUndoStack.removeFirst() }
-        mapRedoStack.removeAll()
-        updateMapHistory()
-    }
-
-    func mutateMap(_ body: (inout TileMapDef) -> Void) {
-        guard let i = mapIndex else { return }
-        body(&editor.meta.maps[i])
-        mapView?.needsDisplay = true
-    }
-
-    func mapUndo() { swapMapHistory(from: &mapUndoStack, to: &mapRedoStack) }
-    func mapRedo() { swapMapHistory(from: &mapRedoStack, to: &mapUndoStack) }
-
-    private func swapMapHistory(from: inout [(id: UUID, map: TileMapDef)], to: inout [(id: UUID, map: TileMapDef)]) {
-        guard let e = from.popLast(), let i = editor.meta.maps.firstIndex(where: { $0.id == e.id }) else {
-            updateMapHistory()
-            return
-        }
-        to.append((e.id, editor.meta.maps[i]))
-        editor.meta.maps[i] = e.map
-        selectedMapID = e.id
-        mapLayer = min(mapLayer, e.map.layers.count - 1)
-        updateMapHistory()
-        mapView?.needsDisplay = true
-    }
-
-    private func updateMapHistory() {
-        canMapUndo = !mapUndoStack.isEmpty
-        canMapRedo = !mapRedoStack.isEmpty
-    }
-
-    func resetMapHistory() {
-        mapUndoStack.removeAll()
-        mapRedoStack.removeAll()
-        updateMapHistory()
     }
 
     // MARK: - クリップボード
@@ -320,8 +239,7 @@ final class AppState {
     func newDocument(width: Int, height: Int, cellWidth: Int, cellHeight: Int) {
         editor.newDocument(width: width, height: height, cellWidth: cellWidth, cellHeight: cellHeight)
         selectedAnimID = nil
-        selectedMapID = nil
-        resetMapHistory()
+        mapSession.sheetReplaced()
         stockView?.fitToView()
         requestDisplay()
     }
@@ -346,10 +264,7 @@ final class AppState {
             editor.load(img, meta: m, url: isPNG ? url : nil)
             noteRecentFile(url)
             selectedAnimID = m.anims.first?.id
-            selectedMapID = m.maps.first?.id
-            mapLayer = 0
-            mapBrushOverride = nil
-            resetMapHistory()
+            mapSession.sheetReplaced()
             stockView?.fitToView()
             requestDisplay()
         } catch {
@@ -500,10 +415,7 @@ final class AppState {
         editor.meta = meta
         editor.setMark(editor.meta.mark)
         selectedAnimID = meta.anims.first?.id
-        selectedMapID = meta.maps.first?.id
-        mapLayer = 0
-        mapBrushOverride = nil
-        resetMapHistory()
+        mapSession.sheetReplaced()
         requestDisplay()
     }
 

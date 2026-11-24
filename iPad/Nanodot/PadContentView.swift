@@ -2,9 +2,9 @@ import NanodotCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 横のパネル（色・アニメ）。狭いときはストックもここに入る
+/// 横のパネル（色・アニメ・マップ）。狭いときはストックもここに入る
 enum SidePanel: String, CaseIterable, Identifiable {
-    case stock, colors, anim
+    case stock, colors, anim, map
     var id: Self { self }
 
     var title: String {
@@ -12,6 +12,7 @@ enum SidePanel: String, CaseIterable, Identifiable {
         case .stock: return L("ストック")
         case .colors: return L("色")
         case .anim: return L("アニメ")
+        case .map: return L("マップ")
         }
     }
 }
@@ -130,6 +131,10 @@ struct PadContentView: View {
         .onChange(of: state.isOutsideDocument) { _, outside in
             if outside && !savingAs { state.show(L("アプリのフォルダーの外の書類です。素の PNG として開きました")) }
         }
+        // ストックでマーク位置を選び直したら、マップで拾ったブラシをやめてマーク範囲のセルに戻す（Mac 版と同じ）
+        .onChange(of: editor.meta.mark) { _, _ in state.mapSession.brushOverride = nil }
+        .onChange(of: editor.meta.lupeWidth) { _, _ in state.mapSession.brushOverride = nil }
+        .onChange(of: editor.meta.lupeHeight) { _, _ in state.mapSession.brushOverride = nil }
     }
 
     // MARK: - 画面の構成
@@ -143,12 +148,12 @@ struct PadContentView: View {
         let wide = !narrow && size.width > size.height * 0.95
         if wide {
             HStack(spacing: 0) {
-                MainCanvasRepresentable(state: state)
+                canvas
                 Divider()
                 VStack(spacing: 0) {
                     stockArea
                     Divider()
-                    panelArea(choices: [.colors, .anim])
+                    panelArea(choices: sideChoices)
                         .frame(height: min(470, size.height * 0.62))
                 }
                 .frame(width: min(400, max(320, size.width * 0.3)))
@@ -156,12 +161,12 @@ struct PadContentView: View {
             .onAppear { normalizeSidePanel(narrow: false) }
         } else if !narrow {
             VStack(spacing: 0) {
-                MainCanvasRepresentable(state: state)
+                canvas
                 Divider()
                 HStack(spacing: 0) {
                     stockArea
                     Divider()
-                    panelArea(choices: [.colors, .anim])
+                    panelArea(choices: sideChoices)
                         .frame(width: min(420, size.width * 0.48))
                 }
                 .frame(height: size.height * 0.42)
@@ -169,13 +174,26 @@ struct PadContentView: View {
             .onAppear { normalizeSidePanel(narrow: false) }
         } else {
             VStack(spacing: 0) {
-                MainCanvasRepresentable(state: state)
+                canvas
                 Divider()
-                panelArea(choices: SidePanel.allCases)
+                panelArea(choices: state.mapMode ? [.map, .stock] : [.stock, .colors, .anim])
                     .frame(height: size.height * 0.46)
             }
         }
     }
+
+    /// メインの場所: ふだんはメイン、マップを出しているときはマップ
+    @ViewBuilder
+    private var canvas: some View {
+        if state.mapMode {
+            MapCanvasRepresentable(state: state)
+        } else {
+            MainCanvasRepresentable(state: state)
+        }
+    }
+
+    /// ストックの隣のパネル（マップを出している間はマップのパネルだけ）
+    private var sideChoices: [SidePanel] { state.mapMode ? [.map] : [.colors, .anim] }
 
     private func normalizeSidePanel(narrow: Bool) {
         if !narrow && sidePanel == .stock { sidePanel = .colors }
@@ -193,12 +211,20 @@ struct PadContentView: View {
     private func panelArea(choices: [SidePanel]) -> some View {
         let current = choices.contains(sidePanel) ? sidePanel : choices[0]
         return VStack(spacing: 0) {
-            Picker("パネル", selection: Binding(get: { current }, set: { sidePanel = $0 })) {
-                ForEach(choices) { Text($0.title).tag($0) }
+            if choices.count > 1 {
+                Picker("パネル", selection: Binding(get: { current }, set: { sidePanel = $0 })) {
+                    ForEach(choices) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(10)
+            } else {
+                Text(current.title)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 32)
+                    .padding(10)
+                    .accessibilityAddTraits(.isHeader)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(10)
             Divider()
             switch current {
             case .stock:
@@ -207,6 +233,8 @@ struct PadContentView: View {
                 ScrollView { ColorPanel(state: state, editor: editor).padding(12) }
             case .anim:
                 ScrollView { AnimPanel(state: state, editor: editor).padding(12) }
+            case .map:
+                ScrollView { MapPanel(state: state, editor: editor).padding(12) }
             }
         }
         .background(Color(uiColor: .systemBackground))
@@ -263,8 +291,19 @@ struct PadContentView: View {
             open: { requestDiscard(.open) },
             save: { state.save() },
             saveAs: { exportPNG(scale: 1, saveAs: true) },
-            showAnim: { sidePanel = sidePanel == .anim ? .colors : .anim }
+            showAnim: {
+                state.mapMode = false
+                sidePanel = sidePanel == .anim ? .colors : .anim
+            },
+            toggleMap: { toggleMapMode() }
         )
+    }
+
+    private func toggleMapMode() {
+        state.mainView?.cancelInteraction()
+        state.mapView?.cancelInteraction()
+        state.mapMode.toggle()
+        state.requestDisplay()
     }
 
     // MARK: - ツールバー
@@ -283,16 +322,18 @@ struct PadContentView: View {
     private func toolbarContent(compact: Bool) -> some View {
         HStack(spacing: 4) {
             fileMenu
-            barButton("arrow.uturn.backward", disabled: !editor.canUndo) { editor.undo() }
-                .accessibilityLabel(editor.undoLabel.map { L("取り消し: \($0)") } ?? L("取り消し"))
-            barButton("arrow.uturn.forward", disabled: !editor.canRedo) { editor.redo() }
-                .accessibilityLabel(editor.redoLabel.map { L("やり直し: \($0)") } ?? L("やり直し"))
+            barButton("arrow.uturn.backward", disabled: !state.canUndo) { state.undo() }
+                .accessibilityLabel(state.mapMode ? L("マップの取り消し") : editor.undoLabel.map { L("取り消し: \($0)") } ?? L("取り消し"))
+            barButton("arrow.uturn.forward", disabled: !state.canRedo) { state.redo() }
+                .accessibilityLabel(state.mapMode ? L("マップのやり直し") : editor.redoLabel.map { L("やり直し: \($0)") } ?? L("やり直し"))
 
             Spacer(minLength: 6)
             titleView
             Spacer(minLength: 6)
 
-            if compact {
+            if state.mapMode {
+                mapTools(compact: compact)
+            } else if compact {
                 toolMenu
             } else {
                 ForEach(PadTool.all, id: \.self) { toolButton($0) }
@@ -301,16 +342,66 @@ struct PadContentView: View {
                     .accessibilityLabel("矩形・楕円を塗りつぶす")
                 penSizeMenu
             }
-            // 選択範囲があるときは、マーク範囲の操作の代わりに選択範囲の操作を出す
-            if editor.selection == nil { markMenu }
-            selectionBar(compact: compact)
-            stampButton
+            if !state.mapMode {
+                // 選択範囲があるときは、マーク範囲の操作の代わりに選択範囲の操作を出す
+                if editor.selection == nil { markMenu }
+                selectionBar(compact: compact)
+                stampButton
+            }
+            mapButton
             barButton("gearshape", selected: showSettings) { showSettings.toggle() }
                 .accessibilityLabel("設定")
                 .popover(isPresented: $showSettings) {
                     SettingsPanel(state: state, editor: editor)
                         .frame(width: 440)
                 }
+        }
+    }
+
+    /// マップの仮組みに切り替える（もう一度押すとメインに戻る）
+    private var mapButton: some View {
+        Button { toggleMapMode() } label: {
+            Image(systemName: "map")
+                .font(.system(size: 18))
+                .frame(width: 40, height: 40)
+                .foregroundStyle(state.mapMode ? Color.white : Color.primary)
+                .background(state.mapMode ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 8))
+        }
+        .accessibilityLabel(state.mapMode ? L("マップを閉じる (⇧⌘M)") : L("マップの仮組み (⇧⌘M)"))
+    }
+
+    /// マップを出している間のツール（ペン・消しゴム・塗りつぶし）と表示の大きさ
+    @ViewBuilder
+    private func mapTools(compact: Bool) -> some View {
+        let session = state.mapSession
+        if compact {
+            Menu {
+                Picker("ツール", selection: Binding(get: { session.tool }, set: { session.tool = $0 })) {
+                    ForEach(MapTool.allCases, id: \.self) { t in Label(t.displayName, systemImage: t.symbol).tag(t) }
+                }
+            } label: {
+                Image(systemName: session.tool.symbol)
+                    .font(.system(size: 18))
+                    .frame(width: 40, height: 40)
+                    .foregroundStyle(Color.white)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityLabel("ツール")
+        } else {
+            ForEach(MapTool.allCases, id: \.self) { t in
+                let on = session.tool == t
+                Button { session.tool = t } label: {
+                    Image(systemName: t.symbol)
+                        .font(.system(size: 18))
+                        .frame(width: 40, height: 40)
+                        .foregroundStyle(on ? Color.white : Color.primary)
+                        .background(on ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 8))
+                }
+                .accessibilityLabel(t.displayName)
+            }
+            barButton("minus.magnifyingglass") { state.mapView?.stepZoom(-1) }.accessibilityLabel("縮小")
+            barButton("plus.magnifyingglass") { state.mapView?.stepZoom(1) }.accessibilityLabel("拡大")
+            barButton("arrow.up.left.and.down.right.magnifyingglass") { state.mapView?.fitToView() }.accessibilityLabel("全体を表示")
         }
     }
 
@@ -885,6 +976,7 @@ struct KeyboardShortcuts: View {
         var save: () -> Void
         var saveAs: () -> Void
         var showAnim: () -> Void
+        var toggleMap: () -> Void
     }
 
     var body: some View {
@@ -893,14 +985,18 @@ struct KeyboardShortcuts: View {
             key("o", .command, actions.open)
             key("s", .command, actions.save)
             key("s", [.command, .shift], actions.saveAs)
-            key("z", .command) { editor.undo() }
-            key("z", [.command, .shift]) { editor.redo() }
+            key("z", .command) { state.undo() }
+            key("z", [.command, .shift]) { state.redo() }
             key("c", .command) { state.copyMark() }
+            // マップを出している間は、見えていないシートを書き換えるキーを受けない
             key("x", .command) { state.cutMark() }
+                .disabled(state.mapMode)
             key("v", .command) { state.pasteToStamp() }
+                .disabled(state.mapMode)
             key("'", .command) { editor.meta.showCellGrid.toggle() }
             key("0", .command) { state.stockView?.fitToView() }
             key("a", [.command, .shift], actions.showAnim)
+            key("m", [.command, .shift], actions.toggleMap)
             key("b", [], { tool(.pen) })
             key("p", [], { tool(.pen) })
             key("e", [], { tool(.eraser) })
@@ -910,8 +1006,10 @@ struct KeyboardShortcuts: View {
             key("o", [], { tool(.ellipse) })
             key("m", [], { tool(.select) })
             key("i", []) { state.setEyedropper(!state.eyedropperActive) }
+                .disabled(state.mapMode)
             key(.escape, []) {
                 state.mainView?.cancelInteraction()
+                state.mapView?.cancelInteraction()
                 state.setEyedropper(false)
             }
             // 浮かせている間だけ受ける（ほかのときは文字入力などの Return を横取りしない）
@@ -921,7 +1019,9 @@ struct KeyboardShortcuts: View {
             }
             .disabled(!editor.isFloating)
             key(.delete, []) { editor.apply(.clear) }
+                .disabled(state.mapMode)
             key(.delete, .option) { editor.apply(.fill) }
+                .disabled(state.mapMode)
             key(.leftArrow, []) { state.arrowKey(dx: -1, dy: 0, shift: false) }
             key(.rightArrow, []) { state.arrowKey(dx: 1, dy: 0, shift: false) }
             key(.upArrow, []) { state.arrowKey(dx: 0, dy: -1, shift: false) }
@@ -937,6 +1037,16 @@ struct KeyboardShortcuts: View {
     }
 
     private func tool(_ t: Tool) {
+        // マップを出している間は、ペン・消しゴム・塗りつぶしのキーがマップのツールになる（ほかの描くツールのキーは何もしない）
+        if state.mapMode {
+            switch t {
+            case .pen: state.mapSession.tool = .pen
+            case .eraser: state.mapSession.tool = .eraser
+            case .fill: state.mapSession.tool = .fill
+            default: break
+            }
+            return
+        }
         editor.tool = t
         editor.stampActive = false
         state.setEyedropper(false)

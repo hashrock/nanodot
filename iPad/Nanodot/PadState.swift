@@ -31,6 +31,48 @@ final class PadState {
     /// アニメのプレビューで表示中のコマ（ストックに枠を出す）
     @ObservationIgnored var previewFrameRect: IntRect?
 
+    // MARK: マップ
+    /// マップの仮組み（Mac 版のマップウィンドウにあたる）。状態と取り消し履歴は NanodotCore の MapSession で Mac 版と共有
+    let mapSession: MapSession
+    /// メインの場所にマップを出している（次の起動でも同じ画面にする。Mac 版がマップウィンドウの開閉を覚えるのと同じ）
+    var mapMode: Bool = UserDefaults.standard.bool(forKey: "pad.mapMode") {
+        didSet {
+            UserDefaults.standard.set(mapMode, forKey: "pad.mapMode")
+            if mapMode {
+                // 浮かせた選択範囲の中身は確定しておく（メインを出していない間は確定・キャンセルのボタンがない）
+                editor.commitSelection()
+                editor.stampActive = false
+                eyedropperActive = false
+                mapSession.ensureSelection()
+            }
+        }
+    }
+    /// マップで通行不可のタイルに × を出す（Mac 版の「注釈」と同じ設定の鍵）
+    var showAnnotations: Bool = UserDefaults.standard.object(forKey: "showAnnotations") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showAnnotations, forKey: "showAnnotations") }
+    }
+    @ObservationIgnored weak var mapView: MapPadView?
+
+    /// 取り消し・やり直し（マップを出しているときはマップの履歴。Mac 版でマップウィンドウが前面のときと同じ）
+    var canUndo: Bool { mapMode ? mapSession.canUndo : editor.canUndo }
+    var canRedo: Bool { mapMode ? mapSession.canRedo : editor.canRedo }
+
+    func undo() {
+        if mapMode {
+            mapSession.undo()
+        } else {
+            editor.undo()
+        }
+    }
+
+    func redo() {
+        if mapMode {
+            mapSession.redo()
+        } else {
+            editor.redo()
+        }
+    }
+
     // MARK: 最近開いた書類
     /// 最近開いた・保存した書類（新しい順、10 件まで）。この iPad の UserDefaults にだけ保存する（iCloud では同期しない）
     private(set) var recentFiles = RecentFileList.decode(UserDefaults.standard.data(forKey: "pad.recentFiles"))
@@ -110,7 +152,9 @@ final class PadState {
 
     init() {
         editor.newDocument(width: 256, height: 256, cellWidth: 32, cellHeight: 32)
+        mapSession = MapSession(editor: editor)
         editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
+        mapSession.onChange = { [weak self] in self?.mapView?.setNeedsDisplay() }
         locateICloudContainer()
         if !restoreLastDocument() { prepareFirstLaunch() }
         refreshRecentFiles()
@@ -137,6 +181,7 @@ final class PadState {
         mainView?.setNeedsDisplay()
         stockView?.setNeedsDisplay()
         previewView?.setNeedsDisplay()
+        mapView?.setNeedsDisplay()
     }
 
     func show(_ message: String) {
@@ -333,6 +378,8 @@ final class PadState {
 
     private func sheetReplaced() {
         selectedAnimID = editor.meta.anims.first?.id
+        mapSession.sheetReplaced()
+        mapView?.fitToView()
         stockView?.fitToView()
         requestDisplay()
     }

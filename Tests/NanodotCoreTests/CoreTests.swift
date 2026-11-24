@@ -1050,3 +1050,170 @@ final class RecentFileListTests: XCTestCase {
         XCTAssertEqual(RecentFileList.decode(many).items.count, RecentFileList.limit)
     }
 }
+
+/// マップの編集状態（Mac 版のマップウィンドウと iPad 版のマップで共有する MapSession）
+final class MapSessionTests: XCTestCase {
+    /// 64×32 のシート、セル 16×16（4 列 × 2 行）
+    private func makeSession() -> MapSession {
+        let e = Editor()
+        e.newDocument(width: 64, height: 32, cellWidth: 16, cellHeight: 16)
+        e.setLupe(width: 16, height: 16)
+        e.setMark(IntPoint(16, 0))
+        return MapSession(editor: e)
+    }
+
+    func testMarkBrushAndAlignment() {
+        let s = makeSession()
+        XCTAssertEqual(s.brush, .single(1), "マーク範囲のセル（列 1・行 0）")
+        s.editor.setLupe(width: 32, height: 32)
+        s.editor.setMark(IntPoint(32, 0))
+        XCTAssertEqual(s.markBrush, MapBrush(width: 2, height: 2, tiles: [2, 3, 6, 7]))
+        // シートの外にかかるセルは空
+        var m = SheetMeta()
+        m.cellWidth = 16
+        m.cellHeight = 16
+        m.mark = IntPoint(48, 16)
+        m.lupeWidth = 32
+        m.lupeHeight = 32
+        XCTAssertEqual(m.markBrush(imageWidth: 64, imageHeight: 32), MapBrush(width: 2, height: 2, tiles: [7, -1, -1, -1]))
+        // ドラッグ中はブラシの大きさ単位でそろえる
+        let wide = MapBrush(width: 2, height: 2, tiles: [0, 0, 0, 0])
+        XCTAssertEqual(wide.alignedOrigin(IntPoint(5, 3), start: IntPoint(1, 1)), IntPoint(5, 3))
+        XCTAssertEqual(wide.alignedOrigin(IntPoint(4, 2), start: IntPoint(1, 1)), IntPoint(3, 1))
+        XCTAssertEqual(wide.alignedOrigin(IntPoint(0, 0), start: IntPoint(1, 1)), IntPoint(-1, -1))
+    }
+
+    func testPaintUndoRedoCancel() {
+        let s = makeSession()
+        var changes = 0
+        s.onChange = { changes += 1 }
+        s.addMap(width: 4, height: 3)
+        XCTAssertNotNil(s.map)
+        XCTAssertEqual(s.editor.meta.maps.count, 1)
+        XCTAssertTrue(s.editor.isDirty, "マップはサイドカーに保存するので未保存になる")
+
+        s.beginEdit()
+        s.apply(at: IntPoint(1, 1))
+        XCTAssertEqual(s.map?.tile(0, 1, 1), 1)
+        XCTAssertTrue(s.canUndo)
+        s.tool = .eraser
+        s.beginEdit()
+        s.apply(at: IntPoint(1, 1))
+        XCTAssertEqual(s.map?.tile(0, 1, 1), -1)
+        s.undo()
+        XCTAssertEqual(s.map?.tile(0, 1, 1), 1)
+        XCTAssertTrue(s.canRedo)
+        s.redo()
+        XCTAssertEqual(s.map?.tile(0, 1, 1), -1)
+        s.undo()
+
+        // 塗りつぶしはブラシの左上のタイル
+        s.tool = .fill
+        s.layer = 1
+        s.beginEdit()
+        s.apply(at: IntPoint(0, 0))
+        XCTAssertEqual(s.map?.layers[1].tiles, Array(repeating: 1, count: 12))
+
+        // 置きかけをやめると、取り消し点ごと戻る（やり直しには積まない）
+        s.tool = .pen
+        s.brushOverride = .single(3)
+        s.beginEdit()
+        s.apply(at: IntPoint(2, 2))
+        XCTAssertEqual(s.map?.tile(1, 2, 2), 3)
+        s.cancelEdit()
+        XCTAssertEqual(s.map?.tile(1, 2, 2), 1)
+        XCTAssertFalse(s.canRedo)
+        XCTAssertGreaterThan(changes, 0)
+    }
+
+    func testPickAndLayers() {
+        let s = makeSession()
+        s.addMap(width: 4, height: 3)
+        s.beginEdit()
+        s.mutate { $0.stamp(0, 0, 0, MapBrush(width: 2, height: 1, tiles: [5, 6])) }
+        s.tool = .eraser
+        s.pickTile(at: IntPoint(1, 0))
+        XCTAssertEqual(s.brush, .single(6))
+        XCTAssertEqual(s.tool, .pen, "拾ったら消しゴムはペンに戻す")
+        s.pickRange(IntPoint(1, 0), IntPoint(-3, 0))
+        XCTAssertEqual(s.brush, MapBrush(width: 2, height: 1, tiles: [5, 6]), "マップの外は切り詰める")
+
+        s.addLayer()
+        XCTAssertEqual(s.map?.layers.count, 3)
+        XCTAssertEqual(s.layer, 2)
+        s.renameLayer(2, "  上  ")
+        XCTAssertEqual(s.map?.layers[2].name, "上")
+        s.moveLayer(-1)
+        XCTAssertEqual(s.layer, 1)
+        XCTAssertEqual(s.map?.layers[1].name, "上")
+        s.toggleLayerVisible(1)
+        XCTAssertEqual(s.map?.layers[1].visible, false)
+        s.removeLayer()
+        XCTAssertEqual(s.map?.layers.count, 2)
+        XCTAssertFalse(s.map?.layers.contains { $0.name == "上" } ?? true)
+        s.undo()
+        XCTAssertEqual(s.map?.layers.count, 3)
+
+        s.resize(width: 2, height: 2)
+        XCTAssertEqual(s.map?.width, 2)
+        XCTAssertEqual(s.map?.layers[0].tiles, [5, 6, -1, -1])
+
+        let first = s.selectedMapID
+        s.addMap()
+        XCTAssertNotEqual(s.selectedMapID, first)
+        s.removeMap()
+        XCTAssertEqual(s.selectedMapID, first)
+        XCTAssertFalse(s.canUndo, "マップを消したら履歴を捨てる")
+        s.sheetReplaced()
+        XCTAssertEqual(s.selectedMapID, first)
+        XCTAssertNil(s.brushOverride)
+    }
+
+    func testCellImage() throws {
+        let s = makeSession()
+        var img = PixelBuffer(width: 64, height: 32)
+        img[17, 1] = RGBA(255, 0, 0)
+        s.editor.load(img, meta: s.editor.meta, url: nil)
+        let sheet = SheetFile.cgImage(from: s.editor.image)
+        let c = try XCTUnwrap(s.cellImage(1, sheet: sheet))
+        XCTAssertEqual(c.width, 16)
+        XCTAssertNil(s.cellImage(-1, sheet: sheet))
+        XCTAssertNil(s.cellImage(99, sheet: sheet), "シートの外のセル")
+    }
+
+    /// Mac 版の保存（SheetFile.save）と iPad 版の読み書き（encodeMeta / decodeMeta をサイドカーに）で、マップが同じに残る
+    func testMapsSurviveBetweenMacAndPad() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("field.png")
+
+        // Mac で作って保存
+        let mac = makeSession()
+        mac.addMap(width: 3, height: 2)
+        mac.beginEdit()
+        mac.apply(at: IntPoint(2, 1))
+        mac.addLayer()
+        try SheetFile.save(mac.editor.image, meta: mac.editor.meta, url: url)
+
+        // iPad の読み方（PadState.open）で開く
+        let sidecar = SheetFile.sidecarURL(for: url)
+        var meta = try XCTUnwrap(RelatedFile.read(sidecar, primary: url).flatMap(SheetFile.decodeMeta))
+        XCTAssertEqual(meta.maps, mac.editor.meta.maps.map { m in
+            // id は保存しない（読むたびに新しくなる）ので、比べるときはそろえる
+            var m = m
+            m.id = meta.maps[0].id
+            for i in m.layers.indices { m.layers[i].id = meta.maps[0].layers[i].id }
+            return m
+        })
+        // iPad で書き換えて、iPad の書き方（PadState.writeSidecar）で保存
+        meta.maps[0].set(2, 0, 0, 7)
+        try RelatedFile.write(try SheetFile.encodeMeta(meta), to: sidecar, primary: url)
+
+        // Mac で開き直す
+        let (_, back) = try SheetFile.load(url: url)
+        XCTAssertEqual(back?.maps.first?.tile(0, 2, 1), 1)
+        XCTAssertEqual(back?.maps.first?.tile(2, 0, 0), 7)
+        XCTAssertEqual(back?.maps.first?.layers.count, 3)
+    }
+}
