@@ -13,7 +13,9 @@ import SwiftUI
 ///   終わったらスポイトを選んだままにする（ツールバーの確認用）。`-demo 1` と一緒に使う
 /// - `-selectTest 1`: 選択のツールで範囲を選び、動かす・確定・取り消す・キャンセルを確かめ、結果を tmp/select.txt に書く。
 ///   終わったら中身を動かして浮かせたままにする（確定・キャンセルのボタンの確認用）。`-demo 1` と一緒に使う
-/// - `-panel anim|settings|new`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
+/// - `-demoMap 1`: `-demo` の絵に草・石のセルを足し、マップ（2 レイヤー）を作ってマップの画面を出す。`-demo 1` と一緒に使う
+/// - `-mapTest 1`: マップのタイルと画面座標の変換と、置く・拾う・取り消しを確かめ、結果を tmp/maptest.txt に書く。`-demoMap 1` と一緒に使う
+/// - `-panel anim|settings|new|map`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
 ///   `-layout WxH` の幅も効く）。`-demoList 1` は `-demo` のアニメを「登録」にしてコマを 2 つ入れる
 enum SimulatorHooks {
     static var panel: String? { UserDefaults.standard.string(forKey: "panel") }
@@ -27,7 +29,11 @@ enum SimulatorHooks {
     static func run(_ state: PadState) {
         let d = UserDefaults.standard
         if d.bool(forKey: "demo") { demo(state) }
+        if d.bool(forKey: "demoMap") { demoMap(state) }
         if d.bool(forKey: "demoSave") { state.save() }
+        if d.bool(forKey: "mapTest") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { mapTest(state) }
+        }
         if d.bool(forKey: "selftest") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { selftest(state) }
         }
@@ -107,6 +113,76 @@ enum SimulatorHooks {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { state.stockView?.fitToView() }
     }
 
+    /// 草（セル 3）と石（セル 4）を描き、20×12 のマップに並べる。石は通行不可
+    private static func demoMap(_ state: PadState) {
+        let e = state.editor
+        let grass = RGBA(0, 168, 68), grass2 = RGBA(0, 135, 81), stone = RGBA(131, 118, 156), stone2 = RGBA(95, 87, 79)
+        e.performEdit("demo") {
+            e.plot(Raster.rect(IntPoint(48, 0), IntPoint(63, 15), filled: true), color: grass, clip: e.image.bounds)
+            e.plot([IntPoint(51, 3), IntPoint(57, 5), IntPoint(53, 10), IntPoint(60, 12), IntPoint(49, 13)], color: grass2, clip: e.image.bounds)
+            e.plot(Raster.rect(IntPoint(64, 0), IntPoint(79, 15), filled: true), color: stone, clip: e.image.bounds)
+            e.plot(Raster.rect(IntPoint(64, 7), IntPoint(79, 7), filled: true) + Raster.rect(IntPoint(71, 0), IntPoint(71, 7), filled: true)
+                   + Raster.rect(IntPoint(67, 8), IntPoint(67, 15), filled: true) + Raster.rect(IntPoint(75, 8), IntPoint(75, 15), filled: true),
+                   color: stone2, clip: e.image.bounds)
+        }
+        var a = e.meta.annotation(col: 4, row: 0)
+        a.passable = false
+        e.meta.setAnnotation(a)
+        var m = TileMapDef(name: "village", width: 20, height: 12)
+        for y in 0..<12 { for x in 0..<20 { m.set(0, x, y, 3) } }
+        for x in 0..<20 { m.set(0, x, 0, 4); m.set(0, x, 11, 4) }
+        for y in 0..<12 { m.set(0, 0, y, 4); m.set(0, 19, y, 4) }
+        for x in 6..<14 { m.set(0, x, 6, 4) }
+        m.set(1, 4, 4, 0)
+        m.set(1, 9, 3, 1)
+        m.set(1, 15, 8, 2)
+        e.meta.maps = [m]
+        state.mapSession.sheetReplaced()
+        state.mapSession.layer = 1
+        e.setMark(IntPoint(16, 0))
+        state.mapMode = true
+        state.requestDisplay()
+    }
+
+    /// マップ: タイルの四隅と中心が同じタイルに戻るか、置く・取り消し・拾うが効くか
+    private static func mapTest(_ state: PadState) {
+        var lines: [String] = []
+        func check(_ name: String, _ ok: Bool) { lines.append("\(ok ? "OK" : "NG") \(name)") }
+        let s = state.mapSession
+        if let v = state.mapView, let m = s.map {
+            v.layoutIfNeeded()
+            var bad = 0
+            for y in 0..<m.height {
+                for x in 0..<m.width {
+                    let r = v.debugTileRect(x, y)
+                    for p in [CGPoint(x: r.minX + 0.01, y: r.minY + 0.01), CGPoint(x: r.maxX - 0.01, y: r.maxY - 0.01), CGPoint(x: r.midX, y: r.midY)]
+                    where v.debugTile(at: p) != IntPoint(x, y) { bad += 1 }
+                }
+            }
+            check("tile <-> screen (zoom \(v.zoomPercent)%)", bad == 0)
+        } else {
+            check("mapView", false)
+        }
+        let before = s.map?.tile(1, 10, 9)
+        let sheetUndo = state.editor.undoLabel
+        s.tool = .pen
+        s.beginEdit()
+        s.apply(at: IntPoint(10, 9))
+        check("pen places mark brush", s.map?.tile(1, 10, 9) == 1)
+        state.undo()
+        check("undo goes to map history", s.map?.tile(1, 10, 9) == before && state.editor.undoLabel == sheetUndo && state.editor.canRedo == false)
+        state.redo()
+        check("redo", s.map?.tile(1, 10, 9) == 1)
+        s.layer = 0
+        s.pickTile(at: IntPoint(0, 0))
+        check("pick stone", s.brush == .single(4))
+        s.brushOverride = nil
+        s.layer = 1
+        state.mapView?.setNeedsDisplay()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("maptest.txt")
+        try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+
     /// demo の絵（16, 0 からのコマ）で確かめる。(16+5, 8) は体の色、(16, 0) は透明
     private static func eyedropperTest(_ state: PadState) {
         let e = state.editor
@@ -159,6 +235,8 @@ struct SimulatorPanelPreview: View {
                 SettingsPanel(state: state, editor: state.editor)
             case "new":
                 NewDocumentSheet { _, _, _, _ in }
+            case "map":
+                ScrollView { MapPanel(state: state, editor: state.editor).padding(12) }
             default:
                 ScrollView { AnimPanel(state: state, editor: state.editor).padding(12) }
             }

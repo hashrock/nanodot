@@ -8,14 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		1D7F7B090655779158F90CDF /* PadContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82FA022599AD03349FBEA522 /* PadContentView.swift */; };
+		2528705986A173989061FA62 /* MapPadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687D20654E612C28963C81F1 /* MapPadView.swift */; };
 		2DE3AC66E68BCCAF091A8945 /* NanodotCore in Frameworks */ = {isa = PBXBuildFile; productRef = B02433472D51CF66555C20B1 /* NanodotCore */; };
 		2E90E8E2F0F1A22565C78DF8 /* AnimPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D588D20CAB346D6321067800 /* AnimPanel.swift */; };
 		3474DD87B455B976225ACD27 /* SimulatorHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE197555EE498E114E94F5F3 /* SimulatorHooks.swift */; };
 		3C0A7481B6783FB314696691 /* PadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8157FAB59FCA369D70DF0ED /* PadState.swift */; };
 		4DE0049670604975D3B9C56E /* NanodotPadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15C5195D1D6E216B610F75F /* NanodotPadApp.swift */; };
 		4FEC402F92E8936ADF19B972 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56B119FF86380E441D6E3A25 /* InfoPlist.strings */; };
+		6BB15BC7A38C9BA086C09EDA /* MapPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B2C3E3100C5C7354970723 /* MapPanel.swift */; };
 		70F3EE3E19FF9BF828734ED1 /* StockPadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FA40BD66F4087CAC3147E3 /* StockPadView.swift */; };
 		88DD5E9135B9F86871F122B4 /* ColorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FF71C433F03DCC9F18793D /* ColorPanel.swift */; };
+		983BE5DEB6FC18223BBC07C7 /* MapDraw.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12B87F6E8468A22F3F76BC7E /* MapDraw.swift */; };
 		9CCBB4D0DA3285700772858A /* MainPadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B543D5F582A0A406C45203A /* MainPadView.swift */; };
 		A76A0AAB2E77943145742D81 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC8A61375F8B47A8C60806EF /* Localizable.xcstrings */; };
 		B89B575EB70503D6219F7AEA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 490A6078C66A5AA65CB4CEB6 /* Assets.xcassets */; };
@@ -25,9 +28,10 @@
 
 /* Begin PBXFileReference section */
 		08FA40BD66F4087CAC3147E3 /* StockPadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockPadView.swift; sourceTree = "<group>"; };
+		12B87F6E8468A22F3F76BC7E /* MapDraw.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapDraw.swift; sourceTree = "<group>"; };
 		490A6078C66A5AA65CB4CEB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5433A63CF00C31C737E9BBCB /* nanodot */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nanodot; path = ..; sourceTree = SOURCE_ROOT; };
 		58FF71C433F03DCC9F18793D /* ColorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPanel.swift; sourceTree = "<group>"; };
+		687D20654E612C28963C81F1 /* MapPadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapPadView.swift; sourceTree = "<group>"; };
 		7A9C90F66602839397221F3E /* Draw.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Draw.swift; sourceTree = "<group>"; };
 		82FA022599AD03349FBEA522 /* PadContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadContentView.swift; sourceTree = "<group>"; };
 		8B543D5F582A0A406C45203A /* MainPadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPadView.swift; sourceTree = "<group>"; };
@@ -37,6 +41,8 @@
 		CC8A61375F8B47A8C60806EF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D588D20CAB346D6321067800 /* AnimPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimPanel.swift; sourceTree = "<group>"; };
 		E0E647808B986283848911FA /* Nanodot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Nanodot.entitlements; sourceTree = "<group>"; };
+		E1297884609DBE64C28CF526 /* nanodot */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "ipad-map"; path = ..; sourceTree = SOURCE_ROOT; };
+		E4B2C3E3100C5C7354970723 /* MapPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapPanel.swift; sourceTree = "<group>"; };
 		F15C5195D1D6E216B610F75F /* NanodotPadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NanodotPadApp.swift; sourceTree = "<group>"; };
 		F61066A460CCBC884803C8C0 /* NanodotPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = NanodotPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB553B6E28E5EE085FAD2064 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -67,6 +73,7 @@
 			isa = PBXGroup;
 			children = (
 				7A9C90F66602839397221F3E /* Draw.swift */,
+				12B87F6E8468A22F3F76BC7E /* MapDraw.swift */,
 			);
 			name = Shared;
 			path = ../Sources/Nanodot/Shared;
@@ -75,7 +82,7 @@
 		44B6344E18B5DF189A4D6E0D /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				5433A63CF00C31C737E9BBCB /* nanodot */,
+				E1297884609DBE64C28CF526 /* nanodot */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -88,6 +95,8 @@
 				58FF71C433F03DCC9F18793D /* ColorPanel.swift */,
 				FB553B6E28E5EE085FAD2064 /* Info.plist */,
 				8B543D5F582A0A406C45203A /* MainPadView.swift */,
+				687D20654E612C28963C81F1 /* MapPadView.swift */,
+				E4B2C3E3100C5C7354970723 /* MapPanel.swift */,
 				E0E647808B986283848911FA /* Nanodot.entitlements */,
 				F15C5195D1D6E216B610F75F /* NanodotPadApp.swift */,
 				82FA022599AD03349FBEA522 /* PadContentView.swift */,
@@ -211,6 +220,9 @@
 				88DD5E9135B9F86871F122B4 /* ColorPanel.swift in Sources */,
 				DAB5AC0B9A03A6E11089B4A2 /* Draw.swift in Sources */,
 				9CCBB4D0DA3285700772858A /* MainPadView.swift in Sources */,
+				983BE5DEB6FC18223BBC07C7 /* MapDraw.swift in Sources */,
+				2528705986A173989061FA62 /* MapPadView.swift in Sources */,
+				6BB15BC7A38C9BA086C09EDA /* MapPanel.swift in Sources */,
 				4DE0049670604975D3B9C56E /* NanodotPadApp.swift in Sources */,
 				1D7F7B090655779158F90CDF /* PadContentView.swift in Sources */,
 				3C0A7481B6783FB314696691 /* PadState.swift in Sources */,
