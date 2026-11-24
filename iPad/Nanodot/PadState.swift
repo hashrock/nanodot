@@ -31,6 +31,12 @@ final class PadState {
     /// アニメのプレビューで表示中のコマ（ストックに枠を出す）
     @ObservationIgnored var previewFrameRect: IntRect?
 
+    // MARK: 最近開いた書類
+    /// 最近開いた・保存した書類（新しい順、10 件まで）。この iPad の UserDefaults にだけ保存する（iCloud では同期しない）
+    private(set) var recentFiles = RecentFileList.decode(UserDefaults.standard.data(forKey: "pad.recentFiles"))
+    /// 一覧の各項目の今の場所（見つからなければ入らない）。アプリに戻ってきたときなどに見直す
+    private(set) var recentLocations: [String: URL] = [:]
+
     // MARK: 入力の設定
     /// 指でも描く（オフなら指は表示の操作だけ。描くのは Apple Pencil）。
     /// 設定で一度も切り替えていない間は、iPadOS の「Apple Pencil でのみ描画」に従う
@@ -107,6 +113,7 @@ final class PadState {
         editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
         locateICloudContainer()
         if !restoreLastDocument() { prepareFirstLaunch() }
+        refreshRecentFiles()
         #if targetEnvironment(simulator)
         // 検証用（シミュレーターだけ）。引数は SimulatorHooks.swift
         DispatchQueue.main.async { [self] in
@@ -349,6 +356,8 @@ final class PadState {
             // PNG 以外は上書き保存しない（保存すると アプリのフォルダーに PNG を作る）
             editor.load(img, meta: m, url: isPNG ? url : nil)
             isOutsideDocument = isPNG && !inside
+            // アクセス権を手放す前に覚える（外の場所はブックマークにアクセス権が入る）
+            noteRecentFile(url)
             // 上書き保存できるよう、閉じるまでアクセス権を持っておく
             if scoped {
                 if isPNG { accessedURL = url } else { url.stopAccessingSecurityScopedResource() }
@@ -426,6 +435,7 @@ final class PadState {
         editor.markSaved(url: url)
         isOutsideDocument = !inside
         if scoped { accessedURL = url }
+        noteRecentFile(url)
         documentName = url.deletingPathExtension().lastPathComponent
         rememberLastDocument()
         if let sidecarError {
@@ -483,10 +493,73 @@ final class PadState {
         if inside { try writeSidecar(for: url) }
         editor.markSaved(url: url)
         isOutsideDocument = !inside
+        noteRecentFile(url)
     }
 
     private func writeSidecar(for url: URL) throws {
         try RelatedFile.write(try SheetFile.encodeMeta(editor.meta), to: SheetFile.sidecarURL(for: url), primary: url)
+    }
+
+    // MARK: - 最近開いた書類
+
+    /// 一覧に足す。受け取ったファイルの一時的な複製（ドロップ）は覚えない
+    private func noteRecentFile(_ url: URL) {
+        let path = url.standardizedFileURL.resolvingSymlinksInPath().path
+        let tmp = FileManager.default.temporaryDirectory.standardizedFileURL.resolvingSymlinksInPath().path
+        guard !path.hasPrefix(tmp) else { return }
+        let base = Self.documentsDirectory.standardizedFileURL.resolvingSymlinksInPath().path + "/"
+        let bookmark = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+        recentFiles.add(RecentFile(path: path, bookmark: bookmark, relativePath: path.hasPrefix(base) ? String(path.dropFirst(base.count)) : nil))
+        saveRecentFiles()
+    }
+
+    func clearRecentFiles() {
+        recentFiles.clear()
+        saveRecentFiles()
+    }
+
+    private func saveRecentFiles() {
+        UserDefaults.standard.set(recentFiles.encoded(), forKey: "pad.recentFiles")
+        refreshRecentFiles()
+    }
+
+    /// 各項目の今の場所を探し直す（書類フォルダーの中は相対パス、外はブックマーク）
+    func refreshRecentFiles() {
+        var found: [String: URL] = [:]
+        for f in recentFiles.items {
+            if let u = locate(f) { found[f.path] = u }
+        }
+        recentLocations = found
+    }
+
+    private func locate(_ f: RecentFile) -> URL? {
+        let fm = FileManager.default
+        if let rel = f.relativePath {
+            let u = Self.documentsDirectory.appendingPathComponent(rel)
+            if fm.fileExists(atPath: u.path) { return u }
+        }
+        if let b = f.bookmark {
+            var stale = false
+            if let u = try? URL(resolvingBookmarkData: b, options: [], relativeTo: nil, bookmarkDataIsStale: &stale) {
+                // 外の場所は、アクセス権を得てから有無を見る
+                let scoped = u.startAccessingSecurityScopedResource()
+                defer { if scoped { u.stopAccessingSecurityScopedResource() } }
+                if fm.fileExists(atPath: u.path) { return u }
+            }
+        }
+        return fm.fileExists(atPath: f.path) ? URL(fileURLWithPath: f.path) : nil
+    }
+
+    /// 一覧の下に出す場所の名前（アプリのフォルダーはファイル App での呼び名）
+    func recentFileLocationLabel(_ f: RecentFile) -> String {
+        guard let u = recentLocations[f.path] else { return L("見つかりません") }
+        if f.relativePath != nil, Self.isInside(u, Self.documentsDirectory) { return L("このiPad内 › Nanodot") }
+        if let icloud = iCloudDocuments, Self.isInside(u, icloud) { return L("iCloud Drive › Nanodot") }
+        return u.deletingLastPathComponent().lastPathComponent
+    }
+
+    private static func isInside(_ url: URL, _ root: URL) -> Bool {
+        AppFolders(roots: [root]).contains(url)
     }
 
     // MARK: - 前回の書類
