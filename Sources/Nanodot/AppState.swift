@@ -9,6 +9,8 @@ final class AppState {
     /// カーソル下のドット（ステータスバー表示用）
     var cursorDot: IntPoint?
     var showNewDocumentSheet = false
+    /// 最近使った項目（NSDocumentController の記録の写し。メニューを作り直すために持つ）
+    private(set) var recentFiles: [URL] = []
     /// ストックの表示倍率（パネルの表示用。実体は StockView）
     var stockZoom: CGFloat = 1
     var selectedAnimID: UUID?
@@ -68,6 +70,7 @@ final class AppState {
         mapSession = MapSession(editor: editor)
         mapSession.onChange = { [weak self] in self?.mapView?.needsDisplay = true }
         editor.onPixelsChanged = { [weak self] in self?.requestDisplay() }
+        refreshRecentFiles()
         #if !APPSTORE
         updateMCP()
         #endif
@@ -259,6 +262,7 @@ final class AppState {
             if meta == nil { m.slots = editor.meta.slots }
             // PNG 以外は上書き保存しない（保存時に PNG の名前を聞く）
             editor.load(img, meta: m, url: isPNG ? url : nil)
+            noteRecentFile(url)
             selectedAnimID = m.anims.first?.id
             mapSession.sheetReplaced()
             stockView?.fitToView()
@@ -302,9 +306,48 @@ final class AppState {
         do {
             try SheetFile.save(editor.image, meta: editor.meta, url: url)
             editor.markSaved(url: url)
+            noteRecentFile(url)
         } catch {
             showError(L("保存に失敗しました: \(error.localizedDescription)"))
         }
+    }
+
+    // MARK: - 最近使った項目
+
+    // 記録は macOS の標準（NSDocumentController。この Mac の中だけで、iCloud では同期しない）。
+    // App Sandbox でも、この一覧から開いた書類にはアクセス権が付く。件数はシステム設定の「最近使った項目」の数（既定 10）に従う。
+    // Info.plist で書類の型として宣言している PNG だけが記録される（ほかの画像は読み込みとして開くので、記録しなくてよい）
+
+    func refreshRecentFiles() {
+        recentFiles = NSDocumentController.shared.recentDocumentURLs
+    }
+
+    private func noteRecentFile(_ url: URL) {
+        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        refreshRecentFiles()
+    }
+
+    func clearRecentFiles() {
+        NSDocumentController.shared.clearRecentDocuments(nil)
+        refreshRecentFiles()
+    }
+
+    func openRecent(_ url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            showError(L("「\(url.lastPathComponent)」が見つかりません。移動したか削除された可能性があります"))
+            refreshRecentFiles()
+            return
+        }
+        guard confirmDiscardChanges() else { return }
+        open(url: url)
+    }
+
+    /// メニューに出す名前。同じ名前が並ぶときは、入っているフォルダーの名前を足す
+    func recentFileTitle(_ url: URL) -> String {
+        let name = url.lastPathComponent
+        let same = recentFiles.filter { $0.lastPathComponent == name }.count > 1
+        let title = same ? "\(name) — \(url.deletingLastPathComponent().lastPathComponent)" : name
+        return FileManager.default.fileExists(atPath: url.path) ? title : L("\(title)（見つかりません）")
     }
 
     // MARK: - 書き出し・読み込み（保存とは別に、明示的に行う）

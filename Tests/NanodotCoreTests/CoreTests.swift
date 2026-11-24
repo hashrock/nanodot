@@ -1018,6 +1018,39 @@ final class SettingsMigrationTests: XCTestCase {
     }
 }
 
+/// iPad 版の最近開いた書類の一覧
+final class RecentFileListTests: XCTestCase {
+    func testAddMovesToFrontAndCaps() {
+        var l = RecentFileList()
+        for i in 0..<12 { l.add(RecentFile(path: "/d/\(i).png")) }
+        XCTAssertEqual(l.items.count, RecentFileList.limit)
+        XCTAssertEqual(l.items.first?.path, "/d/11.png")
+        XCTAssertEqual(l.items.last?.path, "/d/2.png", "古いものから落ちる")
+        l.add(RecentFile(path: "/d/5.png", relativePath: "5.png"))
+        XCTAssertEqual(l.items.first?.path, "/d/5.png", "同じ場所は先頭に移る")
+        XCTAssertEqual(l.items.first?.relativePath, "5.png")
+        XCTAssertEqual(l.items.filter { $0.path == "/d/5.png" }.count, 1, "重ならない")
+        XCTAssertEqual(l.items.first?.name, "5.png")
+        XCTAssertEqual(l.items.first?.folderName, "d")
+        l.remove(path: "/d/5.png")
+        XCTAssertFalse(l.items.contains { $0.path == "/d/5.png" })
+        l.clear()
+        XCTAssertTrue(l.isEmpty)
+    }
+
+    func testCoding() {
+        var l = RecentFileList()
+        l.add(RecentFile(path: "/a/b.png", bookmark: Data([1, 2, 3]), relativePath: "b.png"))
+        let back = RecentFileList.decode(l.encoded())
+        XCTAssertEqual(back, l)
+        XCTAssertTrue(RecentFileList.decode(nil).isEmpty)
+        XCTAssertTrue(RecentFileList.decode(Data("壊れた".utf8)).isEmpty)
+        // 上限より多く保存されていても、読むときに切り詰める
+        let many = try! JSONEncoder().encode(["items": (0..<20).map { RecentFile(path: "/\($0)") }])
+        XCTAssertEqual(RecentFileList.decode(many).items.count, RecentFileList.limit)
+    }
+}
+
 /// マップの編集状態（Mac 版のマップウィンドウと iPad 版のマップで共有する MapSession）
 final class MapSessionTests: XCTestCase {
     /// 64×32 のシート、セル 16×16（4 列 × 2 行）

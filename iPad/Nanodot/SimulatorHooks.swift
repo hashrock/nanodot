@@ -15,7 +15,9 @@ import SwiftUI
 ///   終わったら中身を動かして浮かせたままにする（確定・キャンセルのボタンの確認用）。`-demo 1` と一緒に使う
 /// - `-demoMap 1`: `-demo` の絵に草・石のセルを足し、マップ（2 レイヤー）を作ってマップの画面を出す。`-demo 1` と一緒に使う
 /// - `-mapTest 1`: マップのタイルと画面座標の変換と、置く・拾う・取り消しを確かめ、結果を tmp/maptest.txt に書く。`-demoMap 1` と一緒に使う
-/// - `-panel anim|settings|new|map`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
+/// - `-recentTest 1`: 書類フォルダーに 3 つ書類を作って順に開き、1 つ消して、最近使った項目の順・上限・見つからない印・クリアを確かめ、
+///   結果を tmp/recent.txt に書く。終わったら一覧を残す（`-panel recent` で中身を並べて撮れる）
+/// - `-panel anim|settings|new|map|recent`: そのパネル（アニメ・設定・新規シート）だけを画面いっぱいに出す（下のほうまで撮る確認用。
 ///   `-layout WxH` の幅も効く）。`-demoList 1` は `-demo` のアニメを「登録」にしてコマを 2 つ入れる
 enum SimulatorHooks {
     static var panel: String? { UserDefaults.standard.string(forKey: "panel") }
@@ -40,6 +42,7 @@ enum SimulatorHooks {
         if d.bool(forKey: "eyedropperTest") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { eyedropperTest(state) }
         }
+        if d.bool(forKey: "recentTest") { recentTest(state) }
         if d.bool(forKey: "selectTest") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { selectTest(state) }
         }
@@ -70,6 +73,35 @@ enum SimulatorHooks {
         e.nudgeSelection(dx: 0, dy: 4)
         state.mainView?.setNeedsDisplay()
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("select.txt")
+        try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    private static func recentTest(_ state: PadState) {
+        var lines: [String] = []
+        func check(_ name: String, _ ok: Bool) { lines.append("\(ok ? "OK" : "NG") \(name)") }
+        let fm = FileManager.default
+        let docs = PadState.documentsDirectory
+        state.clearRecentFiles()
+        check("cleared", state.recentFiles.isEmpty)
+        var urls: [URL] = []
+        for name in ["forest", "town", "cave"] {
+            let u = docs.appendingPathComponent(name + ".png")
+            try? SheetFile.pngData(PixelBuffer(width: 16, height: 16))?.write(to: u)
+            urls.append(u)
+            state.open(url: u)
+        }
+        check("newest first", state.recentFiles.items.map(\.name).prefix(3) == ["cave.png", "town.png", "forest.png"])
+        check("inside app folder has relative path", state.recentFiles.items.first?.relativePath == "cave.png")
+        state.open(url: urls[0])
+        check("reopen moves to front", state.recentFiles.items.first?.name == "forest.png" && state.recentFiles.items.count == 3)
+        try? fm.removeItem(at: urls[1])
+        state.refreshRecentFiles()
+        check("missing file is marked", state.recentLocations[state.recentFiles.items[2].path] == nil
+              && state.recentFileLocationLabel(state.recentFiles.items[2]) == L("見つかりません"))
+        check("existing file is located", state.recentLocations[state.recentFiles.items[0].path] != nil)
+        let saved = RecentFileList.decode(UserDefaults.standard.data(forKey: "pad.recentFiles"))
+        check("saved locally (UserDefaults)", saved == state.recentFiles)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("recent.txt")
         try? lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
     }
 
@@ -237,6 +269,12 @@ struct SimulatorPanelPreview: View {
                 NewDocumentSheet { _, _, _, _ in }
             case "map":
                 ScrollView { MapPanel(state: state, editor: state.editor).padding(12) }
+            case "recent":
+                // メニューの中身をそのまま縦に並べる（メニューはタップしないと開かないので、撮るための入口）
+                VStack(alignment: .leading, spacing: 12) {
+                    RecentFilesMenuContent(state: state) { _ in }
+                }
+                .padding(20)
             default:
                 ScrollView { AnimPanel(state: state, editor: state.editor).padding(12) }
             }

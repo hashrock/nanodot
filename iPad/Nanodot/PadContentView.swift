@@ -120,7 +120,10 @@ struct PadContentView: View {
         .onOpenURL { url in requestDiscard(.openFile(url, scoped: false)) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background || phase == .inactive { state.autosave() }
-            if phase == .active { state.refreshFingerDrawingDefault() }
+            if phase == .active {
+                state.refreshFingerDrawingDefault()
+                state.refreshRecentFiles()
+            }
         }
         .onChange(of: state.showColorsRequest) { _, _ in
             if sidePanel == .anim { sidePanel = .colors }
@@ -455,6 +458,7 @@ struct PadContentView: View {
         Menu {
             Button { requestDiscard(.new) } label: { Label("新規…", systemImage: "doc.badge.plus") }
             Button { requestDiscard(.open) } label: { Label("開く…", systemImage: "folder") }
+            recentMenu
             Divider()
             Button { state.save() } label: { Label("保存", systemImage: "square.and.arrow.down") }
             Button { exportPNG(scale: 1, saveAs: true) } label: { Label("名前を付けて保存…", systemImage: "square.and.arrow.down.on.square") }
@@ -475,6 +479,15 @@ struct PadContentView: View {
                 .frame(width: 40, height: 40)
         }
         .accessibilityLabel("ファイル")
+    }
+
+    /// 最近開いた書類（この iPad の中だけの記録）
+    private var recentMenu: some View {
+        Menu {
+            RecentFilesMenuContent(state: state) { url in requestDiscard(.openFile(url, scoped: false)) }
+        } label: {
+            Label("最近使った項目", systemImage: "clock")
+        }
     }
 
     private var toolMenu: some View {
@@ -677,6 +690,33 @@ struct PadContentView: View {
                 .background(selected ? Color.accentColor.opacity(0.2) : .clear, in: RoundedRectangle(cornerRadius: 8))
         }
         .disabled(disabled)
+    }
+}
+
+// MARK: - 最近使った項目
+
+/// 最近使った項目のメニューの中身。見つからないものは押せない形で残し、末尾で履歴をクリアできる
+struct RecentFilesMenuContent: View {
+    let state: PadState
+    let open: (URL) -> Void
+
+    var body: some View {
+        ForEach(state.recentFiles.items, id: \.path) { f in
+            let url = state.recentLocations[f.path]
+            Button {
+                if let url { open(url) }
+            } label: {
+                Text(f.name)
+                Text(state.recentFileLocationLabel(f))
+            }
+            .disabled(url == nil)
+        }
+        if state.recentFiles.isEmpty {
+            Text("最近開いた書類はありません")
+        } else {
+            Divider()
+            Button(role: .destructive) { state.clearRecentFiles() } label: { Label("履歴をクリア", systemImage: "clock.badge.xmark") }
+        }
     }
 }
 

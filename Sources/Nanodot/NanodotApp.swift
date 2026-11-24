@@ -49,6 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         closeGuard = WindowCloseGuard(window: window, state: state)
     }
 
+    /// ほかで書類を動かしたり消したりしていることがあるので、戻ってきたら最近使った項目を見直す
+    func applicationDidBecomeActive(_ notification: Notification) {
+        state?.refreshRecentFiles()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -239,6 +244,15 @@ struct AppCommands: Commands {
             .keyboardShortcut("n")
             Button("開く...") { state.open() }
                 .keyboardShortcut("o")
+            Menu("最近使った項目を開く") {
+                ForEach(state.recentFiles, id: \.self) { url in
+                    // 見つからない書類も一覧に残し、押したときに知らせる（外付けのディスクを外しているだけのこともある）
+                    Button(state.recentFileTitle(url)) { state.openRecent(url) }
+                }
+                if !state.recentFiles.isEmpty { Divider() }
+                Button("メニューを消去") { state.clearRecentFiles() }
+                    .disabled(state.recentFiles.isEmpty)
+            }
         }
         CommandGroup(replacing: .saveItem) {
             Button("保存") { state.save() }

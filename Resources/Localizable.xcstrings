@@ -3424,6 +3424,116 @@
           }
         }
       }
+    },
+    "「%@」が見つかりません。移動したか削除された可能性があります" : {
+      "comment" : "Mac の最近使った項目から、なくなった書類を選んだとき",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” can’t be found. It may have been moved or deleted."
+          }
+        }
+      }
+    },
+    "%@（見つかりません）" : {
+      "comment" : "Mac の最近使った項目で、見つからない書類の名前",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (Not Found)"
+          }
+        }
+      }
+    },
+    "最近使った項目を開く" : {
+      "comment" : "Mac のファイルメニュー（標準の Open Recent）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Recent"
+          }
+        }
+      }
+    },
+    "メニューを消去" : {
+      "comment" : "Mac の最近使った項目を開くの末尾（標準の Clear Menu）",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Menu"
+          }
+        }
+      }
+    },
+    "最近開いた書類はありません" : {
+      "comment" : "iPad の最近使った項目が空のとき",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Recent Documents"
+          }
+        }
+      }
+    },
+    "履歴をクリア" : {
+      "comment" : "iPad の最近使った項目の末尾。一覧を消す",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear History"
+          }
+        }
+      }
+    },
+    "最近使った項目" : {
+      "comment" : "iPad のファイルメニューの最近使った項目",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recents"
+          }
+        }
+      }
+    },
+    "見つかりません" : {
+      "comment" : "iPad の最近使った項目で、見つからない書類の場所の欄",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Found"
+          }
+        }
+      }
+    },
+    "このiPad内 › Nanodot" : {
+      "comment" : "iPad の最近使った項目の場所。ファイル App での呼び名",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On My iPad › Nanodot"
+          }
+        }
+      }
+    },
+    "iCloud Drive › Nanodot" : {
+      "comment" : "iPad の最近使った項目の場所。ファイル App での呼び名",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Drive › Nanodot"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
