@@ -11,8 +11,8 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    MARKETING_VERSION: "0.6.0"
-    CURRENT_PROJECT_VERSION: "5"
+    MARKETING_VERSION: "0.7.0"
+    CURRENT_PROJECT_VERSION: "6"
 schemes:
   NanodotPad:
     build:
