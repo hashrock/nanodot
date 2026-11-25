@@ -30,6 +30,7 @@
 		08FA40BD66F4087CAC3147E3 /* StockPadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockPadView.swift; sourceTree = "<group>"; };
 		12B87F6E8468A22F3F76BC7E /* MapDraw.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapDraw.swift; sourceTree = "<group>"; };
 		490A6078C66A5AA65CB4CEB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5249A7E36C2F28FD6A39D111 /* nanodot */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nanodot; path = ..; sourceTree = SOURCE_ROOT; };
 		58FF71C433F03DCC9F18793D /* ColorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPanel.swift; sourceTree = "<group>"; };
 		687D20654E612C28963C81F1 /* MapPadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapPadView.swift; sourceTree = "<group>"; };
 		7A9C90F66602839397221F3E /* Draw.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Draw.swift; sourceTree = "<group>"; };
@@ -41,7 +42,6 @@
 		CC8A61375F8B47A8C60806EF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D588D20CAB346D6321067800 /* AnimPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimPanel.swift; sourceTree = "<group>"; };
 		E0E647808B986283848911FA /* Nanodot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Nanodot.entitlements; sourceTree = "<group>"; };
-		E1297884609DBE64C28CF526 /* nanodot */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "ipad-map"; path = ..; sourceTree = SOURCE_ROOT; };
 		E4B2C3E3100C5C7354970723 /* MapPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapPanel.swift; sourceTree = "<group>"; };
 		F15C5195D1D6E216B610F75F /* NanodotPadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NanodotPadApp.swift; sourceTree = "<group>"; };
 		F61066A460CCBC884803C8C0 /* NanodotPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = NanodotPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -82,7 +82,7 @@
 		44B6344E18B5DF189A4D6E0D /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				E1297884609DBE64C28CF526 /* nanodot */,
+				5249A7E36C2F28FD6A39D111 /* nanodot */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -308,7 +308,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -327,7 +327,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.6.0;
+				MARKETING_VERSION = 0.7.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -402,7 +402,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -415,7 +415,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.6.0;
+				MARKETING_VERSION = 0.7.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
