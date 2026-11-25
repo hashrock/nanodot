@@ -96,7 +96,7 @@ open iPad/NanodotPad.xcodeproj        # スキーム NanodotPad を iPad／シ�
 - 版は `iPad/project.yml` の `MARKETING_VERSION`・`CURRENT_PROJECT_VERSION`。出し直すときはビルド番号を上げて `ipad-xcodegen.sh`
 - `ipad-export.sh`: Xcode の自動署名で Archive し、`xcodebuild -exportArchive -allowProvisioningUpdates` で Cloud Managed Apple Distribution の署名と `iOS Team Store Provisioning Profile: com.hashrock.nanodot` を付けます。できた `.ipa` を開いて、Info.plist の項目（ITSAppUsesNonExemptEncryption = false、UIFileSharingEnabled、LSSupportsOpeningDocumentsInPlace、iPad だけ、iPadOS 17）、ja・en、`PrivacyInfo.xcprivacy`、アイコン、MCP や検証用の入口が入っていないこと、配布用の署名、プロファイルの App ID、iCloud container を検査します。書き出しのログは `build/ipad/export.log`、署名の記録は `dist/appstore/ipad/Nanodot-<版>-<ビルド>.DistributionSummary.plist`
 - アップロードは別に（Transporter に `.ipa` をドロップするか `xcrun altool --upload-app -t ios …`）。App Store Connect の Nanodot に iOS のプラットフォームを足してから
-- アイコンは Mac 版と同じ `Resources/AppIcon.svg` から作ります（`swift scripts/make-icon.swift Resources/AppIcon.svg iPad/Nanodot/Assets.xcassets/AppIcon.appiconset/AppIcon.png`。白地いっぱい・透明なし）
+- アイコンは Mac 版と同じ `Resources/Logo.png`（ドット絵のロゴ）から作ります（`swift scripts/make-icon.swift Resources/Logo.png iPad/Nanodot/Assets.xcassets/AppIcon.appiconset/AppIcon.png`。白地いっぱい・透明なし）
 - iCloud container は `iCloud.com.hashrock.nanodot`（`iPad/project.yml` の entitlements と Info.plist の `NSUbiquitousContainers`）。ファイル App の「iCloud Drive › Nanodot」に出て、Mac の Finder の iCloud Drive にも同じフォルダーが出ます。`NO_ICLOUD=1 ./scripts/ipad-export.sh` で外して作れます
 - 表示言語は Mac 版と同じカタログ（`Resources/Localizable.xcstrings`）を Xcode が変換して入れます。`iPad/Nanodot/ja.lproj/InfoPlist.strings` は、バンドルに `ja.lproj` を入れて App Store の対応言語に日本語を出すためのものです
 

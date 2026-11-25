@@ -28,7 +28,7 @@ BIN="$("${BUILD[@]}" --show-bin-path)/Nanodot"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Nanodot"
-swift scripts/make-icon.swift Resources/AppIcon.svg "$APP/Contents/Resources/AppIcon.icns"
+swift scripts/make-icon.swift Resources/Logo.png "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
 # 訳。カタログ（.xcstrings）を .lproj/<表>.strings にして Resources に入れる（SwiftPM は .xcstrings をビルドできないので、ここでやる）。
