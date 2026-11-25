@@ -6,7 +6,7 @@
 - `privacy.html`: プライバシーポリシー（日本語のあとに `#en` の英語）。App Store Connect に書く URL は <https://hashrock.github.io/nanodot/privacy.html>
 - `support.html`: サポート（同じく日本語・英語）。<https://hashrock.github.io/nanodot/support.html>
 - `style.css`: レスポンシブスタイル（`.policy` は privacy / support の本文）
-- `assets/`: ロゴ（`Resources/AppIcon.svg` の写し）とスクリーンショット
+- `assets/`: ロゴ（`docs/images/logo.svg` と同じ）とスクリーンショット
 
 ## GitHub Pages
 

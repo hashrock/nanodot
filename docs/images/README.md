@@ -4,7 +4,7 @@ README やサイト、紹介記事などで使える画像です。スクリー�
 
 | ファイル | 内容 |
 |---|---|
-| `logo.svg` | ロゴ（`Resources/AppIcon.svg` と同じ。黒一色） |
+| `logo.svg` | ロゴ（`Resources/Logo.png` のドット絵を SVG にしたもの。黒一色） |
 | `app-icon.png` | アプリアイコン（512×512、白い角丸の上にロゴ） |
 | `screenshot.png` | メイン画面（1280×860） |
 | `anim.png` | アニメウィンドウとオニオンスキン |
